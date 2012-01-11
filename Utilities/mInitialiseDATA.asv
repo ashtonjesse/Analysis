@@ -1,0 +1,16 @@
+global  Data
+
+%% Unemap
+Data.Unemap.Potential.Original = [];
+Data.Unemap.Time = [];
+
+%% Environment
+Data.Environment.Temperature = str2double(char(Input('Temperature (degC): ')));
+Data.Environment.PumpRPM = str2double(char(Input('Pump RPM: ')));
+Data.Environment.PerfusionPressure = str2double(char(Input('Prefusion Pressure (mmHg): ')));
+Data.Environment.Drugs = Input('Most recent drugs (time, concentration, volume): ');
+
+%% Protocols
+Data.Protocols.Pacing.Electrodes = [];
+Data.Protocols.Pacing.Current = str2double(char(Input('Pacing Current: ')));
+Data.Protocols.Pacing.Frequency = str2double(char(Input('Pacing Frequency: ')));
