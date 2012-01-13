@@ -2,7 +2,9 @@ global  Data
 
 %% Unemap
 Data.Unemap.Potential.Original = [];
-Data.Unemap.Potential.BaselineCorrected = [];
+Data.Unemap.Potential.Baseline.Corrected = [];
+Data.Unemap.Potential.Baseline.Polynomial = [];
+Data.Unemap.Potential.Baseline.Order = [];
 Data.Unemap.Time = [];
 Data.Unemap.RejectedElectrodes = [];
 
