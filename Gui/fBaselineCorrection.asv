@@ -129,8 +129,7 @@ function pBaselineMenu_Callback(handles,src,event)
     Data.Unemap.Potential.Baseline.Corrected = ...
         zeros(size(Data.Unemap.Potential.Original,1),...
         Experiment.Unemap.NumberOfElectrodes);
-    %Loop through all the electrodes creating a baseline polynomial for
-    %each and removing this component from the data.
+    %Loop through all the electrodes creating a baseline polynomial for each
     for k = 1:Experiment.Unemap.NumberOfElectrodes;
         oBaselineMenu = findobj('tag','pmBaselineMenu');
         iPolynomialOrder = get(oBaselineMenu,'Value');
