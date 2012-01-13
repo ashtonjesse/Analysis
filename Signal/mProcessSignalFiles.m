@@ -6,12 +6,13 @@ clear all;
 
 %Specify paths
 sExperimentDate = '20111124';
-sSignalsPath = 'D:/Users/jash042/Data/TxtFiles/20111124';
-sSavePath = 'D:/Users/jash042/Documents/PhD/Analysis/Database/20111124';
+sSignalsPath = 'H:/Data/TxtFiles/20111124';
+sSavePath = 'H:/Data/Database/20111124';
 
 %Add paths
-addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/)'));
 addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Utilities/'));
+addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Signal/'));
+addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Gui/'));
 
 global Data Experiment;
 
@@ -46,6 +47,6 @@ end
 
 %Save Experiment file
 sFileSaveName = sprintf('%s_MetaData.mat',sExperimentDate);
-fprintf('Saving %s_MetaData\n',sFileSaveName);
+fprintf('Saving %s\n',sFileSaveName);
 %Save the file
 save(sFileSaveName, 'Experiment');
