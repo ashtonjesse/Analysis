@@ -7,7 +7,12 @@ function gViewPotentials
     close all; 
     clear all;
 
-    global Data;
+    global Data Experiment;
+       
+    addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Utilities/'));
+    addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Signal/'));
+    addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Gui/'));
+
     %Set up the the main figure and the objects on that figure
     oMainFigure=figure('Visible','on',...
         'units','pixels','position',[250 100 500 600],...
@@ -56,13 +61,13 @@ function LoadData_Callback(src, eventdata)
     %This function opens a file dialog, loads a text file,
     %(containing the signal) and plots the data
     clear Data;
-    global Data;
+    global Data Experiment;
 
     %Call built-in file dialog to select filename
-    [sFileName,sPathName]=uigetfile('*.mat','Select .mat containing a Data structured array');
-
-    %Make sure the dialog returns a char object
-    if ~ischar(sFileName)
+    [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Data structured array');
+    [sExpFileName,sExpPathName]=uigetfile('*.mat','Select .mat containing an Experiment structured array');
+    %Make sure the dialogs return char objects
+    if (~ischar(sDataFileName) && ~ischar(sExpFileName))
         return
     end
 
@@ -71,14 +76,13 @@ function LoadData_Callback(src, eventdata)
     set(oHandle,'string','Loading Data','BackgroundColor',[1 0 0],'ForegroundColor',[1 1 1]);
 
     %Get the full file name and save it to UserData attribute of oHandle
-    sLongFileName=strcat(sPathName,sFileName);
-    set(oHandle,'UserData',sLongFileName);
+    sLongDataFileName=strcat(sDataPathName,sDataFileName);
+    sLongExpFileName=strcat(sExpPathName,sExpFileName);
+    set(oHandle,'UserData',sLongDataFileName);
 
     %Load the selected file
-    load(sLongFileName);
-    newtext = sprintf('%s, %s',DATA.Exp.Info.Experiment,filename);
-    set(temp,'string',newtext,'BackgroundColor',[1 .1 0],'ForegroundColor',[1 1 1]);
-
+    load(sLongDataFileName);
+    load(sLongExpFileName);
     %Check the data loaded and make appropriate buttons visible
     fCheckData;
 
@@ -86,20 +90,20 @@ function fCheckData
     %This function checks the data currently loaded into Data and makes the
     %appropriate buttons visible on the mainfigure.
     
-    global Data;
+    global Data Experiment;
     %If there is anything in the Unemap Potentials make the baseline
     %correction button visible.
     if(size(Data.Unemap.Potential.Original,1))
-        oHandle = findobj('tag','btnBase');
+        oHandle = findobj('tag','btnBaseline');
         set(oHandle,'visible','on');
     else
-        temp = findobj('tag','buttbase'); 
+        temp = findobj('tag','btnBaseline'); 
         set(temp,'visible','off');
     end
     
     %If the Unemap potentials have been baseline corrected make the Single
     %channel button and Unemap signals button visible.
-    if(size(Data.Unemap.Potential.BaseCorrected,1))
+    if(size(Data.Unemap.Potential.Baseline.Corrected,1))
         oHandle = findobj('tag','btnSingle'); 
         set(oHandle,'visible','on');
         oHandle = findobj('tag','btnUnemap'); 
@@ -133,7 +137,7 @@ function fCheckData
 
 function bBaseline_Callback(src,eventdata)
     %Do a baseline correction
-    baselineNomeanGUI;
+    fBaselineCorrection;
     fCheckData;
  
 function UpdateMenu_Callback(src,eventdata)
