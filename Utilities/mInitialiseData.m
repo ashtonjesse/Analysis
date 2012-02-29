@@ -11,7 +11,7 @@ Data.Unemap.RejectedElectrodes = [];
 
 %% Environment
 Data.Environment.Temperature = input('Temperature (degC): ');
-Data.Environment.PumpRPM = input('Pump RPM: ');
+Data.Environment.PumpFlowRate = input('Pump Flow Rate (mL/min): ');
 Data.Environment.PerfusionPressure = input('Prefusion Pressure (mmHg): ');
 Data.Environment.Drugs = input('Most recent drugs (time, concentration, volume): ');
 

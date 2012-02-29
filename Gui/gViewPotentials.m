@@ -29,18 +29,23 @@ function gViewPotentials
         'FontSize',[10],'FontWeight','bold','String','Baseline Correct',...
         'BackgroundColor',[0 1 0],'ForegroundColor',[0 0 0],'callback',@bBaseline_Callback,...
         'visible','off','tag','btnBaseline');
-
-    bSignalAnalysis = uicontrol('style','pushbutton','units','pixels','position',[20 375 460 25],...
+    
+    bDetectBeats = uicontrol('style','pushbutton','units','pixels','position',[20 375 460 25],...
+        'FontSize',[10],'FontWeight','bold','String','Detect Beats',...
+        'BackgroundColor',[0 1 0],'ForegroundColor',[0 0 0],'callback',@bDetectBeats_Callback,...
+        'visible','off','tag','btnDetectBeats');
+    
+    bSignalAnalysis = uicontrol('style','pushbutton','units','pixels','position',[20 300 460 25],...
         'FontSize',[10],'FontWeight','bold','String','Select Beat(s)',...
         'BackgroundColor',[0 1 0],'ForegroundColor',[0 0 0],'callback',@bSignalAnalysis_Callback,...
         'visible','off','tag','btnSignalAnalysis');
 
-    bActivationAnalysis = uicontrol('style','pushbutton','units','pixels','position',[20 300 460 25],...
+    bActivationAnalysis = uicontrol('style','pushbutton','units','pixels','position',[20 225 460 25],...
         'FontSize',[10],'FontWeight','bold','String','Analyse Activation',...
         'BackgroundColor',[0 .5 1],'ForegroundColor',[0 0 0],'callback',@bActivationAnalysis_Callback,...
         'visible','off','tag','btnActivationAnalysis');
 
-    eData = uicontrol('style','edit','units','pixels','position',[20 225 460 25],...
+    eData = uicontrol('style','edit','units','pixels','position',[20 150 460 25],...
         'FontSize',[10],'FontWeight','bold','String','H:/Data/Database',...
         'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'HorizontalAlignment','left',...
         'visible','on','tag','edtData');
@@ -85,6 +90,7 @@ function LoadData_Callback(src, eventdata)
     load(sLongExpFileName);
     %Check the data loaded and make appropriate buttons visible
     fCheckData;
+    set(oHandle,'string','Data Loaded','BackgroundColor',[1 0 0],'ForegroundColor',[1 1 1]);
 
 function fCheckData
     %This function checks the data currently loaded into Data and makes the
@@ -104,10 +110,12 @@ function fCheckData
     %If the Unemap potentials have been baseline corrected make the Single
     %channel button and Unemap signals button visible.
     if(size(Data.Unemap.Potential.Baseline.Corrected,1))
-        oHandle = findobj('tag','btnSingle'); 
+        oHandle = findobj('tag','btnDetectBeats'); 
         set(oHandle,'visible','on');
-        oHandle = findobj('tag','btnUnemap'); 
-        set(oHandle,'visible','on');
+%         oHandle = findobj('tag','btnSingle'); 
+%         set(oHandle,'visible','on');
+%         oHandle = findobj('tag','btnUnemap'); 
+%         set(oHandle,'visible','on');
     end
 
 % function LoadMRI(src, eventdata)
@@ -137,9 +145,12 @@ function fCheckData
 
 function bBaseline_Callback(src,eventdata)
     %Do a baseline correction
-    fBaselineCorrection;
+    wBaselineCorrection;
     fCheckData;
- 
+
+function bDetectBeats_Callback(src,eventdata)
+    wDetectBeats;
+        
 function UpdateMenu_Callback(src,eventdata)
     %Updates the main figure
     fCheckData;

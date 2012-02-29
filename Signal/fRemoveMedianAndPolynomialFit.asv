@@ -1,0 +1,12 @@
+function aReturnData = fRemoveMedianAndPolynomialFit(aInData,iOrder)
+% This function computes the overall median of the signal data (aInData)
+% and subtracts this constant from the data. A polynomial fit of order 
+% iOrder is then computed and subtracted from the data.
+
+addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Utilities/'));
+
+dMedian = median(aInData);
+aRemoveMedian = aInData - dMedian;
+[aBaselinePolynomial] = fPolynomialFitEvaluation(aRemoveMedian,iOrder);
+
+aReturnData = [];

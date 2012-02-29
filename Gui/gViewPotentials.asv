@@ -29,8 +29,13 @@ function gViewPotentials
         'FontSize',[10],'FontWeight','bold','String','Baseline Correct',...
         'BackgroundColor',[0 1 0],'ForegroundColor',[0 0 0],'callback',@bBaseline_Callback,...
         'visible','off','tag','btnBaseline');
-
-    bSignalAnalysis = uicontrol('style','pushbutton','units','pixels','position',[20 375 460 25],...
+    
+    bBaseline = uicontrol('style','pushbutton','units','pixels','position',[20 375 460 25],...
+        'FontSize',[10],'FontWeight','bold','String','Baseline Correct',...
+        'BackgroundColor',[0 1 0],'ForegroundColor',[0 0 0],'callback',@bBaseline_Callback,...
+        'visible','off','tag','btnDetectBeats');
+    
+    bSignalAnalysis = uicontrol('style','pushbutton','units','pixels','position',[20 300 460 25],...
         'FontSize',[10],'FontWeight','bold','String','Select Beat(s)',...
         'BackgroundColor',[0 1 0],'ForegroundColor',[0 0 0],'callback',@bSignalAnalysis_Callback,...
         'visible','off','tag','btnSignalAnalysis');
@@ -84,8 +89,8 @@ function LoadData_Callback(src, eventdata)
     load(sLongDataFileName);
     load(sLongExpFileName);
     %Check the data loaded and make appropriate buttons visible
-    
     fCheckData;
+    set(oHandle,'string','Data Loaded','BackgroundColor',[1 0 0],'ForegroundColor',[1 1 1]);
 
 function fCheckData
     %This function checks the data currently loaded into Data and makes the
@@ -95,10 +100,10 @@ function fCheckData
     %If there is anything in the Unemap Potentials make the baseline
     %correction button visible.
     if(size(Data.Unemap.Potential.Original,1))
-        oHandle = findobj('tag','btnBase');
+        oHandle = findobj('tag','btnBaseline');
         set(oHandle,'visible','on');
     else
-        temp = findobj('tag','buttbase'); 
+        temp = findobj('tag','btnBaseline'); 
         set(temp,'visible','off');
     end
     
@@ -138,7 +143,7 @@ function fCheckData
 
 function bBaseline_Callback(src,eventdata)
     %Do a baseline correction
-    baselineNomeanGUI;
+    fBaselineCorrection;
     fCheckData;
  
 function UpdateMenu_Callback(src,eventdata)

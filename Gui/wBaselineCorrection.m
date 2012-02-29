@@ -1,4 +1,4 @@
-function fBaselineCorrection
+function wBaselineCorrection
     %Carry out a baseline correction on the data loaded into Data
 
     %Add paths
@@ -21,10 +21,10 @@ function fBaselineCorrection
     title('Original Signal');
     set(oOriginalAxes,'units','normalized');
 
-    oBaselineMean = axes('units','pixels','position',[60 375 1000 250],...
-        'nextplot','replacechildren','tag','BaselineMean','Box','on'); 
-    title('Baseline and Mean of Original Signal');
-    set(oBaselineMean,'units','normalized');
+%     oBaselineMean = axes('units','pixels','position',[60 375 1000 250],...
+%         'nextplot','replacechildren','tag','BaselineMean','Box','on'); 
+%     title('Baseline and Mean of Original Signal');
+%     set(oBaselineMean,'units','normalized');
 
     oCorrectedOriginal = axes('units','pixels','position',[60 50 1000 250],...
         'nextplot','replacechildren','tag','CorrectedOriginal','Box','on');
@@ -57,19 +57,17 @@ function fBaselineCorrection
     set(oBaselineMainFigure,'CurrentAxes',oOriginalAxes);
     plot(Data.Unemap.Time,Data.Unemap.Potential.Original(:,iDefaultSignal),'k');
     %Hold the axis handle
-    axis 'auto y';
-    oCurrentAxis = axis;
+    axis 'auto';
 
-    %Clear the BaselineMean axes
-    set(oBaselineMainFigure,'CurrentAxes',oBaselineMean);
-    cla;
-    axis(oCurrentAxis);
+%     %Clear the BaselineMean axes
+%     set(oBaselineMainFigure,'CurrentAxes',oBaselineMean);
+%     cla;
+%     axis(oCurrentAxis);
 
     %Clear the CorrectedOriginal axes
     set(oBaselineMainFigure,'CurrentAxes',oCorrectedOriginal);
     cla;
-    axis(oCurrentAxis);
-
+    axis 'auto';
     %If there a baseline correction has already been done and the data saved
     %then plot the baseline corrected original data too
     if(Data.Unemap.Potential.Baseline.Corrected)
@@ -91,37 +89,28 @@ function pBaselineMenu_Callback(handles,src,event)
     %Get the polynomial order from the selection made in the listbox
     %control
     iPolynomialOrder = get(handles,'Value');
-    
-    %Set the Original axes as the active axes 
-    set(oBaselineMainFigure,'CurrentAxes',oHandle);
-    %Hold on to the axis information
-    oOriginalAxis = axis;
-    %Take away the mean of this data
-    [aMedian] = median(Data.Unemap.Potential.Original(:,iDefaultSignal));
-    aRemoveMedian = Data.Unemap.Potential.Original(:,iDefaultSignal) - ;
-    axis(oOriginalAxis);
+               
+    %Remove baseline 
+    aRemoveBaseline = fRemoveMedianAndPolynomialFit(...
+        Data.Unemap.Potential.Original(:,iDefaultSignal), iPolynomialOrder);
+            
+%     %Find the BaselineMean axes and set them to be active
+%     oBaselineMean = findobj('tag','BaselineMean');
+%     set(oBaselineMainFigure,'CurrentAxes',oBaselineMean);
+%     cla;
+%     %Plot the polynomial that was computed
+%     plot(Data.Unemap.Time,aBaselinePolynomial,'k');
+%     sTitle = sprintf('Baseline Poly Order: %d',iPolynomialOrder);
+%     title(sTitle);
+            
+%     axis(oOriginalAxis);
     %Find the CorrectedOriginal axes and set them to be active
     oCorrectedOriginal = findobj('tag','CorrectedOriginal');
     set(oBaselineMainFigure,'CurrentAxes',oCorrectedOriginal);
     cla;
     
-    %Get the polynomial fit for this signal
-    [aBaselinePolynomial] = fPolynomialFitEvaluation(iPolynomialOrder,iDefaultSignal);
-    %Find the BaselineMean axes and set them to be active
-    oBaselineMean = findobj('tag','BaselineMean');
-    set(oBaselineMainFigure,'CurrentAxes',oBaselineMean);
-    cla;
-    %Plot the polynomial that was computed
-    plot(Data.Unemap.Time,aBaselinePolynomial,'k');
-    sTitle = sprintf('Baseline Poly Order: %d',iPolynomialOrder);
-    title(sTitle);
-    %Remove the polynomial approximation to the baseline from the data
-    aRemoveBaseline = Data.Unemap.Potential.Original(:,iDefaultSignal)-aBaselinePolynomial;
-    plot(Data.Unemap.Time,aRemoveBaseline,'k');
-    
     %Plot the data with the baseline and mean of it removed.
-    plot(Data.Unemap.Time,aRemoveBaselineMean,'k');
-    axis(oOriginalAxis);
+    plot(Data.Unemap.Time,aRemoveBaseline,'k');
     title('Baseline Corrected Signal');
 
     function bApplytoData_Callback(handles,src,event)
@@ -139,12 +128,12 @@ function pBaselineMenu_Callback(handles,src,event)
     for k = 1:Experiment.Unemap.NumberOfElectrodes;
         oBaselineMenu = findobj('tag','pmBaselineMenu');
         iPolynomialOrder = get(oBaselineMenu,'Value');
-        [aBaselinePolynomial] = fPolynomialFitEvaluation(iPolynomialOrder,k);
-        aRemoveBaseline = Data.Unemap.Potential.Original(:,k)-aBaselinePolynomial;
-        aRemoveBaselineMean = aRemoveBaseline - mean(aRemoveBaseline);
-
+        %Perform baseline correction
+        aRemoveBaseline = fRemoveMedianAndPolynomialFit(...
+        Data.Unemap.Potential.Original(:,k), iPolynomialOrder);
+    
         Data.Unemap.Potential.Baseline.Order = iPolynomialOrder;
-        Data.Unemap.Potential.Baseline.Corrected(:,k) = aRemoveBaselineMean;
+        Data.Unemap.Potential.Baseline.Corrected(:,k) = aRemoveBaseline;
         waitbar(k/Experiment.Unemap.NumberOfElectrodes,oWaitbar,sprintf(...
             'Please wait... Signal %d completed',k));
     end
