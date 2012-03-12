@@ -21,6 +21,7 @@ function wDetectBeats
         'tag','DetectBeatsMainFigure','name','DetectBeats',...
         'menubar','none','numbertitle','off',...
         'Color',[.95 .99 .95]);
+    zoom on;
     
     uicontrol('style','text','units','pixels',...
         'position',[60 980 290 25],...
@@ -28,7 +29,7 @@ function wDetectBeats
         'FontSize',10,'FontWeight','bold');
     
     pFilterWindowSize = uicontrol('style','popupmenu','units','pixels',...
-        'callback',@pFilterWindowSize_Callback,'position',[60 955 290 25],...
+        'position',[60 955 290 25],...
         'string',{'1','3','5','7','9','11','13','15','17','19','21'},...
         'tag','pmFilterWindowSize','FontSize',11);
     
@@ -38,7 +39,7 @@ function wDetectBeats
         'FontSize',10,'FontWeight','bold');
     
     pPolynomialOrder = uicontrol('style','popupmenu','units','pixels',...
-        'callback',@pPolynomialOrder_Callback,'position',[360 955 350 25],...
+        'position',[360 955 350 25],...
         'string',{'3','5','6','7','8','9','10','11','12','13','14'},...
         'tag','pmPolynomialOrder','FontSize',11);
     
@@ -62,13 +63,10 @@ function wDetectBeats
     uimenu(oFileMenu,'label','Exit','callback',@CloseWindow_Callback,'separator','on');
     oVrmsMenu=uimenu('Label','Vrms');
     uimenu(oVrmsMenu,'label','Calculate Vrms','callback',@bCalculateVrms_Callback,'separator','on');
-    uimenu(oVrmsMenu,'label','Calculate Smooth Vrms','callback',@bCalculateSmoothVrms_Callback,'separator','on');
-
-    %Set the default signal
-    iDefaultSignal = 1;
-    set(oVrmsAxes,'UserData',[]);
-    set(oVrmsAxes,'UserData',iDefaultSignal);
-   
+    uimenu(oVrmsMenu,'label','Calculate Smooth Vrms using SG','callback',@bCalculateSGSmoothVrms_Callback,'separator','on');
+    uimenu(oVrmsMenu,'label','Calculate Smooth Vrms using moving average','callback',@bCalculateSmoothVrms_Callback,'separator','on');
+    oCurvatureMenu=uimenu('Label','Curvature');
+    uimenu(oCurvatureMenu,'label','Calculate Vrms','callback',@bCalculateCurvature_Callback,'separator','on');
 
 function bCalculateVrms_Callback(handles,src,event)
     %Handles the callback for the calculate Vrms button
@@ -95,11 +93,20 @@ function bCalculateSmoothVrms_Callback(handles,src,event)
     %Find the main figure object
     oDetectBeatsMainFigure = findobj('tag','DetectBeatsMainFigure');
     %Find the drop down objects to get the values
-%     oHandle = findobj('tag','pmFilterWindowSize');
-%     iFilterWindowSize = get(oHandle,'Value');
-%     oHandle = findobj('tag','pmPolynomialOrder');
-%     iPolynomialOrder = get(oHandle,'Value');
-    iFilterWindowSize = get(handles,'FilterWindowSize');
+    oHandle = findobj('tag','pmFilterWindowSize');
+    aString = get(oHandle,'String');
+    iIndex = get(oHandle,'Value');
+    iFilterWindowSize = aString(iIndex);
+    
+    oHandle = findobj('tag','pmPolynomialOrder');
+    aString = get(oHandle,'String');
+    iIndex = get(oHandle,'Value');
+    iPolynomialOrder = aString(iIndex);
+    
+    % Make sure inputs are of type integer
+    iPolynomialOrder = str2num(char(iPolynomialOrder));
+    iFilterWindowSize = str2num(char(iFilterWindowSize));
+    
     %Calculate Vrms and smooth
     aVrms = fCalculateSmoothVrms(Data.Unemap.Potential.Baseline.Corrected,...
         iPolynomialOrder,iFilterWindowSize);
@@ -108,17 +115,75 @@ function bCalculateSmoothVrms_Callback(handles,src,event)
     oVrmsAxes = findobj('tag','VrmsAxes');
     set(oDetectBeatsMainFigure,'CurrentAxes',oVrmsAxes);
     cla;
+    
     %Plot the computed Vrms
     plot(Data.Unemap.Time,aVrms,'k');
     title('Smooth V_R_M_S');
-
-function pFilterWindowSize_Callback(handles,src,event)
-    iFilterWindowSize = get(handles,'Value');
-    set(handles,'FilterWindowSize',iFilterWindowSize);
-        
-function pPolynomialOrder_Callback(handles,src,event)
-    iPolynomialOrder = get(handles,'Value');
-    set(handles,'PolynomialOrder',iPolynomialOrder);
     
+    %Save this data to the axes
+    SaveDatatoVrmsAxes(aVrms);
+
+function bCalculateSGSmoothVrms_Callback(handles,src,event)
+    %Handles the callback for the calculate smooth Vrms button
+    global Data Experiment;
+    %Find the main figure object
+    oDetectBeatsMainFigure = findobj('tag','DetectBeatsMainFigure');
+    %Find the drop down objects to get the values
+    oHandle = findobj('tag','pmFilterWindowSize');
+    aString = get(oHandle,'String');
+    iIndex = get(oHandle,'Value');
+    iFilterWindowSize = aString(iIndex);
+    
+    oHandle = findobj('tag','pmPolynomialOrder');
+    aString = get(oHandle,'String');
+    iIndex = get(oHandle,'Value');
+    iPolynomialOrder = aString(iIndex);
+    
+    % Make sure inputs are of type integer
+    iPolynomialOrder = str2num(char(iPolynomialOrder));
+    iFilterWindowSize = str2num(char(iFilterWindowSize));
+    
+    %Calculate Vrms and smooth
+    aVrms = fCalculateSGSmoothVrms(Data.Unemap.Potential.Baseline.Corrected,...
+        iPolynomialOrder,iFilterWindowSize);
+            
+    %Find the VrmsAxes axes and set them to be active
+    oVrmsAxes = findobj('tag','VrmsAxes');
+    set(oDetectBeatsMainFigure,'CurrentAxes',oVrmsAxes);
+    cla;
+    
+    %Plot the computed Vrms
+    plot(Data.Unemap.Time,aVrms,'k');
+    title('Smooth V_R_M_S');
+    
+    %Save this data to the axes
+    SaveDatatoVrmsAxes(aVrms);
+
+function bCalculateCurvature_Callback(handles,src,event)
+    %Handles the callback for the calculate curvature button
+    global Data Experiment;
+    %Find the main figure object
+    oDetectBeatsMainFigure = findobj('tag','DetectBeatsMainFigure');
+    %Find the VrmsAxes axes and get the saved data
+    oVrmsAxes = findobj('tag','VrmsAxes');
+    aVrms = get(oVrmsAxes,'UserData');
+    %Calculate the curvature of this waveform
+    aCurvature = fCalculateCurvature(aVrms,20,5);
+    %Find the Curvature axes and set them to be active
+    oCurvatureAxes = findobj('tag','CurvatureAxes');
+    set(oDetectBeatsMainFigure,'CurrentAxes',oCurvatureAxes);
+    cla;
+    
+    %Plot the computed curvature
+    plot(Data.Unemap.Time,aCurvature,'k');
+    title('Curvature');
+    
+function SaveDatatoVrmsAxes(aData)
+    %Find the VrmsAxes axes and set them to be active
+    oVrmsAxes = findobj('tag','VrmsAxes');
+    %Save this data to the axes
+    set(oVrmsAxes,'UserData',[]);
+    set(oVrmsAxes,'UserData',aData);
+
 function CloseWindow_Callback(handles,src,event)
     closereq;

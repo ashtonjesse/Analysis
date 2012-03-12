@@ -1,9 +1,7 @@
-function [aSmoothVrms] = fCalculateSmoothVrms(aData, iOrder, iNumberofPoints)
+function [aSmoothVrms] = fCalculateVrms(aData, iOrder, iNumberofPoints)
 % This function calculates the Vrms of all the signals in a data file and 
 % then smoothes this with a moving average over a iNumberofPoints point 
 % window using Savitzky-Golay FIR filtering.
-
-addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/Signal/'));
 
 % Get the size of the input data array
 [x y] = size(aData);
@@ -17,6 +15,4 @@ for k = 1:x;
 end
 
 %aSmoothVrms = sgolayfilt(aVrms,iOrder,iNumberofPoints);
-aSmoothVrms = fCalculateMovingAverage(aVrms,iNumberofPoints);
-
-return
+aSmoothVrms = 

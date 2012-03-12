@@ -1,0 +1,14 @@
+classdef Phrenic < Potential
+    %Phrenic is a subclass  of type Potential that is associated with the
+    %Phrenic re
+    %recording from an Experiment.
+    %   Detailed explanation goes here
+    
+    properties
+    end
+    
+    methods
+    end
+    
+end
+

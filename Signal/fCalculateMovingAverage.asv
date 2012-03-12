@@ -8,6 +8,7 @@ function y = fCalculateMovingAverage(aData,iFilterWindowSize)
 %      fun  (optional) is a custom function rather than moving averages
 %
 % Note:if x is a matrix then the smoothing will be done 'vertically'.
+% 
 %
 % Example:
 %
@@ -32,20 +33,18 @@ if size(aData,1) == 1
 end
 
 f = zeros(iFilterWindowSize,1) + 1/iFilterWindowSize;
-n = size(aData,1);
-isodd = bitand(iFilterWindowSize,1);
-iHalfWindowSize = floor(iFilterWindowSize/2);
+n=size(aData,1);
+isodd=bitand(iFilterWindowSize,1);
+iFilterWindowSize2=floor(iFilterWindowSize/2);
 
-if (size(aData,2) == 1)
-    y = filter(f,1,aData);
-    y = y([zeros(1,iHalfWindowSize - 1 + isodd) + iFilterWindowSize,...
-        iFilterWindowSize:n,zeros(1,iHalfWindowSize) + n]);
+
+if (size(x,2)==1)
+    y=filter(f,1,x);
+    y=y([zeros(1,m2-1+isodd)+m,m:n,zeros(1,m2)+n]);
 else
-    y = filter2(f,aData);
-    y(1:(iHalfWindowSize-~isodd),:) = y(iHalfWindowSize + isodd + ...
-        zeros(iHalfWindowSize-~isodd,1),:);
-    y((n-iHalfWindowSize+1):end,:) = y(n - iHalfWindowSize + ...
-        zeros(iHalfWindowSize,1),:);
+    y=filter2(f,x);
+    y(1:(m2-~isodd),:)=y(m2+isodd+zeros(m2-~isodd,1),:);
+    y((n-m2+1):end,:)=y(n-m2+zeros(m2,1),:);
 end
 
 return

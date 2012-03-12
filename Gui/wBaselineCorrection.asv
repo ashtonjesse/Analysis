@@ -179,11 +179,7 @@ function bApplytoData_Callback(handles,src,event)
     end
     close(oWaitbar);
 
-function pChannelChange_Callback(handles,src,event)
-    iDefaultSignal = get(handles,'Value');
-    set(oOriginalAxes,'UserData',[]);
-    set(oOriginalAxes,'UserData',iDefaultSignal);
-
+    function 
 function iPolynomialOrder = GetPolynomialOrder()
     %Get the polynomial order from the selection made in the listbox
     %control
