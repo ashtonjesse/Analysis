@@ -28,8 +28,8 @@ classdef BaseDAL
         
         function SaveEntity(oBaseDAL,oEntity,sPath)
             %         Saves the specificed entity
-
-            save sPath oEntity;
+            
+            save(sPath, 'oEntity');
         end
         
         
