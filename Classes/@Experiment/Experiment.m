@@ -12,7 +12,7 @@ classdef Experiment < handle
     end
     
     properties (SetAccess = private)
-        m_oDAL;
+        oDAL;
     end
     
     methods
@@ -21,7 +21,7 @@ classdef Experiment < handle
 %          Constructor
 
 %             Create a new instance of BaseDAL for this Experiment
-            oExperiment.m_oDAL = BaseDAL();
+            oExperiment.oDAL = BaseDAL();
         end
         
 
@@ -29,7 +29,7 @@ classdef Experiment < handle
 %         Create a Experiment entity from a metadata file
 
 %             Get the entity via the DAL
-            oExperiment = oExperiment.m_oDAL.CreateEntityFromFile(sFile);
+            oExperiment = oExperiment.oDAL.CreateEntityFromFile(sFile);
         end
     end
     

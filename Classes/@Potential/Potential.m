@@ -14,20 +14,20 @@ classdef Potential < handle
     end
     
      properties (SetAccess = private)
-            m_oDAL;
+            oDAL;
      end
        
     methods
 %         Constructor
         function oPotential = Potential()
-            oPotential.m_oDAL = BaseDAL();
+            oPotential.oDAL = BaseDAL();
         end
         
 %         Get an entity by loading a mat file that has been saved
 %         previously
         function oPotential = GetEntityFromMATFile(oPotential, sFile)
 %             Load the mat file into the workspace
-            oData = oPotential.m_oDAL.LoadFromFile(sFile);
+            oData = oPotential.oDAL.LoadFromFile(sFile);
 %             Reload all the properties 
             oPotential.TimeSeries = oData.oEntity.TimeSeries;
             oPotential.Experiment = oData.oEntity.Experiment;
@@ -57,7 +57,7 @@ classdef Potential < handle
                 oPotential.Experiment = GetEntityFromFile(Experiment, char(aFileFull(1)));
             end
 %             Load the potential data from the txt file
-            aFileContents = oPotential.m_oDAL.LoadFromFile(sFile);
+            aFileContents = oPotential.DAL.LoadFromFile(sFile);
 %             Set the Original and TimeSeries Structured arrays
             oPotential.Original = aFileContents(:,2:oPotential.Experiment.Unemap.NumberOfElectrodes+1);
             oPotential.TimeSeries = [1:1:size(oPotential.Original,1)]*(1/oPotential.Experiment.Unemap.ADConversion.SamplingRate);
@@ -66,7 +66,7 @@ classdef Potential < handle
         function Save(oPotential,sPath)
 %             Save this Potential to the specified path sPath
 
-            oPotential.m_oDAL.SaveEntity(oPotential,sPath);
+            oPotential.oDAL.SaveEntity(oPotential,sPath);
         end
     end
     

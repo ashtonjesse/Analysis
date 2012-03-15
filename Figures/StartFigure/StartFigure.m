@@ -1,84 +1,124 @@
-function varargout = StartFigure(varargin)
-% StartFigure M-file for StartFigure.fig
-%      StartFigure, by itself, creates a new StartFigure or raises the existing
-%      singleton*.
-%
-%      H = StartFigure returns the handle to a new StartFigure or the handle to
-%      the existing singleton*.
-%
-%      StartFigure('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in StartFigure.M with the given input arguments.
-%
-%      StartFigure('Property','Value',...) creates a new StartFigure or raises
-%      the existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before Main_OpeningFcn gets called.  An
-%      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to Main_OpeningFcn via varargin.
-%
-%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
-%      instance to run (singleton)".
-%
-% See also: GUIDE, GUIDATA, GUIHANDLES
+classdef StartFigure < BaseFigure
+% StartFigure Summary of this class goes here
+% This figure allows you to open other figures:
+% -BaselineFigure (type: BaselineCorrectionClass) 
 
-% Edit the above text to modify the response to help Main
+% Currently there is no functionality to handle deletion of the reference 
+% to the child figure so a Warning is posted to the command window automatically   
 
-% Last Modified by GUIDE v2.5 13-Mar-2012 15:31:23
-
-
-gui_Singleton = 1;
-gui_State = struct('gui_Name',mfilename, 'gui_Singleton',  gui_Singleton, 'gui_OpeningFcn', @Main_OpeningFcn, 'gui_OutputFcn',  @Main_OutputFcn, 'gui_LayoutFcn',  [] , 'gui_Callback',   []);
-if nargin && ischar(varargin{1})
-    gui_State.gui_Callback = str2func(varargin{1});
+    properties
+        
+    end
+    
+    methods
+        %% Constructor
+        function oFigure = StartFigure()
+            oFigure = oFigure@BaseFigure('StartFigure',@StartFigure_OpeningFcn);
+            
+            %Set the call back functions for the controls
+            set(oFigure.oGuiHandle.bBaselineCorrection, 'callback', @(src, event) bBaselineCorrection_Callback(oFigure, src, event));
+                       
+            %Set the callback functions to the menu items 
+            set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oOpenMenu, 'callback', @(src, event) oOpenMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSavePotentialMenu, 'callback', @(src, event) oSavePotentialMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
+            set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
+            
+            %Sets the figure close function. This lets the class know that
+            %the figure wants to close and thus the class should cleanup in
+            %memory as well
+            set(oFigure.oGuiHandle.Figure1,  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            
+            % --- Executes just before BaselineCorrection is made visible.
+            function StartFigure_OpeningFcn(hObject, eventdata, handles, varargin)
+                % This function has no output args, see OutputFcn.
+                % hObject    handle to figure 
+                % eventdata  reserved - to be defined in a future version of MATLAB
+                % handles    structure with handles and user data (see GUIDATA)
+                % varargin   command line arguments to BaselineCorrection (see VARARGIN)
+                
+               %Set the output attribute
+                handles.output = hObject;
+                %Update the gui handles 
+                guidata(hObject, handles);
+            end
+        end
+    end
+    
+    methods (Access = protected)
+        %% Protected methods that are inherited
+        function delete(oFigure)
+            delete@BaseFigure(oFigure);
+        end
+               
+        function oFigure = Close_fcn(oFigure, src, event)
+            Close_fcn@BaseFigure(oFigure, src, event);
+        end    
+    end
+    
+    methods (Access = private)
+        %% Private UI control callbacks
+        function oFigure = oOpenMenu_Callback(oFigure, src, event)
+            %This function opens a file dialog and loads a mat file (containing signal data) 
+            
+            %Call built-in file dialog to select filename
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Data structured array','H:\Data\Database\20111124\');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+                return
+            end
+            
+            %Get the full file name and save it to string attribute
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            set(oFigure.oGuiHandle.ePath,'String',sLongDataFileName);
+            
+            %Load the selected file
+            oPotential = GetEntityFromMATFile(Potential,sLongDataFileName);
+            %Save the Entity to gui handles
+            oFigure.oGuiHandle.oPotential =  oPotential;
+            
+        end
+        
+        function oFigure = oSavePotentialMenu_Callback(oFigure, src, event)
+            % Save the current Potential entity
+            % hObject    handle to oSavePotentialMenu (see GCBO)
+            % eventdata  reserved - to be defined in a future version of MATLAB
+            % handles    structure with handles and user data (see GUIDATA)
+            
+            %Call built-in file dialog to select filename
+            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for this .mat file','H:\Data\Database\20111124\');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+                return
+            end
+            
+            %Get the full file name
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            
+            %Save
+            oFigure.oGuiHandle.oPotential.Save(sLongDataFileName);
+        end
+        
+        function oFigure = bBaselineCorrection_Callback(oFigure, src, event)
+            %Open the BaselineCorrection figure
+            BaselineCorrection(oFigure);
+        end
+        
+        function oFigure = oFileMenu_Callback(oFigure, src, event)
+            
+        end
+        
+        function oFigure = oViewMenu_Callback(oFigure, src, event)
+           
+        end
+        
+        function oFigure = oUpdateMenu_Callback(oFigure, src, event)
+            
+        end
+            
+    end
+    
 end
 
-if nargout
-    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
-else
-    gui_mainfcn(gui_State, varargin{:});
-end
-
-% --- Executes just before Main is made visible.
-function Main_OpeningFcn(hObject, eventdata, handles, varargin)
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to Main (see VARARGIN)
-
-% Choose default command line output for Main
-handles.output = hObject;
-
-% Update handles structure
-guidata(hObject, handles);
-
-%initialize_gui(hObject, handles, false);
-
-% --- Outputs from this function are returned to the command line.
-function varargout = Main_OutputFcn(hObject, eventdata, handles)
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Get default command line output from handles structure
-varargout{1} = handles.output;
-
-% --------------------------------------------------------------------
-% function initialize_gui(fig_handle, handles, isreset)
-% % If the metricdata field is present and the bDetectBeats flag is false, it means
-% % we are we are just re-initializing a GUI by calling it from the cmd line
-% % while it is up. So, bail out as we dont want to bDetectBeats the data.
-% if isfield(handles, 'metricdata') && ~isreset
-%     return;
-% end
-% 
-% set(handles.ePath,  'String', 'H:/Data/Database');
-% 
-% % Update handles structure
-% guidata(handles.Figure1, handles);
-% Put this in the control CrtFcn attribute: Main('ePath_CreateFcn',hObject,eventdata,guidata(hObject))
-% --- Executes during object creation, after setting all properties.
-% function ePath_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to ePath (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
