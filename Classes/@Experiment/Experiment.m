@@ -25,7 +25,7 @@ classdef Experiment < handle
         end
         
 
-        function oExperiment = GetEntityFromFile(oExperiment, sFile)
+        function oExperiment = GetEntityFromTxtFile(oExperiment, sFile)
 %         Create a Experiment entity from a metadata file
 
 %             Get the entity via the DAL

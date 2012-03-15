@@ -8,16 +8,13 @@ clear all;
 sSignalsPath = 'H:/Data/TxtFiles/20111124';
 sSavePath = 'H:/Data/Database/20111124';
 
-%Add paths
-addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/'));
-
 %Get the full path names of all the .txt files in the signal directory
 aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'*.txt');
 %aSignalFileFull = fGetFileNamesOnly(sSavePath,'*.mat');
-
+fprintf('Running... \n');
 for k = 1:2%length(aSignalFileFull)
-    oPotential = GetEntityFromTXTFile(Potential,char(aSignalFileFull(k)));
-    %oPotential = GetEntityFromMATFile(Potential,char(aSignalFileFull(k)));
+    oUnemap = GetEntityFromTXTFile(Unemap,char(aSignalFileFull(k)));
+    %oUnemap = GetEntityFromMATFile(Unemap,char(aSignalFileFull(k)));
     %Get current filename fileparts
     [a sFileName c] = fileparts(aSignalFileFull{k});
     %Append .mat to the end of the filename
@@ -25,5 +22,8 @@ for k = 1:2%length(aSignalFileFull)
     %Print to the command window that the file is being saved
     fprintf('Saving %s\n',sFileSaveName);
     %Save the entity
-    oPotential.Save(sFileSaveName)
+    oUnemap.Save(sFileSaveName)
 end
+
+close all;
+clear all;

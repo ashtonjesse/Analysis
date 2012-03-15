@@ -1,9 +1,8 @@
 classdef SubFigure < BaseFigure
     % BaseFigure Summary 
-    % This is the figure base class that other figure classes inherit from.
-    % It contains methods and properties that are common to all custom 
-    % figure classes.
-    
+    % This is the base class for figures that are opened from another
+    % figure so have a parent. 
+        
     properties
         oParentFigure;
     end
@@ -21,10 +20,6 @@ classdef SubFigure < BaseFigure
         function delete(oFigure)
             delete@BaseFigure(oFigure);
             oFigure.oParentFigure = [];
-        end
-        
-        function oFigure = Close_fcn(oFigure, src, event)
-            Close_fcn@BaseFigure(oFigure, src, event);
         end
     end
     

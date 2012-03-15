@@ -31,23 +31,26 @@ classdef BaselineCorrection < SubFigure
             set(oFigure.oGuiHandle.oApplyMenu, 'callback', @(src, event) oApplyMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
-            %%%%%% Just moved this to BaseFigure...
+            %Sets the figure close function. This lets the class know that
+            %the figure wants to close and thus the class should cleanup in
+            %memory as well
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
                                    
             %Plot the data of the first signal
-            set(oFigure.oGuiHandle.BaselineFigure,'CurrentAxes',oFigure.oGuiHandle.oTopAxes);
-            plot(oFigure.oParentFigure.oGuiHandle.oPotential.TimeSeries, oFigure.oParentFigure.oGuiHandle.oPotential.Original(:,1),'k');
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oTopAxes);
+            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.oParentFigure.oGuiHandle.oUnemap.Original(:,1),'k');
             axis 'auto';
             
             %Clear the CorrectedOriginal axes
-            set(oFigure.oGuiHandle.BaselineFigure,'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
             cla;
             axis 'auto';
             
             %If a baseline correction has already been done and the data saved
             %then plot the baseline corrected original data too
-            if(oFigure.oParentFigure.oGuiHandle.oPotential.Baseline)
-                plot(oFigure.oParentFigure.oGuiHandle.oPotential.TimeSeries,...
-                    oFigure.oParentFigure.oGuiHandle.oPotential.Baseline.Corrected(:,1),'k');
+            if(oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline)
+                plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected(:,1),'k');
                 sTitle = sprintf('Existing Baseline Corrected Signal');
                 title(sTitle);
             end
@@ -78,14 +81,14 @@ classdef BaselineCorrection < SubFigure
         function delete(oFigure)
             delete@SubFigure(oFigure);
         end
-        
-        function oFigure = Close_fcn(oFigure, src, event)
-            Close_fcn@SubFigure(oFigure, src, event);
-        end
-   end
+    end
     
     methods
         %% Ui control callbacks    
+        function oFigure = Close_fcn(oFigure, src, event)
+           delete(oFigure);
+        end
+        
         % --------------------------------------------------------------------
         function oSignalSlider_Callback(oFigure, src, event)
 
@@ -123,19 +126,39 @@ classdef BaselineCorrection < SubFigure
             iPolynomialOrder = str2double(char(iPolynomialOrder));
             
             %Remove baseline
-            oFigure.oParentFigure.oGuiHandle.oPotential.RemoveMedianAndFitPolynomial(iPolynomialOrder,1);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveMedianAndFitPolynomial(iPolynomialOrder,1);
                                     
             %Plot the data with the baseline removed.
-            set(oFigure.oGuiHandle.BaselineFigure,'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
             cla;
-            plot(oFigure.oParentFigure.oGuiHandle.oPotential.TimeSeries,...
-                oFigure.oParentFigure.oGuiHandle.oPotential.Baseline.Corrected(:,1),'k');
+            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected(:,1),'k');
             title('Baseline Corrected Signal');
         end
         
         % --------------------------------------------------------------------
         function oSplineMenu_Callback(oFigure, src, event)
-
+            
+            aString = get(oFigure.oGuiHandle.pmSplineOrder,'String');
+            iIndex = get(oFigure.oGuiHandle.pmSplineOrder,'Value');
+            iSplineOrder = aString(iIndex);
+            % Make sure output are of type double
+            iSplineOrder = str2double(char(iSplineOrder));
+                        
+            %Smooth the data with a spline approximation
+            aSplineApproximation = fSplineSmooth(aRemoveBaseline,iSplineOrder,'MaxIter',500);
+            
+            %Find the SmoothedSignal axes and set them to be active
+            oSmoothedSignal = findobj('tag','SmoothedSignal');
+            set(oBaselineMainFigure,'CurrentAxes',oSmoothedSignal);
+            cla;
+            %Store smoothed data
+            set(oSmoothedSignal,'UserData',[]);
+            set(oSmoothedSignal,'UserData',aSplineApproximation);
+            
+            %Plot the data with the baseline and mean of it removed.
+            plot(Data.Unemap.Time,aSplineApproximation,'k');
+            title('Smoothed Signal');
         end
         
         % --------------------------------------------------------------------

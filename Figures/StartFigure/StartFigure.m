@@ -29,7 +29,7 @@ classdef StartFigure < BaseFigure
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
-            set(oFigure.oGuiHandle.Figure1,  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             % --- Executes just before BaselineCorrection is made visible.
             function StartFigure_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -52,14 +52,14 @@ classdef StartFigure < BaseFigure
         function delete(oFigure)
             delete@BaseFigure(oFigure);
         end
-               
-        function oFigure = Close_fcn(oFigure, src, event)
-            Close_fcn@BaseFigure(oFigure, src, event);
-        end    
     end
     
     methods (Access = private)
         %% Private UI control callbacks
+        function oFigure = Close_fcn(oFigure, src, event)
+            delete(oFigure);
+        end    
+        
         function oFigure = oOpenMenu_Callback(oFigure, src, event)
             %This function opens a file dialog and loads a mat file (containing signal data) 
             
@@ -75,9 +75,9 @@ classdef StartFigure < BaseFigure
             set(oFigure.oGuiHandle.ePath,'String',sLongDataFileName);
             
             %Load the selected file
-            oPotential = GetEntityFromMATFile(Potential,sLongDataFileName);
+            oUnemap = GetEntityFromMATFile(Unemap,sLongDataFileName);
             %Save the Entity to gui handles
-            oFigure.oGuiHandle.oPotential =  oPotential;
+            oFigure.oGuiHandle.oUnemap =  oUnemap;
             
         end
         
@@ -98,11 +98,12 @@ classdef StartFigure < BaseFigure
             sLongDataFileName=strcat(sDataPathName,sDataFileName);
             
             %Save
-            oFigure.oGuiHandle.oPotential.Save(sLongDataFileName);
+            oFigure.oGuiHandle.oUnemap.Save(sLongDataFileName);
         end
         
         function oFigure = bBaselineCorrection_Callback(oFigure, src, event)
-            %Open the BaselineCorrection figure
+            %Open the BaselineCorrection figure passing this figure as the
+            %parent
             BaselineCorrection(oFigure);
         end
         

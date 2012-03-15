@@ -1,4 +1,4 @@
-classdef BaseDAL
+classdef BaseDAL 
     %BaseDAL is the data access layer super class
     %   This class should contain all methods associated with loading or
     %   saving data. Any methods that also involve manipulating or
@@ -26,7 +26,7 @@ classdef BaseDAL
             oEntity = ParseFileIntoEntity(DataHelper, sFile);
         end
         
-        function SaveEntity(oBaseDAL,oEntity,sPath)
+        function SaveThisEntity(oBaseDAL,oEntity,sPath)
             %         Saves the specificed entity
             
             save(sPath, 'oEntity');

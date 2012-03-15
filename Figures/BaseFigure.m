@@ -4,7 +4,7 @@ classdef BaseFigure < handle
     
     properties
         oGuiHandle;
-        sFigureName;
+        sFigureTag;
     end
     
     methods
@@ -12,19 +12,14 @@ classdef BaseFigure < handle
         function oFigure = BaseFigure(sGuiFileName,OpeningFcn)
             %Class constructor - creates and initialises the gui. 
 
-            addpath(genpath('D:/Users/jash042/Documents/PhD/Analysis/'));
             gui_Singleton = 1;
             gui_State = struct('gui_Name',sGuiFileName, 'gui_Singleton',  gui_Singleton, 'gui_OpeningFcn', OpeningFcn, 'gui_OutputFcn',  @BaselineCorrection_OutputFcn, 'gui_LayoutFcn',  [] , 'gui_Callback',   []);
             %Make the gui figure, get its handles and store locally
             oOutput = gui_mainfcn(gui_State);
             oFigure.oGuiHandle = guihandles(oOutput);            
             
-            %Set close function
-            oFigure.sFigureName = strcat(sGuiFileName,'Fig');
-            %Sets the figure close function. This lets the class know that
-            %the figure wants to close and thus the class should cleanup in
-            %memory as well
-            set(oFigure.oGuiHandle.BaselineFigure,  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            %Set the figure tag
+            oFigure.sFigureTag = strcat(sGuiFileName,'Fig');
             
             % --- Outputs from this function are returned to the command line.
             % Currently don't need to use this function but need it is here to get
@@ -52,17 +47,11 @@ classdef BaseFigure < handle
             
             %remove the closerequestfcn from the figure, this prevents an
             %infitie loop with the following delete command
-            set(oFigure.oGuiHandle.,  'closerequestfcn', '');
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', '');
             %delete the figure
-            delete(oFigure.oGuiHandle.);
+            delete(oFigure.oGuiHandle.(oFigure.sFigureTag));
             %clear out the pointer to the figure - prevents memory leaks
             oFigure.oGuiHandle = [];
-        end
-        
-        function oFigure = Close_fcn(oFigure, src, event)
-            %This is the closerequestfcn of the figure. All it does here is
-            %call the class delete function (presented above)
-            delete(oFigure);
         end
     end
 end
