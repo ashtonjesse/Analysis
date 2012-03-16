@@ -1,7 +1,7 @@
 classdef StartFigure < BaseFigure
 % StartFigure Summary of this class goes here
 % This figure allows you to open other figures:
-% -BaselineFigure (type: BaselineCorrectionClass) 
+% -BaselineCorrectionFig (class type: BaselineCorrection) 
 
 % Currently there is no functionality to handle deletion of the reference 
 % to the child figure so a Warning is posted to the command window automatically   
@@ -75,7 +75,7 @@ classdef StartFigure < BaseFigure
             set(oFigure.oGuiHandle.ePath,'String',sLongDataFileName);
             
             %Load the selected file
-            oUnemap = GetEntityFromMATFile(Unemap,sLongDataFileName);
+            oUnemap = GetUnemapFromMATFile(Unemap,sLongDataFileName);
             %Save the Entity to gui handles
             oFigure.oGuiHandle.oUnemap =  oUnemap;
             
@@ -83,10 +83,7 @@ classdef StartFigure < BaseFigure
         
         function oFigure = oSavePotentialMenu_Callback(oFigure, src, event)
             % Save the current Potential entity
-            % hObject    handle to oSavePotentialMenu (see GCBO)
-            % eventdata  reserved - to be defined in a future version of MATLAB
-            % handles    structure with handles and user data (see GUIDATA)
-            
+           
             %Call built-in file dialog to select filename
             [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for this .mat file','H:\Data\Database\20111124\');
             %Make sure the dialogs return char objects

@@ -53,6 +53,16 @@ classdef BaseFigure < handle
             %clear out the pointer to the figure - prevents memory leaks
             oFigure.oGuiHandle = [];
         end
+        
+        function nValue = GetPopUpSelectionDouble(oFigure,sPopUpMenuTag)
+            %   Get the value of the selection made in the specified
+            %   popupmenu
+            aString = get(oFigure.oGuiHandle.(sPopUpMenuTag),'String');
+            iIndex = get(oFigure.oGuiHandle.(sPopUpMenuTag),'Value');
+            nValue = aString(iIndex);
+            % Make sure output are of type double
+            nValue = str2double(char(nValue));
+        end
     end
 end
 

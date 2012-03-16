@@ -21,6 +21,10 @@ classdef SubFigure < BaseFigure
             delete@BaseFigure(oFigure);
             oFigure.oParentFigure = [];
         end
+        
+        function nValue = GetPopUpSelectionDouble(oFigure,sPopUpMenuTag)
+            nValue = GetPopUpSelectionDouble@BaseFigure(oFigure,sPopUpMenuTag);
+        end
     end
     
 end

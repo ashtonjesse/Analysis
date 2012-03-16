@@ -13,7 +13,7 @@ aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'*.txt');
 %aSignalFileFull = fGetFileNamesOnly(sSavePath,'*.mat');
 fprintf('Running... \n');
 for k = 1:2%length(aSignalFileFull)
-    oUnemap = GetEntityFromTXTFile(Unemap,char(aSignalFileFull(k)));
+    oUnemap = GetUnemapFromTXTFile(Unemap,char(aSignalFileFull(k)));
     %oUnemap = GetEntityFromMATFile(Unemap,char(aSignalFileFull(k)));
     %Get current filename fileparts
     [a sFileName c] = fileparts(aSignalFileFull{k});

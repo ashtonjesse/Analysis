@@ -48,7 +48,7 @@ classdef BaselineCorrection < SubFigure
             
             %If a baseline correction has already been done and the data saved
             %then plot the baseline corrected original data too
-            if(oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline)
+            if ~isempty(oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline)
                 plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                     oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected(:,1),'k');
                 sTitle = sprintf('Existing Baseline Corrected Signal');
@@ -79,7 +79,11 @@ classdef BaselineCorrection < SubFigure
     methods (Access = protected)
          %% Protected methods inherited from superclass
         function delete(oFigure)
-            delete@SubFigure(oFigure);
+            delete@BaseFigure(oFigure);
+        end
+        
+        function nValue = GetPopUpSelectionDouble(oFigure,sPopUpMenuTag)
+            nValue = GetPopUpSelectionDouble@BaseFigure(oFigure,sPopUpMenuTag);
         end
     end
     
@@ -119,15 +123,16 @@ classdef BaselineCorrection < SubFigure
             %this polynomial fit to the data 
             
             %Get the polynomial order from the selection made in the popup
-            aString = get(oFigure.oGuiHandle.pmPolynomialOrder,'String');
-            iIndex = get(oFigure.oGuiHandle.pmPolynomialOrder,'Value');
-            iPolynomialOrder = aString(iIndex);
-            % Make sure inputs are of type integer
-            iPolynomialOrder = str2double(char(iPolynomialOrder));
+            iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
             
             %Remove baseline
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveMedianAndFitPolynomial(iPolynomialOrder,1);
-                                    
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected = ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Original, ...
+                'RemoveMedianAndFitPolynomial', iPolynomialOrder,1);
+            
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.PolyOrder = iPolynomialOrder;
+            
             %Plot the data with the baseline removed.
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
             cla;
@@ -139,34 +144,57 @@ classdef BaselineCorrection < SubFigure
         % --------------------------------------------------------------------
         function oSplineMenu_Callback(oFigure, src, event)
             
-            aString = get(oFigure.oGuiHandle.pmSplineOrder,'String');
-            iIndex = get(oFigure.oGuiHandle.pmSplineOrder,'Value');
-            iSplineOrder = aString(iIndex);
-            % Make sure output are of type double
-            iSplineOrder = str2double(char(iSplineOrder));
+            %Get the spline approximation order from the selection made in the popup
+            iSplineOrder = oFigure.GetPopUpSelectionDouble('pmSplineOrder');
                         
             %Smooth the data with a spline approximation
-            aSplineApproximation = fSplineSmooth(aRemoveBaseline,iSplineOrder,'MaxIter',500);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected = ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected, ...
+                'SplineSmoothData',iSplineOrder,1);
             
-            %Find the SmoothedSignal axes and set them to be active
-            oSmoothedSignal = findobj('tag','SmoothedSignal');
-            set(oBaselineMainFigure,'CurrentAxes',oSmoothedSignal);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.SplineOrder = iSplineOrder;
+            
+            %Set the Top axes to be active
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oTopAxes);
             cla;
-            %Store smoothed data
-            set(oSmoothedSignal,'UserData',[]);
-            set(oSmoothedSignal,'UserData',aSplineApproximation);
+                        
+            %Plot the Spline approximation
+            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected(:,1),'k');
             
-            %Plot the data with the baseline and mean of it removed.
-            plot(Data.Unemap.Time,aSplineApproximation,'k');
-            title('Smoothed Signal');
         end
         
         % --------------------------------------------------------------------
         function oApplyMenu_Callback(oFigure, src, event)
-
+            %   Apply the baseline correction and potentially the spline
+            %   approximation to all the channels in oUnemap.Original and save.
+            
+            %   Get the polynomial order from the selection made in the listbox
+            %   control
+             iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
+            
+             %  Remove baseline (not specifying a channel number so this call
+             %  will do all the channels
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected = ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Original, ...
+                'RemoveMedianAndFitPolynomial', iPolynomialOrder);
+            
+            %  Check if user wants a spline approximation applied
+            blKeepSpline = get(oFigure.oGuiHandle.tbKeepSpline, 'Value');
+            if blKeepSpline
+                %Get the spline approximation order from the selection made in the popup
+                iSplineOrder = oFigure.GetPopUpSelectionDouble('pmSplineOrder');
+                
+                %Smooth the data with a spline approximation
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected = ...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected, ...
+                    'SplineSmoothData',iSplineOrder);
+            end
         end
         
     end
    
 end
-
