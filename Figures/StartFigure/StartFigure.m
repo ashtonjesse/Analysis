@@ -62,10 +62,10 @@ classdef StartFigure < BaseFigure
         end    
         
         function oFigure = oOpenMenu_Callback(oFigure, src, event)
-            %This function opens a file dialog and loads a mat file (containing signal data) 
+            %This function opens a file dialog and loads 2 mat files (containing signal data and ECG data) 
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Data structured array','H:\Data\Database\20111124\');
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Unemap entity','H:\Data\Database\20111124\');
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sExpFileName))
                 return
@@ -77,8 +77,23 @@ classdef StartFigure < BaseFigure
             
             %Load the selected file
             oUnemap = GetUnemapFromMATFile(Unemap,sLongDataFileName);
-            %Save the Entity to gui handles
+            %load the Entity into gui handles
             oFigure.oGuiHandle.oUnemap =  oUnemap;
+            
+            %Call built-in file dialog to select filename
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity','H:\Data\Database\20111124\');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+                return
+            end
+            
+            %Get the full file name and save it to string attribute
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                        
+            %Load the selected file
+            oECG = GetECGFromMATFile(ECG,sLongDataFileName);
+            %Save the Entity to gui handles of the parent figure
+            oFigure.oGuiHandle.oECG =  oECG;
             
         end
         
@@ -97,6 +112,8 @@ classdef StartFigure < BaseFigure
             
             %Save
             oFigure.oGuiHandle.oUnemap.Save(sLongDataFileName);
+            
+            
         end
         
         function oFigure = bBaselineCorrection_Callback(oFigure, src, event)

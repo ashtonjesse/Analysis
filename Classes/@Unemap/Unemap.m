@@ -64,9 +64,9 @@ classdef Unemap < BasePotential
 
         function oUnemap = GetUnemapFromTXTFile(oUnemap,sFile)
             %   Get an entity by loading data from a txt file - only done the
-            %   first time you are creating a PotentiaModel entity
+            %   first time you are creating a Unemap entity
             
-            %   If the PotentialModel does not have an Experiment loaded yet
+            %   If the Unemap does not have an Experiment loaded yet
             %   then load one
             if isempty(oUnemap.oExperiment)
                 %   Look for a metadata file in the same directory that will
@@ -74,9 +74,8 @@ classdef Unemap < BasePotential
                 [sPath] = fileparts(sFile);
                 aFileFull = fGetFileNamesOnly(sPath,'*_metadata.txt');
                 %   There should be one experiment file and no more
-                if (size(aFileFull,1) > 1 || size(aFileFull,1) == 0)
-                    ME = MException('VerifyInput:TooManyInputFiles', sprintf('There is the wrong number of experimental metadata files in the directory %s',sPath));
-                    throw(ME);
+                if ~(size(aFileFull,1) == 1)
+                    error('VerifyInput:TooManyInputFiles', 'There is the wrong number of experimental metadata files in the directory %s',sPath);
                 end
                 %   Get the Experiment entity
                 oUnemap.oExperiment = GetExperimentFromTxtFile(Experiment, char(aFileFull(1)));

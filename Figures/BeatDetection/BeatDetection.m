@@ -73,6 +73,7 @@ classdef BeatDetection < SubFigure
 
         end
                 
+       
         % --------------------------------------------------------------------
         function oEditMenu_Callback(oFigure, src, event)
 

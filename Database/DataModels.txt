@@ -25,6 +25,8 @@ oExperiment.Unemap.ADConversion.BitDepth
 oExperiment.Unemap.ADConversion.Gain
 oExperiment.Unemap.ADConversion.DynamicRange
 oExperiment.Unemap.NumberOfElectrodes
+oExperiment.Unemap.ECGChannel
+oExperiment.Unemap.PhrenicChannel
 oExperiment.PerfusionPressureAmp.Gain
 oExperiment.PerfusionPressureAmp.HighFilter
 oExperiment.PerfusionPressureAmp.LowFilter
