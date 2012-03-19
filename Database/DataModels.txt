@@ -5,7 +5,12 @@ oUnemap.Original
 oUnemap.Baseline.Corrected
 oUnemap.Baseline.PolyOrder
 oUnemap.Baseline.SplineOrder
-oUnemap.RMS
+oUnemap.RMS.Values
+oUnemap.RMS.Smoothed
+oUnemap.RMS.Smoothing
+oUnemap.RMS.PolyOrder
+oUnemap.RMS.WindowSize
+oUnemap.RMS.Curvature
 oUnemap.Slope
 oUnemap.RejectedElectrodes
 

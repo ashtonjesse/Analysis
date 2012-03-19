@@ -20,6 +20,7 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSmoothMenu, 'callback', @(src, event) oSmoothMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oCurvatureMenu, 'callback', @(src, event) oCurvatureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
             GetVRMS(oFigure);
@@ -109,6 +110,25 @@ classdef BeatDetection < SubFigure
             
         end
         
+        function oCurvatureMenu_Callback(oFigure, src, event)
+            
+            %Calculate the curvature 
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature = ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateCurvature(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed, ...
+                20,5);
+            
+            %Set the middle axes to be active
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
+            set(oFigure.oGuiHandle.oMiddleAxes,'Visible','On');
+            cla;
+            
+            %Plot the computed curvature
+            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature,'k');
+            title('Curvature');
+            
+        end
     end
     
     methods (Access = private)
@@ -117,7 +137,7 @@ classdef BeatDetection < SubFigure
             %Calculate Vrms
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Values = ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected)
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected);
                             
             %Set the Top axes to be active
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oTopAxes);
