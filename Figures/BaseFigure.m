@@ -63,6 +63,14 @@ classdef BaseFigure < handle
             % Make sure output are of type double
             nValue = str2double(char(nValue));
         end
+        
+        function sValue = GetPopUpSelectionString(oFigure,sPopUpMenuTag)
+            %   Get the value of the selection made in the specified
+            %   popupmenu
+            aString = get(oFigure.oGuiHandle.(sPopUpMenuTag),'String');
+            iIndex = get(oFigure.oGuiHandle.(sPopUpMenuTag),'Value');
+            sValue = aString(iIndex);
+        end
     end
 end
 

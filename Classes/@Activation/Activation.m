@@ -4,14 +4,14 @@ classdef Activation < handle
     %   Activation has an associated Experiment object.
     
     properties
-        Experiment;
+        oExperiment;
         Times;
     end
     
     methods
         function oActivation = Activation(oExperiment, oTimes)
             if nargin > 0
-                oActivation.Experiment = oExperiment;
+                oActivation.oExperiment = oExperiment;
                 oActivation.Times = oTimes;
             end
         end

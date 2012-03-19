@@ -3,7 +3,6 @@ classdef Unemap < BasePotential
     %from an experiment
 
     properties (SetAccess = public)
-        DefaultPath = [];       
         TimeSeries = [];
         oExperiment;
         Original = [];
@@ -21,7 +20,7 @@ classdef Unemap < BasePotential
     end
     
     methods (Access = protected)
-        %% Protected methods that are inherited
+        %% Inherited protected methods
         function SaveEntity(oUnemap,sPath)
             SaveEntity@BaseEntity(oUnemap,sPath);
         end
@@ -32,11 +31,20 @@ classdef Unemap < BasePotential
         function Save(oUnemap,sPath)
             SaveEntity(oUnemap,sPath);
         end
-        
+        %% Inherited methods
         function aOutData = ProcessData(oBasePotential, aInData, varargin)
             aOutData = ProcessData@BasePotential(oBasePotential, aInData, varargin);
         end
-               
+
+        function aOutData = CalculateVrms(oBasePotential, aInData, varargin)
+            aOutData = CalculateVrms@BasePotential(oBasePotential, aInData, varargin);
+        end
+
+        function aOutData = CalculateCurvature(oBasePotential, aInData ,iNumberofPoints,iModelOrder)
+            aOutData = CalculateCurvature@BasePotential(oBasePotential, aInData, iNumberofPoints,iModelOrder);
+        end
+        
+        %% Class specific methods
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
             %   previously

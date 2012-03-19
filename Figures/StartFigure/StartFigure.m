@@ -17,6 +17,7 @@ classdef StartFigure < BaseFigure
             
             %Set the call back functions for the controls
             set(oFigure.oGuiHandle.bBaselineCorrection, 'callback', @(src, event) bBaselineCorrection_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.bDetectBeats, 'callback', @(src, event) bDetectBeats_Callback(oFigure, src, event));
                        
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
@@ -103,6 +104,13 @@ classdef StartFigure < BaseFigure
             %parent
             BaselineCorrection(oFigure);
         end
+        
+        function oFigure = bDetectBeats_Callback(oFigure, src, event)
+            %Open the BeatDetection figure passing this figure as the
+            %parent
+            BeatDetection(oFigure);
+        end
+        
         
         function oFigure = oFileMenu_Callback(oFigure, src, event)
             
