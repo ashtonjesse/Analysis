@@ -14,15 +14,21 @@ aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'*.txt');
 fprintf('Running... \n');
 for k = 1:2%length(aSignalFileFull)
     oUnemap = GetUnemapFromTXTFile(Unemap,char(aSignalFileFull(k)));
-    %oUnemap = GetEntityFromMATFile(Unemap,char(aSignalFileFull(k)));
+    oECG = GetECGFromTXTFile(ECG,char(aSignalFileFull(k)));
     %Get current filename fileparts
     [a sFileName c] = fileparts(aSignalFileFull{k});
-    %Append .mat to the end of the filename
-    sFileSaveName = strcat(sSavePath,sprintf('/%s.mat',sFileName));
+    %Append _unemap.mat to the end of the filename
+    sFileSaveName = strcat(sSavePath,sprintf('/%s_unemap.mat',sFileName));
     %Print to the command window that the file is being saved
     fprintf('Saving %s\n',sFileSaveName);
-    %Save the entity
+    %Save the unemap entity
     oUnemap.Save(sFileSaveName)
+    %Append _ecg.mat to the end of the filename
+    sFileSaveName = strcat(sSavePath,sprintf('/%s_ecg.mat',sFileName));
+    %Print to the command window that the file is being saved
+    fprintf('Saving %s\n',sFileSaveName);
+    %Save the ECG entity
+    oECG.Save(sFileSaveName);
 end
 
 close all;

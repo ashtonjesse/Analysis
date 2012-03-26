@@ -25,8 +25,8 @@ classdef ECG < BasePotential
     
     methods (Access = public)
         %% Public methods
-        function Save(oUnemap,sPath)
-            SaveEntity(oUnemap,sPath);
+        function Save(oECG,sPath)
+            SaveEntity(oECG,sPath);
         end
         %% Inherited methods
         function aOutData = ProcessData(oBasePotential, aInData, varargin)

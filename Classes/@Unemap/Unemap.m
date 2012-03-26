@@ -9,7 +9,7 @@ classdef Unemap < BasePotential
         Baseline = [];
         RMS = [];
         Slope = [];
-        RejectedElectrodes = [];
+        Electrodes = [];
     end
             
     methods
@@ -58,7 +58,7 @@ classdef Unemap < BasePotential
             oUnemap.Baseline = oData.oEntity.Baseline;
             oUnemap.RMS = oData.oEntity.RMS;
             oUnemap.Slope = oData.oEntity.Slope;
-            oUnemap.RejectedElectrodes = oData.oEntity.RejectedElectrodes;
+            oUnemap.Electrodes = oData.oEntity.Electrodes;
         end
         
 

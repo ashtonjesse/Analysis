@@ -1,6 +1,6 @@
 classdef Experiment < BaseEntity
     %The Experiment Class.
-    %   The handle class for all information associated with a experiment
+    %   The handle class for all information associated with an experiment
         
     properties 
         Date;

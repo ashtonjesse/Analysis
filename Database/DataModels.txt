@@ -12,7 +12,8 @@ oUnemap.RMS.PolyOrder
 oUnemap.RMS.WindowSize
 oUnemap.RMS.Curvature
 oUnemap.Slope
-oUnemap.RejectedElectrodes
+oUnemap.Electrodes.Accepted
+oUnemap.Electrodes.Rejected
 
 Experiment:
 oExperiment.Date
