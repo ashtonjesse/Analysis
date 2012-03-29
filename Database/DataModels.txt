@@ -5,12 +5,15 @@ oUnemap.Original
 oUnemap.Processed.Data
 oUnemap.Processed.BaselinePolyOrder
 oUnemap.Processed.SplineOrder
+oUnemap.Processed.Beats
 oUnemap.RMS.Values
 oUnemap.RMS.Smoothed
 oUnemap.RMS.Smoothing
 oUnemap.RMS.PolyOrder
 oUnemap.RMS.WindowSize
-oUnemap.RMS.Curvature
+oUnemap.RMS.Curvature.Values
+oUnemap.RMS.Curvature.Peaks
+oUnemap.RMS.Curvature.Threshold
 oUnemap.Slope
 oUnemap.Electrodes.Accepted
 oUnemap.Electrodes.Rejected

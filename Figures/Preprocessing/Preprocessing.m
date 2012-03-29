@@ -223,7 +223,6 @@ classdef Preprocessing < SubFigure
                 ApplySpline(oFigure,'Original')
             end
             
-            %Subfunction that keeps things tidy
             function ApplySpline(oFigure,sDataType)
                 %Get the spline approximation order from the selection made in the popup
                 iSplineOrder = oFigure.GetPopUpSelectionDouble('pmSplineOrder');

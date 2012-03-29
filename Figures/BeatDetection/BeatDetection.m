@@ -22,12 +22,20 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSmoothMenu, 'callback', @(src, event) oSmoothMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCurvatureMenu, 'callback', @(src, event) oCurvatureMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDetectMenu, 'callback', @(src, event) oDetectMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
-            GetVRMS(oFigure);
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
             set(oFigure.oGuiHandle.oBottomAxes,'Visible','off');
             zoom on;
+            
+            %Calculate Vrms
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Values = ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data);
+                            
+            %Plot the computed Vrms
+            oFigure.PlotVRMS('Values');
             
             function BeatDetection_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -82,6 +90,37 @@ classdef BeatDetection < SubFigure
         end
         
         % --------------------------------------------------------------------
+        function oDetectMenu_Callback(oFigure, src, event)
+            %Find the beat intervals
+            
+            %Get the number of peak locations n
+            [m,n] = size(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
+            %Save the first peak location
+            iFirstPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,1);
+            %Initialise the loop variables
+            iCurrentPeak = iFirstPeak;
+            iLastPeak = 0;
+            aBeats = zeros(2,1);
+            %Loop through the columns of the peak locations array (2nd row of Curvature.Peaks)
+            for i = 2:n;
+                %If the next peak is greater than 100 more than the current
+                %peak then the next group of peaks must be reached so save
+                %the first and last peaks of the last group in aBeats.
+                if oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i) < (iCurrentPeak + 100)
+                    iLastPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i);
+                else
+                    aBeats = [aBeats [iFirstPeak ; iLastPeak]];
+                    iFirstPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i);
+                end
+                iCurrentPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i);
+            end
+            %Remove the zeros from the first column
+            aBeats = aBeats(:,2:size(aBeats,2));
+            %Save the beat locations
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Beats = aBeats;
+        end
+        
+        % --------------------------------------------------------------------
         function oSmoothMenu_Callback(oFigure, src, event)
             
             %Get the polynomial order from the selection made in the popup
@@ -94,7 +133,7 @@ classdef BeatDetection < SubFigure
             %Calculate Vrms and smooth
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed = ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
                 iPolynomialOrder, iWindowSize, sSmoothingType);
             
             %Save the characteristics of the smoothing
@@ -103,18 +142,14 @@ classdef BeatDetection < SubFigure
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.WindowSize = iWindowSize;
                         
             %Plot the computed Vrms
-            axis(oFigure.oGuiHandle.oTopAxes,'manual');
-            plot(oFigure.oGuiHandle.oTopAxes, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed,'k');
-            title('Smooth V_R_M_S');
+            oFigure.PlotVRMS('Smoothed');
             
         end
         
         function oCurvatureMenu_Callback(oFigure, src, event)
             
             %Calculate the curvature 
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature = ...
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values = ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateCurvature(...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed, ...
                 20,5);
@@ -126,39 +161,51 @@ classdef BeatDetection < SubFigure
             addlistener(oGetThresholdFigure,'ThresholdCalculated',@(src,event) oFigure.ThresholdCurvature(src, event));
             
             %Plot the computed curvature
-            set(oFigure.oGuiHandle.oMiddleAxes,'Visible','On');
-            cla(oFigure.oGuiHandle.oMiddleAxes);
-            plot(oFigure.oGuiHandle.oMiddleAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature,'k');
-            title(oFigure.oGuiHandle.oMiddleAxes,'Curvature');
+            oFigure.PlotCurvature();
             
         end
         
         function ThresholdCurvature(oFigure, src, event)
-            %Label peaks on Curvature 
+            %Get the peaks of the Curvature above threshold
             [aPeaks,aLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature,oFigure.Threshold);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,oFigure.Threshold);
+            %Plot the peaks
             hold(oFigure.oGuiHandle.oMiddleAxes,'on');
-            plot(oFigure.oGuiHandle.oMiddleAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aLocations),aPeaks,'*g');
+            plot(oFigure.oGuiHandle.oMiddleAxes,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aLocations),aPeaks,'*g');
+            %Save the peak values and locations
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks = [aPeaks ; aLocations];
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Threshold = oFigure.Threshold;
+            
         end
+        
     end
     
     methods (Access = private)
-        % --------------------------------------------------------------------
-        function GetVRMS(oFigure)
-            %Calculate Vrms
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Values = ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.Corrected);
-                            
-            %Set the Top axes to be active
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oTopAxes);
-            cla;
-            
-            %Plot the computed Vrms
-            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Values,'k');
-            title('V_R_M_S');
+      
+        function PlotVRMS(oFigure,sSelection)
+            % Plot VRMS. sSelection should be a field of the RMS struct,
+            % either 'Values' or 'Smoothed'
+            cla(oFigure.oGuiHandle.oTopAxes);
+            plot(oFigure.oGuiHandle.oTopAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.(sSelection),'k');
+            switch sSelection
+                case 'Smoothed'
+                    title(oFigure.oGuiHandle.oTopAxes,'Smoothed V_R_M_S');
+                otherwise
+                    title(oFigure.oGuiHandle.oTopAxes,'V_R_M_S');
+            end
+        end
+        
+        function PlotCurvature(oFigure)
+            % Plot Curvature Data
+            cla(oFigure.oGuiHandle.oMiddleAxes);
+            set(oFigure.oGuiHandle.oMiddleAxes,'Visible','On');
+            plot(oFigure.oGuiHandle.oMiddleAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,'k');
+            title(oFigure.oGuiHandle.oMiddleAxes,'Curvature');
         end
     end
 end

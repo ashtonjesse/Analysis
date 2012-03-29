@@ -29,7 +29,7 @@ classdef GetThreshold < SubFigure
             %Plot the computed curvature
             cla(oFigure.oGuiHandle.oAxes);
             plot(oFigure.oGuiHandle.oAxes,oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature,'k');
+                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,'k');
             title(oFigure.oGuiHandle.oAxes,'Curvature');
             %Turn brushing on so that the user can select a range of data
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
@@ -83,7 +83,7 @@ classdef GetThreshold < SubFigure
             dStandardDeviation = std(brushedData{2}(brushedIdx));
             % Get the selected multiplier
             dSelection = oFigure.GetPopUpSelectionDouble('oBottomPopUp');
-            oFigure.oParentFigure.Threshold = mean(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature) + ...
+            oFigure.oParentFigure.Threshold = mean(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values) + ...
                 (dSelection*dStandardDeviation);
                 
             notify(oFigure,'ThresholdCalculated');
