@@ -12,7 +12,7 @@ sSavePath = 'H:/Data/Database/20111124';
 aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'*.txt');
 %aSignalFileFull = fGetFileNamesOnly(sSavePath,'*.mat');
 fprintf('Running... \n');
-for k = 1:2%length(aSignalFileFull)
+for k = 1:1%length(aSignalFileFull)
     oUnemap = GetUnemapFromTXTFile(Unemap,char(aSignalFileFull(k)));
     oECG = GetECGFromTXTFile(ECG,char(aSignalFileFull(k)));
     %Get current filename fileparts

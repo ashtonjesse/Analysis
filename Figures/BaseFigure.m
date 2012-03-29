@@ -40,7 +40,7 @@ classdef BaseFigure < handle
     
     methods (Access = protected)
         %% Delete and exit methods
-        function delete(oFigure)
+        function deleteme(oFigure)
             %Class deconstructor - handles the cleaning up of the class &
             %figure. Either the class or the figure can initiate the closing
             %condition, this function makes sure both are cleaned up
@@ -71,6 +71,7 @@ classdef BaseFigure < handle
             iIndex = get(oFigure.oGuiHandle.(sPopUpMenuTag),'Value');
             sValue = aString(iIndex);
         end
+        
     end
 end
 

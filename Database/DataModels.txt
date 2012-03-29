@@ -2,9 +2,9 @@ Unemap:
 oUnemap.TimeSeries
 oUnemap.oExperiment
 oUnemap.Original
-oUnemap.Baseline.Corrected
-oUnemap.Baseline.PolyOrder
-oUnemap.Baseline.SplineOrder
+oUnemap.Processed.Data
+oUnemap.Processed.BaselinePolyOrder
+oUnemap.Processed.SplineOrder
 oUnemap.RMS.Values
 oUnemap.RMS.Smoothed
 oUnemap.RMS.Smoothing
@@ -25,7 +25,7 @@ oExperiment.Unemap.ADConversion.SamplingRate
 oExperiment.Unemap.ADConversion.BitDepth
 oExperiment.Unemap.ADConversion.Gain
 oExperiment.Unemap.ADConversion.DynamicRange
-oExperiment.Unemap.NumberOfElectrodes
+oExperiment.Unemap.NumberOfChannels
 oExperiment.Unemap.ECGChannel
 oExperiment.Unemap.PhrenicChannel
 oExperiment.PerfusionPressureAmp.Gain

@@ -16,7 +16,7 @@ classdef StartFigure < BaseFigure
             oFigure = oFigure@BaseFigure('StartFigure',@StartFigure_OpeningFcn);
             
             %Set the call back functions for the controls
-            set(oFigure.oGuiHandle.bBaselineCorrection, 'callback', @(src, event) bBaselineCorrection_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.bPreprocessing, 'callback', @(src, event) bPreprocessing_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bDetectBeats, 'callback', @(src, event) bDetectBeats_Callback(oFigure, src, event));
                        
             %Set the callback functions to the menu items 
@@ -50,15 +50,15 @@ classdef StartFigure < BaseFigure
     
     methods (Access = protected)
         %% Protected methods that are inherited
-        function delete(oFigure)
-            delete@BaseFigure(oFigure);
+        function deleteme(oFigure)
+            deleteme@BaseFigure(oFigure);
         end
     end
     
     methods (Access = private)
         %% Private UI control callbacks
         function oFigure = Close_fcn(oFigure, src, event)
-            delete(oFigure);
+            deleteme(oFigure);
         end    
         
         function oFigure = oOpenMenu_Callback(oFigure, src, event)
@@ -101,7 +101,7 @@ classdef StartFigure < BaseFigure
             % Save the current Potential entity
            
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for this .mat file','H:\Data\Database\20111124\');
+            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the unemap .mat file','H:\Data\Database\20111124\');
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sExpFileName))
                 return
@@ -113,13 +113,25 @@ classdef StartFigure < BaseFigure
             %Save
             oFigure.oGuiHandle.oUnemap.Save(sLongDataFileName);
             
+            %Call built-in file dialog to select filename
+            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the ecg .mat file','H:\Data\Database\20111124\');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+                return
+            end
+            
+            %Get the full file name
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            
+            %Save
+            oFigure.oGuiHandle.oECG.Save(sLongDataFileName);
             
         end
         
-        function oFigure = bBaselineCorrection_Callback(oFigure, src, event)
-            %Open the BaselineCorrection figure passing this figure as the
+        function oFigure = bPreprocessing_Callback(oFigure, src, event)
+            %Open the Preprocessing figure passing this figure as the
             %parent
-            BaselineCorrection(oFigure);
+            Preprocessing(oFigure);
         end
         
         function oFigure = bDetectBeats_Callback(oFigure, src, event)

@@ -6,7 +6,7 @@ classdef Unemap < BasePotential
         TimeSeries = [];
         oExperiment;
         Original = [];
-        Baseline = [];
+        Processed = [];
         RMS = [];
         Slope = [];
         Electrodes = [];
@@ -55,7 +55,7 @@ classdef Unemap < BasePotential
             oUnemap.TimeSeries = oData.oEntity.TimeSeries;
             oUnemap.oExperiment = Experiment(oData.oEntity.oExperiment);
             oUnemap.Original = oData.oEntity.Original;
-            oUnemap.Baseline = oData.oEntity.Baseline;
+            oUnemap.Processed = oData.oEntity.Processed;
             oUnemap.RMS = oData.oEntity.RMS;
             oUnemap.Slope = oData.oEntity.Slope;
             oUnemap.Electrodes = oData.oEntity.Electrodes;
@@ -83,7 +83,8 @@ classdef Unemap < BasePotential
             %   Load the potential data from the txt file
             aFileContents = oUnemap.oDAL.LoadFromFile(sFile);
             %   Set the Original and TimeSeries Structured arrays
-            oUnemap.Original = aFileContents(:,2:oUnemap.oExperiment.Unemap.NumberOfElectrodes+1);
+            oUnemap.Original = aFileContents(:,2:oUnemap.oExperiment.Unemap.NumberOfChannels+1);
+            oUnemap.Processed.Data = NaN(size(oUnemap.Original,1),size(oUnemap.Original,2));
             oUnemap.TimeSeries = [1:1:size(oUnemap.Original,1)]*(1/oUnemap.oExperiment.Unemap.ADConversion.SamplingRate);
         end
     end

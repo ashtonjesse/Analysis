@@ -9,6 +9,7 @@ classdef BeatDetection < SubFigure
     %   each beat.
     
     properties
+        Threshold
     end
     
     methods
@@ -26,6 +27,7 @@ classdef BeatDetection < SubFigure
             GetVRMS(oFigure);
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
             set(oFigure.oGuiHandle.oBottomAxes,'Visible','off');
+            zoom on;
             
             function BeatDetection_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -48,8 +50,8 @@ classdef BeatDetection < SubFigure
     
     methods (Access = protected)
          %% Protected methods inherited from superclass
-        function delete(oFigure)
-            delete@BaseFigure(oFigure);
+        function deleteme(oFigure)
+            deleteme@BaseFigure(oFigure);
         end
         
         function nValue = GetPopUpSelectionDouble(oFigure,sPopUpMenuTag)
@@ -64,7 +66,7 @@ classdef BeatDetection < SubFigure
     methods
         %% Ui control callbacks    
         function oFigure = Close_fcn(oFigure, src, event)
-           delete(oFigure);
+           deleteme(oFigure);
         end
         
         %% Menu Callbacks
@@ -99,13 +101,11 @@ classdef BeatDetection < SubFigure
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothing = sSmoothingType;
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.PolyOrder = iPolynomialOrder;
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.WindowSize = iWindowSize;
-            
-            %Set the top axes to be active
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oTopAxes);
-            cla;
-            
+                        
             %Plot the computed Vrms
-            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+            axis(oFigure.oGuiHandle.oTopAxes,'manual');
+            plot(oFigure.oGuiHandle.oTopAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed,'k');
             title('Smooth V_R_M_S');
             
@@ -119,16 +119,27 @@ classdef BeatDetection < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed, ...
                 20,5);
             
-            %Set the middle axes to be active
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oFigure.oGuiHandle.oMiddleAxes);
-            set(oFigure.oGuiHandle.oMiddleAxes,'Visible','On');
-            cla;
+            %Open the GetThreshold figure to apply a threshold
+            oGetThresholdFigure = GetThreshold(oFigure);
+            %Add a listener so that the figure knows when a user has
+            %calculated the threshold            
+            addlistener(oGetThresholdFigure,'ThresholdCalculated',@(src,event) oFigure.ThresholdCurvature(src, event));
             
             %Plot the computed curvature
-            plot(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+            set(oFigure.oGuiHandle.oMiddleAxes,'Visible','On');
+            cla(oFigure.oGuiHandle.oMiddleAxes);
+            plot(oFigure.oGuiHandle.oMiddleAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature,'k');
-            title('Curvature');
+            title(oFigure.oGuiHandle.oMiddleAxes,'Curvature');
             
+        end
+        
+        function ThresholdCurvature(oFigure, src, event)
+            %Label peaks on Curvature 
+            [aPeaks,aLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature,oFigure.Threshold);
+            hold(oFigure.oGuiHandle.oMiddleAxes,'on');
+            plot(oFigure.oGuiHandle.oMiddleAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aLocations),aPeaks,'*g');
         end
     end
     

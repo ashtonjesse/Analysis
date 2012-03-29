@@ -66,7 +66,7 @@ classdef ECG < BasePotential
             %   Load the potential data from the txt file
             aFileContents = oECG.oDAL.LoadFromFile(sFile);
             %   Set the Original and TimeSeries Structured arrays
-            oECG.Original = aFileContents(:,oECG.oExperiment.Unemap.NumberOfElectrodes + ...
+            oECG.Original = aFileContents(:,oECG.oExperiment.Unemap.NumberOfChannels + ...
                 oECG.oExperiment.Unemap.ECGChannel + 1);
             oECG.TimeSeries = [1:1:size(oECG.Original,1)]*(1/oECG.oExperiment.Unemap.ADConversion.SamplingRate);
         end       

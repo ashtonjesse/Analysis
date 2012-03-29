@@ -17,8 +17,8 @@ classdef SubFigure < BaseFigure
     
     methods (Access = protected)
         %% Delete and exit methods
-        function delete(oFigure)
-            delete@BaseFigure(oFigure);
+        function deleteme(oFigure)
+            deleteme@BaseFigure(oFigure);
             oFigure.oParentFigure = [];
         end
         
