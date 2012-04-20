@@ -29,10 +29,10 @@ classdef Unemap < BasePotential
             SaveEntity(oUnemap,sPath);
         end
         %% Inherited methods
-        function aOutData = ProcessData(oBasePotential, aInData, varargin)
-            aOutData = ProcessData@BasePotential(oBasePotential, aInData, varargin);
+        function aOutData = ProcessData(oUnemap, aInData, sProcedure, iOrder)
+            aOutData = ProcessData@BasePotential(oUnemap, aInData, sProcedure, iOrder);
         end
-
+                      
         function aOutData = CalculateVrms(oBasePotential, aInData, varargin)
             aOutData = CalculateVrms@BasePotential(oBasePotential, aInData, varargin);
         end
@@ -42,6 +42,48 @@ classdef Unemap < BasePotential
         end
         
         %% Class specific methods
+        function ProcessArrayData(oUnemap, sProcedure, iOrder)
+            %Does some checks and then calls the inherited ProcessData
+            %method
+            oWaitbar = waitbar(0,'Please wait...');
+            iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
+            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                %Perform the processing on the original data
+                for i=1:iTotal
+                    oUnemap.Electrodes(i).Processed.Data = ...
+                        oUnemap.ProcessData(oUnemap.Electrodes(i).Potential,sProcedure,iOrder);
+                     %Update the waitbar
+                        waitbar(i/iTotal,oWaitbar,sprintf(...
+                            'Please wait... Baseline Correcting Signal %d',i));
+                end
+            else
+                %Perform the processing on already processed data
+                for i=1:iTotal
+                    oUnemap.Electrodes(i).Processed.Data = ...
+                        oUnemap.ProcessData(oUnemap.Electrodes(i).Processed.Data,sProcedure,iOrder);
+                    %Update the waitbar
+                    waitbar(i/iTotal,oWaitbar,sprintf(...
+                        'Please wait... Spline Smoothing Signal %d',i));
+                end
+            end
+            close(oWaitbar);
+        end
+        
+        function ProcessElectrodeData(oUnemap, sProcedure, iOrder, iChannel)
+            %Does some checks and then calls the inherited ProcessData
+            %method
+            
+            if isnan(oUnemap.Electrodes(iChannel).Processed.Data(1))
+                %Perform the processing on the original data
+                oUnemap.Electrodes(iChannel).Processed.Data = ...
+                        oUnemap.ProcessData(oUnemap.Electrodes(iChannel).Potential,sProcedure,iOrder);
+            else
+                %Perform the processing on already processed data
+                oUnemap.Electrodes(iChannel).Processed.Data = ...
+                        oUnemap.ProcessData(oUnemap.Electrodes(iChannel).Processed.Data,sProcedure,iOrder);
+            end
+        end
+            
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
             %   previously

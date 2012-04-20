@@ -135,12 +135,12 @@ classdef Preprocessing < SubFigure
             iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));
             %Check if this filter should be applied to processed or
             %original data
-            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(1,iChannel))
-                aFilteredData = filter(oFilter,oFigure.oParentFigure.oGuiHandle.oUnemap.Original(:,iChannel));
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(:,iChannel) = aFilteredData;
+            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data(1))
+                aFilteredData = filter(oFilter,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
             else
-                aFilteredData = filter(oFilter,oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(:,iChannel));
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(:,iChannel) = aFilteredData;
+                aFilteredData = filter(oFilter,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
             end
             oFigure.PlotProcessed(iChannel);
             
@@ -155,21 +155,9 @@ classdef Preprocessing < SubFigure
             iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
             %Get the currently selected channel
             iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));
-            %Remove baseline from either the original data or if there is
-            %processed data already for this channel then apply to that.
-            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(1,iChannel))
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Original, ...
-                    'RemoveMedianAndFitPolynomial', iPolynomialOrder,iChannel);
-            else
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
-                    'RemoveMedianAndFitPolynomial', iPolynomialOrder,iChannel);
-            end
-            
-            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.PolyOrder = iPolynomialOrder;
+            %Remove baseline 
+            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(...
+                'RemoveMedianAndFitPolynomial', iPolynomialOrder,iChannel);
             
             %Plot the data with the baseline removed.
             oFigure.PlotProcessed(iChannel);
@@ -183,22 +171,10 @@ classdef Preprocessing < SubFigure
             %Get the currently selected channel
             iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));           
             
-            %Smooth with a spline the data from either the original  or if there is
-            %processed data already for this channel then apply to that.
-            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(1,iChannel))
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Original, ...
-                    'SplineSmoothData', iSplineOrder,iChannel);
-            else
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
-                    'SplineSmoothData', iSplineOrder,iChannel);
-            end
-            
-            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.SplineOrder = iSplineOrder;
-            
+            %Smooth with a spline
+            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(...
+                'SplineSmoothData', iSplineOrder,iChannel);
+                        
             %Plot the Spline approximation
              oFigure.PlotProcessed(iChannel);
             
@@ -206,7 +182,7 @@ classdef Preprocessing < SubFigure
         
         % --------------------------------------------------------------------
         function oApplyMenu_Callback(oFigure, src, event)
-            %   Apply the selected processing steps to all the channels in oUnemap.Original and save.
+            %   Apply the selected processing steps to all the channels in oUnemap.Electrodes and save.
             bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
             bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
             if bBaseline
@@ -214,38 +190,18 @@ classdef Preprocessing < SubFigure
                 %   control
                 iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
                 
-                %  Remove baseline (not specifying a channel number so this call
-                %  will do all the channels
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Original, ...
+                %  Remove baseline - do all the channels
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData(...
                     'RemoveMedianAndFitPolynomial', iPolynomialOrder);
             end
             
-            if bBaseline && bSpline
-                ApplySpline(oFigure,'Processed')
-            elseif ~bBaseline && bSpline
-                ApplySpline(oFigure,'Original')
-            end
-            
-            function ApplySpline(oFigure,sDataType)
+            if bSpline
                 %Get the spline approximation order from the selection made in the popup
                 iSplineOrder = oFigure.GetPopUpSelectionDouble('pmSplineOrder');
                 
                 %Smooth the data with a spline approximation
-                switch sDataType
-                    case 'Processed'
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
-                            'SplineSmoothData',iSplineOrder);
-                    case 'Original'
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data = ...
-                            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessData(...
-                            oFigure.oParentFigure.oGuiHandle.oUnemap.Original, ...
-                            'SplineSmoothData',iSplineOrder);
-                    otherwise
-                end
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData(...
+                    'SplineSmoothData',iSplineOrder);
             end
         end
         
@@ -261,7 +217,7 @@ classdef Preprocessing < SubFigure
             sTitle = sprintf('Original Signal for Channel %d',iChannel);
             oAxes = oFigure.oGuiHandle.oTopAxes;
             plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Original(:,iChannel),'k');
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential,'k');
             axis(oAxes, 'auto');
             title(oAxes, sTitle);
         end
@@ -273,13 +229,13 @@ classdef Preprocessing < SubFigure
                 iChannel = round(iChannel(1));
             end
             %If there has been some processing done then plot the data
-            if ~isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(1,iChannel))
+            if ~isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data(1))
                 plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(:,iChannel),'k');
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
                 if get(oFigure.oGuiHandle.oCheckBoxBeats,'Value')
                     hold(oAxes, 'on');
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Beats(:,iChannel),'-g');
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats,'-g');
                     hold(oAxes, 'off');
                 end
                 axis(oAxes, 'auto');
