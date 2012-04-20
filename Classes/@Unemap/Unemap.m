@@ -1,15 +1,12 @@
 classdef Unemap < BasePotential
-    %Potential is a class that is associated with the potential data
+    %Unemap is a class that is associated with the potential data
     %from an experiment
 
     properties (SetAccess = public)
         TimeSeries = [];
         oExperiment;
-        Original = [];
-        Processed = [];
+        Electrodes = [];       
         RMS = [];
-        Slope = [];
-        Electrodes = [];
     end
             
     methods
@@ -54,11 +51,8 @@ classdef Unemap < BasePotential
             %   Reload all the properties 
             oUnemap.TimeSeries = oData.oEntity.TimeSeries;
             oUnemap.oExperiment = Experiment(oData.oEntity.oExperiment);
-            oUnemap.Original = oData.oEntity.Original;
-            oUnemap.Processed = oData.oEntity.Processed;
-            oUnemap.RMS = oData.oEntity.RMS;
-            oUnemap.Slope = oData.oEntity.Slope;
             oUnemap.Electrodes = oData.oEntity.Electrodes;
+            oUnemap.RMS = oData.oEntity.RMS;
         end
         
 
@@ -66,13 +60,14 @@ classdef Unemap < BasePotential
             %   Get an entity by loading data from a txt file - only done the
             %   first time you are creating a Unemap entity
             
+            %   Get the path
+            [sPath] = fileparts(sFile);
             %   If the Unemap does not have an Experiment loaded yet
             %   then load one
             if isempty(oUnemap.oExperiment)
                 %   Look for a metadata file in the same directory that will
                 %   contain the Experiment data
-                [sPath] = fileparts(sFile);
-                aFileFull = fGetFileNamesOnly(sPath,'*_metadata.txt');
+                aFileFull = fGetFileNamesOnly(sPath,'*_experiment.txt');
                 %   There should be one experiment file and no more
                 if ~(size(aFileFull,1) == 1)
                     error('VerifyInput:TooManyInputFiles', 'There is the wrong number of experimental metadata files in the directory %s',sPath);
@@ -80,12 +75,19 @@ classdef Unemap < BasePotential
                 %   Get the Experiment entity
                 oUnemap.oExperiment = GetExperimentFromTxtFile(Experiment, char(aFileFull(1)));
             end
-            %   Load the potential data from the txt file
-            aFileContents = oUnemap.oDAL.LoadFromFile(sFile);
-            %   Set the Original and TimeSeries Structured arrays
-            oUnemap.Original = aFileContents(:,2:oUnemap.oExperiment.Unemap.NumberOfChannels+1);
-            oUnemap.Processed.Data = NaN(size(oUnemap.Original,1),size(oUnemap.Original,2));
-            oUnemap.TimeSeries = [1:1:size(oUnemap.Original,1)]*(1/oUnemap.oExperiment.Unemap.ADConversion.SamplingRate);
+            
+            %   Look for an array config file in the same directory that will
+            %   contain the electrode names/positions
+            aFileFull = fGetFileNamesOnly(sPath,'*.cnfg');
+            %   There should be one config file and no more
+            if ~(size(aFileFull,1) == 1)
+                error('VerifyInput:TooManyInputFiles', 'There is the wrong number of config files in the directory %s',sPath);
+            end
+            % Get the electrodes 
+            oUnemap.Electrodes = oUnemap.oDAL.GetElectrodesFromConfigFile(...
+                oUnemap.oExperiment.Unemap.NumberOfChannels, char(aFileFull(1)));
+            % Get the electrode data
+            oUnemap.oDAL.GetDataFromSignalFile(oUnemap,sFile);
         end
     end
 end

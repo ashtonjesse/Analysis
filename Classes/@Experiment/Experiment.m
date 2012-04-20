@@ -9,6 +9,7 @@ classdef Experiment < BaseEntity
         PerfusionPressureAmp;
         PhrenicAmp;
         ECGAmp;
+        Plot;
     end
         
     methods
@@ -16,7 +17,7 @@ classdef Experiment < BaseEntity
             %% Constructor
             oExperiment = oExperiment@BaseEntity();
             if nargin == 1
-                if isstruct(varargin{1})
+                if isstruct(varargin{1}) || isa(varargin{1},'Experiment')
                     oExperimentStruct = varargin{1};
                     oExperiment.Date = oExperimentStruct.Date;
                     oExperiment.Material = oExperimentStruct.Material;
@@ -24,6 +25,7 @@ classdef Experiment < BaseEntity
                     oExperiment.PerfusionPressureAmp = oExperimentStruct.PerfusionPressureAmp;
                     oExperiment.PhrenicAmp = oExperimentStruct.PhrenicAmp;
                     oExperiment.ECGAmp = oExperimentStruct.ECGAmp;
+                    oExperiment.Plot = oExperimentStruct.Plot;
                 end
             end
         end

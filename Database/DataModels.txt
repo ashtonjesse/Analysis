@@ -1,11 +1,7 @@
-Unemap:
+Unemap: (BasePotential)
 oUnemap.TimeSeries
 oUnemap.oExperiment
-oUnemap.Original
-oUnemap.Processed.Data
-oUnemap.Processed.BaselinePolyOrder
-oUnemap.Processed.SplineOrder
-oUnemap.Processed.Beats
+oUnemap.Electrodes
 oUnemap.RMS.Values
 oUnemap.RMS.Smoothed
 oUnemap.RMS.Smoothing
@@ -14,11 +10,21 @@ oUnemap.RMS.WindowSize
 oUnemap.RMS.Curvature.Values
 oUnemap.RMS.Curvature.Peaks
 oUnemap.RMS.Curvature.Threshold
-oUnemap.Slope
-oUnemap.Electrodes.Accepted
-oUnemap.Electrodes.Rejected
 
-Experiment:
+Electrodes: (not wrapped by a class)
+Electrodes(i).Accepted
+Electrodes(i).Name
+Electrodes(i).Potential
+Electrodes(i).Coords
+Electrodes(i).Activation
+Electrodes(i).Slope
+Electrodes(i).Curvature
+Electrodes(i).Processed.Data
+Electrodes(i).Processed.BaselinePolyOrder
+Electrodes(i).Processed.SplineOrder
+Electrodes(i).Processed.Beats
+
+Experiment: (BaseEntity)
 oExperiment.Date
 oExperiment.Material.Gender
 oExperiment.Material.Weight 
@@ -29,6 +35,8 @@ oExperiment.Unemap.ADConversion.BitDepth
 oExperiment.Unemap.ADConversion.Gain
 oExperiment.Unemap.ADConversion.DynamicRange
 oExperiment.Unemap.NumberOfChannels
+oExperiment.Unemap.NumberOfPlugs
+oExperiment.Unemap.ChannelsPerPlug
 oExperiment.Unemap.ECGChannel
 oExperiment.Unemap.PhrenicChannel
 oExperiment.PerfusionPressureAmp.Gain
@@ -41,5 +49,13 @@ oExperiment.ECGAmp.AcCouplingFrequency
 oExperiment.ECGAmp.HighFilter
 oExperiment.ECGAmp.LowFilter
 oExperiment.ECGAmp.LineFilter
+oExperiment.Plot.Electrodes.xDim
+oExperiment.Plot.Electrodes.yDim
+
+ECG: (BasePotential)
+oECG.oExperiment;
+oECG.Original;
+oECG.TimeSeries;
+oECG.Processed.Beats;
 
 Activation:

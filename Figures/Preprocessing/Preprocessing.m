@@ -64,6 +64,11 @@ classdef Preprocessing < SubFigure
                 set(handles.oCheckBoxBaseline, 'string', 'Baseline Correction');
                 set(handles.oCheckBoxSpline, 'string', 'Spline');
                 set(handles.oCheckBoxFilter, 'string', 'Filter');
+                set(handles.oCheckBoxBeats, 'string', 'Plot beats');
+                set(handles.oCheckBoxBaseline, 'TooltipString', 'Baseline Correction');
+                set(handles.oCheckBoxSpline, 'TooltipString', 'Spline');
+                set(handles.oCheckBoxFilter, 'TooltipString', 'Filter');
+                set(handles.oCheckBoxBeats, 'TooltipString', 'Plot beats');
                 
                 %Set the output attribute
                 handles.output = hObject;
@@ -192,7 +197,7 @@ classdef Preprocessing < SubFigure
                     'SplineSmoothData', iSplineOrder,iChannel);
             end
             
-            oFigure.oParentFigure.oGuiHandle.oUnemap.Baseline.SplineOrder = iSplineOrder;
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.SplineOrder = iSplineOrder;
             
             %Plot the Spline approximation
              oFigure.PlotProcessed(iChannel);
@@ -271,6 +276,12 @@ classdef Preprocessing < SubFigure
             if ~isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(1,iChannel))
                 plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                     oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data(:,iChannel),'k');
+                if get(oFigure.oGuiHandle.oCheckBoxBeats,'Value')
+                    hold(oAxes, 'on');
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Beats(:,iChannel),'-g');
+                    hold(oAxes, 'off');
+                end
                 axis(oAxes, 'auto');
                 sTitle = sprintf('Processed Signal for Channel %d', iChannel);
                 title(oAxes,sTitle);

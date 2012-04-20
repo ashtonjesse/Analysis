@@ -18,7 +18,8 @@ classdef StartFigure < BaseFigure
             %Set the call back functions for the controls
             set(oFigure.oGuiHandle.bPreprocessing, 'callback', @(src, event) bPreprocessing_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bDetectBeats, 'callback', @(src, event) bDetectBeats_Callback(oFigure, src, event));
-                       
+            set(oFigure.oGuiHandle.bAnalyseSignals, 'callback', @(src, event) bAnalyseSignals_Callback(oFigure, src, event));
+            
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oOpenMenu, 'callback', @(src, event) oOpenMenu_Callback(oFigure, src, event));
@@ -140,6 +141,11 @@ classdef StartFigure < BaseFigure
             BeatDetection(oFigure);
         end
         
+        function oFigure = bAnalyseSignals_Callback(oFigure, src, event)
+            %Open the AnalyseSignals figure passing this figure as the
+            %parent
+            AnalyseSignals(oFigure);
+        end
         
         function oFigure = oFileMenu_Callback(oFigure, src, event)
             

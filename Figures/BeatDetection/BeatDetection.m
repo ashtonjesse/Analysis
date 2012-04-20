@@ -91,33 +91,20 @@ classdef BeatDetection < SubFigure
         
         % --------------------------------------------------------------------
         function oDetectMenu_Callback(oFigure, src, event)
-            %Find the beat intervals
+            %Get the data associated with the thresholded beats for Unemap
+            %and ECG
+            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Beats = ...
+            oFigure.oParentFigure.oGuiHandle.oUnemap.GetBeats(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
             
-            %Get the number of peak locations n
-            [m,n] = size(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
-            %Save the first peak location
-            iFirstPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,1);
-            %Initialise the loop variables
-            iCurrentPeak = iFirstPeak;
-            iLastPeak = 0;
-            aBeats = zeros(2,1);
-            %Loop through the columns of the peak locations array (2nd row of Curvature.Peaks)
-            for i = 2:n;
-                %If the next peak is greater than 100 more than the current
-                %peak then the next group of peaks must be reached so save
-                %the first and last peaks of the last group in aBeats.
-                if oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i) < (iCurrentPeak + 100)
-                    iLastPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i);
-                else
-                    aBeats = [aBeats [iFirstPeak ; iLastPeak]];
-                    iFirstPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i);
-                end
-                iCurrentPeak = oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks(2,i);
-            end
-            %Remove the zeros from the first column
-            aBeats = aBeats(:,2:size(aBeats,2));
-            %Save the beat locations
-            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Beats = aBeats;
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = ...
+            oFigure.oParentFigure.oGuiHandle.oECG.GetBeats(...
+                oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
+            
+            %Plot the detected beats on the ECG
+            oFigure.PlotECG('DetectBeats');
         end
         
         % --------------------------------------------------------------------
@@ -206,6 +193,31 @@ classdef BeatDetection < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,'k');
             title(oFigure.oGuiHandle.oMiddleAxes,'Curvature');
+        end
+        
+        function PlotECG(oFigure,sOption)
+            % Plot ECG Data
+            
+            %Clear axes and set to be visible
+            cla(oFigure.oGuiHandle.oBottomAxes);
+            set(oFigure.oGuiHandle.oBottomAxes,'Visible','On');
+            
+            %Plot the ECG channel data
+            plot(oFigure.oGuiHandle.oBottomAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.oECG.Original,'k');
+            %Check if the user specified detectbeats and plot these as well
+            %if so
+            switch sOption
+                case 'DetectBeats'
+                    hold(oFigure.oGuiHandle.oBottomAxes, 'on');
+                    plot(oFigure.oGuiHandle.oBottomAxes, ...
+                        oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
+                        oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats,'-g');
+                otherwise
+                    
+            end
+            title(oFigure.oGuiHandle.oBottomAxes,'ECG');
         end
     end
 end

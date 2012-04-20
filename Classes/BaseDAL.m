@@ -10,7 +10,9 @@ classdef BaseDAL
             %%  Constructor
 
         end
-        
+    end
+    
+    methods (Access = public)
         %% Public Methods
         function oData = GetEntityFromFile(oBaseDAL,sFile)
             %   Loads struct from file and should be called by an Entity

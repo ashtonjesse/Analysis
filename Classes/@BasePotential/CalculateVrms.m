@@ -1,6 +1,6 @@
-function aOutData = CalculateVrms(oFigure, aInData, varargin)
+function aOutData = CalculateVrms(oBasePotential, aInData, varargin)
 % This function takes up to 4 inputs including an array of input data (but
-% not including the oFigure BasePotential class object). Depending on the
+% not including the oBasePotential BasePotential class object). Depending on the
 % inputs supplied it either calculates a straight RMS or calculates an RMS
 % and smooths this over a iNumberofPoints point 
 % window using either Savitzky-Golay FIR filtering or a moving average.

@@ -10,6 +10,7 @@ classdef BasePotential < BaseEntity
         %% Constructor
         function oBasePotential = BasePotential()
             oBasePotential = oBasePotential@BaseEntity();
+            oBasePotential.oDAL = PotentialDAL();
         end
     end
     

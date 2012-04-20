@@ -7,6 +7,7 @@ classdef ECG < BasePotential
         oExperiment;
         Original;
         TimeSeries;
+        Processed;
     end
     
     methods
@@ -43,6 +44,7 @@ classdef ECG < BasePotential
             oECG.oExperiment = Experiment(oData.oEntity.oExperiment);
             oECG.Original = oData.oEntity.Original;
             oECG.TimeSeries = oData.oEntity.TimeSeries;
+            oECG.Processed = oData.oEntity.Processed;
         end
         
         function oECG = GetECGFromTXTFile(oECG,sFile)
@@ -55,7 +57,7 @@ classdef ECG < BasePotential
                 %   Look for a metadata file in the same directory that will
                 %   contain the Experiment data
                 [sPath] = fileparts(sFile);
-                aFileFull = fGetFileNamesOnly(sPath,'*_metadata.txt');
+                aFileFull = fGetFileNamesOnly(sPath,'*_experiment.txt');
                 %   There should be one experiment file and no more
                 if ~(size(aFileFull,1) == 1)
                     error('VerifyInput:TooManyInputFiles', 'There is the wrong number of experimental metadata files in the directory %s',sPath);
