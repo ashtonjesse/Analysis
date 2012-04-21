@@ -9,7 +9,7 @@ classdef BeatDetection < SubFigure
     %   each beat.
     
     properties
-        Threshold
+        Threshold;
     end
     
     methods
@@ -30,9 +30,7 @@ classdef BeatDetection < SubFigure
             zoom on;
             
             %Calculate Vrms
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Values = ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms();
                             
             %Plot the computed Vrms
             oFigure.PlotVRMS('Values');
@@ -93,9 +91,7 @@ classdef BeatDetection < SubFigure
         function oDetectMenu_Callback(oFigure, src, event)
             %Get the data associated with the thresholded beats for Unemap
             %and ECG
-            oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Beats = ...
-            oFigure.oParentFigure.oGuiHandle.oUnemap.GetBeats(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
+            oFigure.oParentFigure.oGuiHandle.oUnemap.GetArrayBeats(...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
             
             oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = ...
@@ -118,16 +114,9 @@ classdef BeatDetection < SubFigure
             sSmoothingType = oFigure.GetPopUpSelectionString('pmSmoothingType');
             
             %Calculate Vrms and smooth
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed = ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Processed.Data, ...
+            oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
                 iPolynomialOrder, iWindowSize, sSmoothingType);
-            
-            %Save the characteristics of the smoothing
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothing = sSmoothingType;
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.PolyOrder = iPolynomialOrder;
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.WindowSize = iWindowSize;
-                        
+                                  
             %Plot the computed Vrms
             oFigure.PlotVRMS('Smoothed');
             

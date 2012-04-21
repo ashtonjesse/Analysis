@@ -33,15 +33,34 @@ classdef Unemap < BasePotential
             aOutData = ProcessData@BasePotential(oUnemap, aInData, sProcedure, iOrder);
         end
                       
-        function aOutData = CalculateVrms(oBasePotential, aInData, varargin)
-            aOutData = CalculateVrms@BasePotential(oBasePotential, aInData, varargin);
+        function aOutData = CalculateCurvature(oUnemap, aInData ,iNumberofPoints,iModelOrder)
+            aOutData = CalculateCurvature@BasePotential(oUnemap, aInData, iNumberofPoints,iModelOrder);
         end
-
-        function aOutData = CalculateCurvature(oBasePotential, aInData ,iNumberofPoints,iModelOrder)
-            aOutData = CalculateCurvature@BasePotential(oBasePotential, aInData, iNumberofPoints,iModelOrder);
+        
+        function aOutData = GetBeats(oUnemap, aInData, aPeaks)
+            aOutData = GetBeats@BasePotential(oUnemap, aInData, aPeaks);
         end
         
         %% Class specific methods
+                
+        function GetArrayBeats(oUnemap, aPeaks)
+            %Does some checks and then calls the inherited GetBeats
+            %method
+            
+            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                %Detect beats on the original data
+                aInData = cell2mat({oUnemap.Electrodes(:).Potential});
+            else
+                %Detect beats on the processed data
+                aInData = MultiIndexStructData(DataHelper,oUnemap.Electrodes,'Processed','Data');
+            end
+            aOutData = oUnemap.GetBeats(aInData,aPeaks);
+            for i = 1:oUnemap.oExperiment.Unemap.NumberOfChannels;
+                oUnemap.Electrodes(i).Processed.Beats = aOutData(:,i);
+            end
+
+        end
+        
         function ProcessArrayData(oUnemap, sProcedure, iOrder)
             %Does some checks and then calls the inherited ProcessData
             %method

@@ -66,9 +66,9 @@ classdef StartFigure < BaseFigure
             %This function opens a file dialog and loads 2 mat files (containing signal data and ECG data) 
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Unemap entity','H:\Data\Database\20111124\');
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Unemap entity','D:\Users\jash042\Documents\PhD\Analysis\Database\20111124\');
             %Make sure the dialogs return char objects
-            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+            if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                 return
             end
             
@@ -82,9 +82,9 @@ classdef StartFigure < BaseFigure
             oFigure.oGuiHandle.oUnemap =  oUnemap;
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity','H:\Data\Database\20111124\');
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity','D:\Users\jash042\Documents\PhD\Analysis\Database\20111124\');
             %Make sure the dialogs return char objects
-            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+            if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                 return
             end
             

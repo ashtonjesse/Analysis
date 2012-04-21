@@ -1,6 +1,6 @@
 function aOutData = GetBeats(oBasePotential, aInData, aPeaks)
 %   GetBeats 
-%   Get the segments of the original data that correspond to the beats
+%   Get the seg ments of the data that correspond to the beats
 %   indicated between the peaks in aPeaks and fill in gaps with NaNs.
 
 %Get the number of peak locations n
@@ -14,8 +14,7 @@ iCurrentPeak = iFirstPeak;
 iLastPeak = 0;
 iOldLastPeak = 1;
 aBeats = NaN(1,q);
-%Loop through the signals
-
+%Loop through the peaks
 for j = 2:n;
     %If the next peak is greater than 100 more than the current
     %peak then the next group of peaks must be reached so save
@@ -40,7 +39,8 @@ aBeats = [aBeats ; aThisGap ; aThisBeat];
 if size(aBeats,1) < p
     aBeats = [aBeats ; NaN(p - size(aBeats,1),q)];
 end
-%Output aBeats
+%output the beats.
 aOutData = aBeats;
+
 end
 

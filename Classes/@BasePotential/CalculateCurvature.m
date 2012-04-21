@@ -1,4 +1,4 @@
-function aCurvature = CalculateCurvature(oFigure,aData,iNumberofPoints,iModelOrder)
+function aCurvature = CalculateCurvature(oBasePotential,aData,iNumberofPoints,iModelOrder)
 % This function calculates the Curvature of the signal stored in aData
 
 % Calculate the first derivative

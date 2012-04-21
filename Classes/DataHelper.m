@@ -57,6 +57,28 @@ classdef DataHelper
             fclose(fid);
         end
         
+        function aData = MultiIndexStructData(oDataHelper,varargin)
+            %Returns data from a multilevel index 
+            
+            %Check the inputs
+            if isempty(varargin)
+               error('DataHelper.MultiIndexStructData:WrongInputs', ...
+                'Wrong number of inputs'); 
+            end
+            [x y] = size(varargin);
+            switch y
+                case 3
+                    aStruct = cell2mat(varargin(1,1));
+                    sFirstField = char(varargin(1,2));
+                    sSecondField = char(varargin(1,3));
+                    [a b] = size(aStruct);
+                    aFirstLevel =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{1:b}}));
+                    aSecondLevel = aFirstLevel.(sSecondField);
+                    [i j] = size(aSecondLevel);
+                    aData = subsref([aFirstLevel.(sSecondField)],struct('type','()','subs',{{1:i 1:b}}));
+            end
+                       
+        end
     end
        
 end
