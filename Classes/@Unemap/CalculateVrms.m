@@ -24,7 +24,7 @@ if isnan(oUnemap.Electrodes(1).Processed.Data(1))
     end
 else
     %Calculate Vrms of the processed data
-    aData = MultiIndexStructData(DataHelper,oUnemap.Electrodes,'Processed','Data');
+    aData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
     
     for k = 1:x;
         %Calculate the Vrms for signal k

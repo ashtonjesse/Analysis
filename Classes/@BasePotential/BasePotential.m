@@ -44,6 +44,37 @@ classdef BasePotential < BaseEntity
                         %Apply a spline approximation to smooth the data
                         OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
                     end
+                case 'RemovePolynomialFit'
+                    %Split the input cell array into data and beats
+                    aElectrodeData = cell2mat(aInData(1,1));
+                    aBeats = cell2mat(aInData(1,2));
+                    %Loop through each row find the first non-NaN numbers in
+                    %aBeats. 
+                    [x y] = size(aBeats);
+                    aAverages = zeros(1,y);
+                    OutData = zeros(x,y);
+                    for i = 1:x;
+                        if ~isnan(aBeats(i,1))
+                            %Take the previous 10 values of
+                            %ElectrodeData before the current beat
+                            aAverages = [aAverages ; mean(aElectrodeData((i-10):i,:))];
+                            %Could get an error if the first beat is within
+                            %10 values of the start of the recording
+                            %elseif ~isnan(aBeats(i,1)) && i <= 10
+                            %%If the beat is within 10 of the beginning
+                            %%of the data then take average of as many values as
+                            %%there are before the current record.
+                            %Averages = [aAverages ; mean(aElectrodeData(1:i,:))];
+                        end
+                    end
+                    
+                    %Remove zero in first place
+                    aAverages = aAverages(2:size(aAverages,1),:);
+                    %Loop through channels
+                    for j = 1:y;
+                        OutData(:,j) = fPolynomialFitEvaluation(aAverages(:,j),iOrder,x);
+                    end
+                    
             end
 
         end

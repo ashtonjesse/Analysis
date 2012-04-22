@@ -35,6 +35,8 @@ classdef GetThreshold < SubFigure
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
             
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            
             function GetThreshold_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
                 % hObject    handle to figure 
@@ -71,6 +73,10 @@ classdef GetThreshold < SubFigure
    end
     
     methods (Access = public)
+        function oFigure = Close_fcn(oFigure, src, event)
+            deleteme(oFigure);
+        end
+        
         function oButton_Callback(oFigure, src, event)
             % Find the brushline object in the figure
             hBrushLine = findall(oFigure.oGuiHandle.(oFigure.sFigureTag),'tag','Brushing');

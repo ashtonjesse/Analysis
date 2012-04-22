@@ -10,6 +10,7 @@ classdef BeatDetection < SubFigure
     
     properties
         Threshold;
+        ComparePlotsOutput;
     end
     
     methods
@@ -23,6 +24,7 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oSmoothMenu, 'callback', @(src, event) oSmoothMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCurvatureMenu, 'callback', @(src, event) oCurvatureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDetectMenu, 'callback', @(src, event) oDetectMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oInterbeatMenu, 'callback', @(src, event) oInterbeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
@@ -85,6 +87,26 @@ classdef BeatDetection < SubFigure
         % --------------------------------------------------------------------
         function oEditMenu_Callback(oFigure, src, event)
 
+        end
+        
+        % --------------------------------------------------------------------
+        function oInterbeatMenu_Callback(oFigure, src, event)
+            %Fit a polynomial to the isoelectric points between beats and
+            %remove this from the processed data
+            
+            %Get the polynomial order from the selection made in the popup
+            iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
+            %Make call to InterbeatVariation
+            [aPolyFitData aElectrodeData] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetInterBeatVariation(iPolynomialOrder);
+            
+            %Open the ComparePlots figure to see the goodness of fit
+            oComparePlotsFigure = ComparePlots(oFigure,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                aElectrodeData,aPolyFitData);
+            %Add a listener so that the figure knows when a user has
+            %accepted the fit
+            addlistener(oComparePlotsFigure,'Accepted',@(src,event) oFigure.RemoveInterBeatVariation(src, event));
+            
         end
         
         % --------------------------------------------------------------------
@@ -155,6 +177,10 @@ classdef BeatDetection < SubFigure
             
         end
         
+        function RemoveInterBeatVariation(oFigure,src,event)
+            %Take the calculated fit and apply it to the electrode data
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveInterBeatVariation(oFigure.ComparePlotsOutput);
+        end
     end
     
     methods (Access = private)

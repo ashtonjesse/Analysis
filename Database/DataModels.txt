@@ -17,8 +17,8 @@ Electrodes(i).Name
 Electrodes(i).Potential
 Electrodes(i).Coords
 Electrodes(i).Activation
-Electrodes(i).Slope
-Electrodes(i).Curvature
+Electrodes(i).Processed.Slope
+Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
 Electrodes(i).Processed.BaselinePolyOrder
 Electrodes(i).Processed.SplineOrder

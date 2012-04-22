@@ -37,28 +37,74 @@ classdef Unemap < BasePotential
             aOutData = CalculateCurvature@BasePotential(oUnemap, aInData, iNumberofPoints,iModelOrder);
         end
         
+        function aGradient = CalculateSlope(oUnemap, aInData ,iNumberofPoints,iModelOrder)
+            aGradient = CalculateSlope@BasePotential(oUnemap, aInData, iNumberofPoints,iModelOrder);
+        end
+        
         function aOutData = GetBeats(oUnemap, aInData, aPeaks)
             aOutData = GetBeats@BasePotential(oUnemap, aInData, aPeaks);
         end
-        
+                       
         %% Class specific methods
-                
+        function GetCurvature(oUnemap,iElectrodeNumber)
+            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(iElectrodeNumber))
+                error('Unemap.GetCurvature.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
+            else
+                %Perform on processed data
+                oUnemap.Electrodes(iElectrodeNumber).Processed.Curvature = ...
+                    oUnemap.CalculateCurvature(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,20,5);
+            end
+        end
+        
+        function GetSlope(oUnemap,iElectrodeNumber)
+            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(iElectrodeNumber))
+                error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
+            else
+                %Perform on processed data
+                oUnemap.Electrodes(iElectrodeNumber).Processed.Slope = ...
+                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,20,5);
+            end
+        end
+        
+        function [aFitData aElectrodeData] = GetInterBeatVariation(oUnemap,iOrder)
+            %Makes a call to ProcessData to calculate the interbeat variation
+            %in amplitude by fitting a polynomial to the isoelectric lines
+            %preceeding each beat
+            
+            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                error('Unemap.RemoveInterBeatVariation.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
+            else
+                %Get the electrode processed data and detected beats
+                aElectrodeData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
+                aBeats = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Beats');
+                %Concatenate these arrays into a cell array for passing to
+                %ProcessData
+                aInData = {aElectrodeData,aBeats};
+                aFitData = oUnemap.ProcessData(aInData,'RemovePolynomialFit',iOrder);
+            end
+        end
+        
+        function RemoveInterBeatVariation(oUnemap, aFitData)
+            %Get the electrode processed data 
+            aElectrodeData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
+            %Remove the fit
+            aOutData = aElectrodeData - aFitData;
+            %Save this to the electrode data
+            oUnemap.Electrodes = MultiLevelSubsAsgn(DataHelper,oUnemap.Electrodes,'Processed','Data',aOutData); 
+        end
+        
         function GetArrayBeats(oUnemap, aPeaks)
             %Does some checks and then calls the inherited GetBeats
             %method
             
             if isnan(oUnemap.Electrodes(1).Processed.Data(1))
-                %Detect beats on the original data
-                aInData = cell2mat({oUnemap.Electrodes(:).Potential});
+                error('Unemap.GetArrayBeats.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Detect beats on the processed data
-                aInData = MultiIndexStructData(DataHelper,oUnemap.Electrodes,'Processed','Data');
+                aInData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
             end
             aOutData = oUnemap.GetBeats(aInData,aPeaks);
-            for i = 1:oUnemap.oExperiment.Unemap.NumberOfChannels;
-                oUnemap.Electrodes(i).Processed.Beats = aOutData(:,i);
-            end
-
+            oUnemap.Electrodes = MultiLevelSubsAsgn(DataHelper,oUnemap.Electrodes,'Processed','Beats',aOutData);
         end
         
         function ProcessArrayData(oUnemap, sProcedure, iOrder)
@@ -71,7 +117,9 @@ classdef Unemap < BasePotential
                 for i=1:iTotal
                     oUnemap.Electrodes(i).Processed.Data = ...
                         oUnemap.ProcessData(oUnemap.Electrodes(i).Potential,sProcedure,iOrder);
-                     %Update the waitbar
+                    oUnemap.GetSlope(i);
+                    oUnemap.GetCurvature(i);
+                    %Update the waitbar
                         waitbar(i/iTotal,oWaitbar,sprintf(...
                             'Please wait... Baseline Correcting Signal %d',i));
                 end
@@ -80,6 +128,8 @@ classdef Unemap < BasePotential
                 for i=1:iTotal
                     oUnemap.Electrodes(i).Processed.Data = ...
                         oUnemap.ProcessData(oUnemap.Electrodes(i).Processed.Data,sProcedure,iOrder);
+                    oUnemap.GetSlope(i);
+                    oUnemap.GetCurvature(i);
                     %Update the waitbar
                     waitbar(i/iTotal,oWaitbar,sprintf(...
                         'Please wait... Spline Smoothing Signal %d',i));
@@ -116,7 +166,6 @@ classdef Unemap < BasePotential
             oUnemap.RMS = oData.oEntity.RMS;
         end
         
-
         function oUnemap = GetUnemapFromTXTFile(oUnemap,sFile)
             %   Get an entity by loading data from a txt file - only done the
             %   first time you are creating a Unemap entity

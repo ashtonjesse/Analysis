@@ -57,25 +57,55 @@ classdef DataHelper
             fclose(fid);
         end
         
-        function aData = MultiIndexStructData(oDataHelper,varargin)
-            %Returns data from a multilevel index 
-            
-            %Check the inputs
-            if isempty(varargin)
-               error('DataHelper.MultiIndexStructData:WrongInputs', ...
-                'Wrong number of inputs'); 
-            end
-            [x y] = size(varargin);
-            switch y
+        function aData = MultiLevelSubsRef(oDataHelper,varargin)
+            %Carries out a subsref method on multilevel
+            %struct
+                       
+            switch size(varargin,2);
                 case 3
+                    %Get the inputs
+                    %The struct to index
                     aStruct = cell2mat(varargin(1,1));
+                    %The first field, will not be indexed
                     sFirstField = char(varargin(1,2));
+                    %The second fied, will be indexed
                     sSecondField = char(varargin(1,3));
+                    %Get the size of the struct and index all of the
+                    %elements
                     [a b] = size(aStruct);
                     aFirstLevel =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{1:b}}));
                     aSecondLevel = aFirstLevel.(sSecondField);
+                    %Get the size of the second level array and index all
+                    %of the elements
                     [i j] = size(aSecondLevel);
                     aData = subsref([aFirstLevel.(sSecondField)],struct('type','()','subs',{{1:i 1:b}}));
+            end
+                       
+        end
+        
+        function aOutStruct = MultiLevelSubsAsgn(oDataHelper,varargin)
+            %Carries out a subsasgn method on multilevel
+            %struct
+                        
+            switch size(varargin,2);
+                case 4
+                    %Get the inputs
+                    %The struct to index
+                    aStruct = cell2mat(varargin(1,1));
+                    %The first field, will not be indexed
+                    sFirstField = char(varargin(1,2));
+                    %The second fied, will be indexed
+                    sSecondField = char(varargin(1,3));
+                    %The data to assign
+                    aInData = cell2mat(varargin(1,4));
+                    
+                    %Get the size of the struct and index all of the
+                    %elements
+                    [a b] = size(aInData);
+                    for i = 1:b;
+                        aStruct(i).(sFirstField).(sSecondField)(:) = aInData(:,i);
+                    end
+                    aOutStruct = aStruct;
             end
                        
         end
