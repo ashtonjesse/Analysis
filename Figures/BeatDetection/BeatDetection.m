@@ -116,11 +116,12 @@ classdef BeatDetection < SubFigure
             oFigure.oParentFigure.oGuiHandle.oUnemap.GetArrayBeats(...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
             
-            oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = ...
-            oFigure.oParentFigure.oGuiHandle.oECG.GetBeats(...
+            aOutData = oFigure.oParentFigure.oGuiHandle.oECG.GetBeats(...
                 oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
             
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = cell2mat(aOutData(1));
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes = cell2mat(aOutData(2));
             %Plot the detected beats on the ECG
             oFigure.PlotECG('DetectBeats');
         end
@@ -228,7 +229,7 @@ classdef BeatDetection < SubFigure
                     hold(oFigure.oGuiHandle.oBottomAxes, 'on');
                     plot(oFigure.oGuiHandle.oBottomAxes, ...
                         oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
-                        oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats,'-g');
+                        transpose(oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats),'-g');
                 otherwise
                     
             end

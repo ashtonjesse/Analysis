@@ -20,6 +20,7 @@ X = 1:1:size(aData,1);
 XEval = 1:1:iDim;
 %Make vector vertical
 X = transpose(X);
+XEval = transpose(XEval);
 P = polyfit(X,aData,iOrder);
 
 Y = polyval(P,XEval);

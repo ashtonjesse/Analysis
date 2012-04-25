@@ -1,7 +1,8 @@
 function aOutData = GetBeats(oBasePotential, aInData, aPeaks)
 %   GetBeats 
-%   Get the seg ments of the data that correspond to the beats
+%   Get the segments of the data that correspond to the beats
 %   indicated between the peaks in aPeaks and fill in gaps with NaNs.
+%   Returns a cell array with the beats and the start and end times of each
 
 %Get the number of peak locations n
 [m,n] = size(aPeaks);
@@ -14,6 +15,7 @@ iCurrentPeak = iFirstPeak;
 iLastPeak = 0;
 iOldLastPeak = 1;
 aBeats = NaN(1,q);
+aBeatIndices = zeros(1,2);
 %Loop through the peaks
 for j = 2:n;
     %If the next peak is greater than 100 more than the current
@@ -22,9 +24,11 @@ for j = 2:n;
     if aPeaks(2,j) < (iCurrentPeak + 100)
         iLastPeak = aPeaks(2,j);
     else
+        %must have found the end of a beat
         aThisBeat = aInData(iFirstPeak:iLastPeak,:);
         aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
         aBeats = [aBeats ; aThisGap ; aThisBeat];
+        aBeatIndices = [aBeatIndices ; iFirstPeak, iLastPeak];
         iFirstPeak = aPeaks(2,j);
         iOldLastPeak = iLastPeak;
     end
@@ -34,13 +38,15 @@ end
 aThisBeat = aInData(iFirstPeak:iLastPeak,:);
 aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
 aBeats = [aBeats ; aThisGap ; aThisBeat];
-
+aBeatIndices = [aBeatIndices ; iFirstPeak, iLastPeak];
 %Fill in the end of the vector with NaNs if required
 if size(aBeats,1) < p
     aBeats = [aBeats ; NaN(p - size(aBeats,1),q)];
 end
+%Remove the first set of zeros from indices
+aBeatIndices = aBeatIndices(2:size(aBeatIndices,1),:);
 %output the beats.
-aOutData = aBeats;
+aOutData = {aBeats,aBeatIndices};
 
 end
 

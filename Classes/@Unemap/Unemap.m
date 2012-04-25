@@ -101,10 +101,14 @@ classdef Unemap < BasePotential
                 error('Unemap.GetArrayBeats.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Detect beats on the processed data
+                %Concatenate all the electrode processed data into one
+                %array
                 aInData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
             end
             aOutData = oUnemap.GetBeats(aInData,aPeaks);
-            oUnemap.Electrodes = MultiLevelSubsAsgn(DataHelper,oUnemap.Electrodes,'Processed','Beats',aOutData);
+            %Split again into the Electrodes
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',cell2mat(aOutData(1)));
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
         end
         
         function ProcessArrayData(oUnemap, sProcedure, iOrder)

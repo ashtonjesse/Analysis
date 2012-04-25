@@ -5,11 +5,13 @@ close all;
 clear all;
 
 %Specify paths
-sSignalsPath = 'H:/Data/TxtFiles/20111124';
-sSavePath = 'H:/Data/Database/20111124';
+sSignalsPath = 'D:\Users\jash042\Documents\PhD\Data\';
+% sSavePath = 'H:/Data/Database/20111124';
+sSavePath = 'D:/Users/jash042/Documents/PhD/Analysis/Database/20111124/';
+
 
 %Get the full path names of all the .txt files in the signal directory
-aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'*.txt');
+aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'1408.txt');
 %aSignalFileFull = fGetFileNamesOnly(sSavePath,'*.mat');
 fprintf('Running... \n');
 for k = 1:1%length(aSignalFileFull)
@@ -18,13 +20,13 @@ for k = 1:1%length(aSignalFileFull)
     %Get current filename fileparts
     [a sFileName c] = fileparts(aSignalFileFull{k});
     %Append _unemap.mat to the end of the filename
-    sFileSaveName = strcat(sSavePath,sprintf('/%s_unemap.mat',sFileName));
+    sFileSaveName = strcat(sSavePath,sprintf('%s_unemap.mat',sFileName));
     %Print to the command window that the file is being saved
     fprintf('Saving %s\n',sFileSaveName);
     %Save the unemap entity
     oUnemap.Save(sFileSaveName)
     %Append _ecg.mat to the end of the filename
-    sFileSaveName = strcat(sSavePath,sprintf('/%s_ecg.mat',sFileName));
+    sFileSaveName = strcat(sSavePath,sprintf('%s_ecg.mat',sFileName));
     %Print to the command window that the file is being saved
     fprintf('Saving %s\n',sFileSaveName);
     %Save the ECG entity

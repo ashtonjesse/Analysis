@@ -7,7 +7,7 @@ classdef StartFigure < BaseFigure
 % to the child figure so a Warning is posted to the command window automatically   
 
     properties
-        
+        DefaultPath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20111124\';
     end
     
     methods
@@ -66,7 +66,7 @@ classdef StartFigure < BaseFigure
             %This function opens a file dialog and loads 2 mat files (containing signal data and ECG data) 
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Unemap entity','D:\Users\jash042\Documents\PhD\Analysis\Database\20111124\');
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Unemap entity',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                 return
@@ -82,7 +82,7 @@ classdef StartFigure < BaseFigure
             oFigure.oGuiHandle.oUnemap =  oUnemap;
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity','D:\Users\jash042\Documents\PhD\Analysis\Database\20111124\');
+            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                 return
@@ -102,7 +102,7 @@ classdef StartFigure < BaseFigure
             % Save the current Potential entity
            
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the unemap .mat file','H:\Data\Database\20111124\');
+            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the unemap .mat file',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sExpFileName))
                 return
@@ -115,7 +115,7 @@ classdef StartFigure < BaseFigure
             oFigure.oGuiHandle.oUnemap.Save(sLongDataFileName);
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the ecg .mat file','H:\Data\Database\20111124\');
+            [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the ecg .mat file',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sExpFileName))
                 return

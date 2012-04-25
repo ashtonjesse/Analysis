@@ -102,12 +102,32 @@ classdef DataHelper
                     %Get the size of the struct and index all of the
                     %elements
                     [a b] = size(aInData);
-                    for i = 1:b;
-                        aStruct(i).(sFirstField).(sSecondField)(:) = aInData(:,i);
+                    [x y] = size(aStruct);
+                    if b == y
+                        for i = 1:b;
+                            aStruct(i).(sFirstField).(sSecondField) = aInData(:,i);
+                        end
+                    else
+                        for i = 1:y;
+                            aStruct(i).(sFirstField).(sSecondField) = aInData;
+                        end
                     end
                     aOutStruct = aStruct;
             end
                        
+        end
+        
+        function oHandle = GetHandle(oDataHelper,oParent,sNeededTag)
+            %Needs expanding to allow for a range of inputs but at the
+            %moment it checks through a list of handles and finds the
+            %handle to the object that has the tag requested
+            tags = get(oParent,'tag');
+            for i = 1:length(tags)
+                if strcmpi(char(tags(i)), char(sNeededTag))
+                    oHandle = oParent(i);
+                    return 
+                end
+            end
         end
     end
        

@@ -3,7 +3,10 @@ classdef BaseDAL
     %   This class should contain all methods associated with loading or
     %   saving data. Any methods that also involve manipulating or
     %   interpreting data may be in the DataHelper class
-        
+    properties
+        oHelper = DataHelper;
+    end
+    
     methods
 
         function oBaseDAL = BaseDAL()
@@ -32,7 +35,7 @@ classdef BaseDAL
             %   should be preceeded by an equals  sign
             
             %   Create the new entity by using a DataHelper method
-            oEntity = ParseFileIntoEntity(DataHelper, sFile);
+            oEntity = ParseFileIntoEntity(oBaseDAL.oHelper, sFile);
         end
         
         function SaveThisEntity(oBaseDAL,oEntity,sPath)

@@ -23,6 +23,7 @@ Electrodes(i).Processed.Data
 Electrodes(i).Processed.BaselinePolyOrder
 Electrodes(i).Processed.SplineOrder
 Electrodes(i).Processed.Beats
+Electrodes(i).Processed.BeatIndexes
 
 Experiment: (BaseEntity)
 oExperiment.Date
