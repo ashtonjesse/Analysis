@@ -29,6 +29,9 @@ classdef BasePotential < BaseEntity
             %       *SplineSmoothData - Apply a spline approximation of a specified order.
             %           For this the second input should be iOrder, the
             %           order of the spline to apply.
+            %       *RemoveSplineInterpolation - Using cubic spline
+            %       interpolation between isoelectric points to remove this
+            %       variation between beats
             OutData = zeros(size(aInData,1),size(aInData,2));
             
             switch sProcedure
@@ -44,21 +47,21 @@ classdef BasePotential < BaseEntity
                         %Apply a spline approximation to smooth the data
                         OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
                     end
-                case 'RemovePolynomialFit'
+                case 'RemoveSplineInterpolation'
                     %Split the input cell array into data and beats
                     aElectrodeData = cell2mat(aInData(1,1));
                     aBeats = cell2mat(aInData(1,2));
                     %Loop through each row find the first non-NaN numbers in
                     %aBeats. 
                     [x y] = size(aBeats);
-                    aAverages = zeros(1,y);
+                    aAverages = zeros(1,y+1);
                     OutData = zeros(x,y);
                     iBeatFound = 0;
                     for i = 1:x;
-                        if ~isnan(aBeats(i,1)) && ~iBeatFound
-                            %Take the previous 10 values of
+                        if ~isnan(aBeats(i,1)) && ~iBeatFound && i>30
+                            %Take the previous 30 values of
                             %ElectrodeData before the current beat
-                            aAverages = [aAverages ; mean(aElectrodeData((i-10):i,:))];
+                            aAverages = [aAverages ; i, mean(aElectrodeData((i-30):i,:))];
                             iBeatFound = 1;
                             %Could get an error if the first beat is within
                             %10 values of the start of the recording
@@ -71,14 +74,17 @@ classdef BasePotential < BaseEntity
                             iBeatFound = 0;
                         end
                     end
-                    
+                    if ~iBeatFound 
+                        aAverages = [aAverages ; i, aElectrodeData(i,:)];
+                    end
                     %Remove zero in first place
+                    %aAverages(1,:) = aAverages(size(aAverages,1),:);
                     aAverages = aAverages(2:size(aAverages,1),:);
                     %Loop through channels
                     for j = 1:y;
-                        OutData(:,j) = fPolynomialFitEvaluation(aAverages(:,j),iOrder,x);
+                        OutData(:,j) = fInterpolate({aAverages(:,1),aAverages(:,j+1)},iOrder,x);
                     end
-                    
+
             end
 
         end

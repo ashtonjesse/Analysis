@@ -32,6 +32,7 @@ classdef ComparePlots < SubFigure
             
             %Plot the data
             oFigure.PlotData(1);
+            zoom on;
             
             function ComparePlots_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -94,9 +95,9 @@ classdef ComparePlots < SubFigure
             end
             cla(oFigure.oGuiHandle.oTopAxes);
             plot(oFigure.oGuiHandle.oTopAxes,oFigure.XData,oFigure.Y1Data(:,iIndex),'k');
-            
-            cla(oFigure.oGuiHandle.oBottomAxes);
-            plot(oFigure.oGuiHandle.oBottomAxes,oFigure.XData,oFigure.Y2Data(:,iIndex),'k');
+            hold(oFigure.oGuiHandle.oTopAxes,'on');
+            plot(oFigure.oGuiHandle.oTopAxes,oFigure.XData,oFigure.Y2Data(:,iIndex),'LineStyle','-','LineWidth',3,'Color','g');
+            hold(oFigure.oGuiHandle.oTopAxes,'off');
         end
     end
 end

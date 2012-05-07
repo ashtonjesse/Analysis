@@ -9,7 +9,6 @@ classdef BeatDetection < SubFigure
     %   each beat.
     
     properties
-        Threshold;
         ComparePlotsOutput;
     end
     
@@ -153,28 +152,43 @@ classdef BeatDetection < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed, ...
                 20,5);
             
-            %Open the GetThreshold figure to apply a threshold
-            oGetThresholdFigure = GetThreshold(oFigure);
+            %Open the SelectData figure to apply a threshold
+            oGetThresholdFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,...
+                {{'oInstructionText','string','Select a range of data during electrical quiescence'} ; ...
+                {'oBottomText','string','How many standard deviations to apply?'} ; ...
+                {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
+                {'oButton','string','Done'} ; ...
+                {'oAxes','title','Curvature'}});
             %Add a listener so that the figure knows when a user has
             %calculated the threshold            
-            addlistener(oGetThresholdFigure,'ThresholdCalculated',@(src,event) oFigure.ThresholdCurvature(src, event));
+            addlistener(oGetThresholdFigure,'DataSelected',@(src,event) oFigure.ThresholdCurvature(src, event));
             
             %Plot the computed curvature
             oFigure.PlotCurvature();
             
         end
         
+
+            
         function ThresholdCurvature(oFigure, src, event)
+            % Calculate the standard deviation of the selected data
+            dStandardDeviation = std(event.YData);
+            % Get the selected multiplier
+            dSelection = double(event.Option);
+            dThreshold = mean(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values) + ...
+                (dSelection*dStandardDeviation);
+            
             %Get the peaks of the Curvature above threshold
             [aPeaks,aLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,oFigure.Threshold);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Values,dThreshold);
             %Plot the peaks
             hold(oFigure.oGuiHandle.oMiddleAxes,'on');
             plot(oFigure.oGuiHandle.oMiddleAxes,...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aLocations),aPeaks,'*g');
             %Save the peak values and locations
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks = [aPeaks ; aLocations];
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Threshold = oFigure.Threshold;
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Threshold = dThreshold;
             
         end
         

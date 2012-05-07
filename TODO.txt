@@ -1,0 +1,10 @@
+TODO
+
+* Work out isoelectric calculation
+* Be able to chop areas of signal out
+* Accept/Reject signals by button
+* Number the beats
+* Create sliders for connector and channel
+* Mark activation times with a button and be able to move marker
+* Create new figure called MapElectrodeData
+	- Has a diagram of the electrode locations in space and updates with the currently selected connector.

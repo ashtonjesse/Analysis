@@ -1,7 +1,5 @@
 function Y = fPolynomialFitEvaluation(varargin)
-%This function creates a polynomial fit of the potential data currently
-%loaded into the global Data variable and then returns the evaluated Y
-%values of this polynomial.
+%This function creates a polynomial fit of potential data 
 
 %Do some checks
 switch size(varargin,2)

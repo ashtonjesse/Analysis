@@ -80,7 +80,7 @@ classdef Unemap < BasePotential
                 %Concatenate these arrays into a cell array for passing to
                 %ProcessData
                 aInData = {aElectrodeData,aBeats};
-                aFitData = oUnemap.ProcessData(aInData,'RemovePolynomialFit',iOrder);
+                aFitData = oUnemap.ProcessData(aInData,'RemoveSplineInterpolation',iOrder);
             end
         end
         

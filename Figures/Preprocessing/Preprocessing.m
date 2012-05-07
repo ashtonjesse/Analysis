@@ -36,6 +36,7 @@ classdef Preprocessing < SubFigure
             set(oFigure.oGuiHandle.oBaselineMenu, 'callback', @(src, event) oBaselineMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSplineMenu, 'callback', @(src, event) oSplineMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oApplyMenu, 'callback', @(src, event) oApplyMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oTruncateMenu, 'callback', @(src, event) oTruncateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
@@ -121,6 +122,26 @@ classdef Preprocessing < SubFigure
         % --------------------------------------------------------------------
         function oEditMenu_Callback(oFigure, src, event)
 
+        end
+        
+        % --------------------------------------------------------------------
+        function oTruncateMenu_Callback(oFigure, src, event)
+            %Open the SelectData figure to select the data to truncate
+            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.Data(1))
+                sInstructions = 'Select a range of data to truncate.';
+            else
+                sInstructions = 'Select a range of data to truncate. This truncation will only be applied to the potential data (not any processed data)';
+            end
+            oSelectDataFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Potential,...
+                {{'oInstructionText','string',sInstructions} ; ...
+                {'oBottomText','visible','off'} ; ...
+                {'oBottomPopUp','visible','off'} ; ...
+                {'oButton','string','Done'} ; ...
+                {'oAxes','title','Channel 1 Potential Data'}});
+            %Add a listener so that the figure knows when a user has
+            %selected the data to truncate            
+            addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.TruncateData(src, event));
         end
                 
         % --------------------------------------------------------------------
@@ -220,6 +241,11 @@ classdef Preprocessing < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential,'k');
             axis(oAxes, 'auto');
             title(oAxes, sTitle);
+        end
+        
+        function TruncateData(oFigure, src, event)
+            %Get the time indexes of the data that has been selected
+            dIndexes = event.XData;
         end
         
         function PlotProcessed(oFigure, iChannel)
