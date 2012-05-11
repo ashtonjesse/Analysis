@@ -52,6 +52,7 @@ classdef BaseFigure < handle
             delete(oFigure.oGuiHandle.(oFigure.sFigureTag));
             %clear out the pointer to the figure - prevents memory leaks
             oFigure.oGuiHandle = [];
+        
         end
         
         function nValue = GetPopUpSelectionDouble(oFigure,sPopUpMenuTag)

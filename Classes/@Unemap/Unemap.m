@@ -80,7 +80,7 @@ classdef Unemap < BasePotential
                 %Concatenate these arrays into a cell array for passing to
                 %ProcessData
                 aInData = {aElectrodeData,aBeats};
-                aFitData = oUnemap.ProcessData(aInData,'RemoveSplineInterpolation',iOrder);
+                aFitData = oUnemap.ProcessData(aInData,'RemoveInterpolation',iOrder);
             end
         end
         
@@ -156,7 +156,50 @@ classdef Unemap < BasePotential
                         oUnemap.ProcessData(oUnemap.Electrodes(iChannel).Processed.Data,sProcedure,iOrder);
             end
         end
+        
+        function FilterElectrodeData(oUnemap, iChannel)
+            %Build 50Hz notch filter and apply to selected channel
             
+            %Get nyquist frequency
+            wo = oUnemap.oExperiment.Unemap.ADConversion.SamplingRate/2;
+            [z p k] = butter(3, [49 51]./wo, 'stop'); % 10th order filter
+            [sos,g] = zp2sos(z,p,k); % Convert to 2nd order sections form
+            oFilter = dfilt.df2sos(sos,g); % Create filter object
+            %Check if this filter should be applied to processed or
+            %original data
+            if isnan(oUnemap.Electrodes(iChannel).Processed.Data(1))
+                aFilteredData = filter(oFilter,oUnemap.Electrodes(iChannel).Potential);
+                oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
+            else
+                aFilteredData = filter(oFilter,oUnemap.Electrodes(iChannel).Processed.Data);
+                oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
+            end
+        end
+        
+        function TruncateArrayData(oUnemap, bIndexesToKeep)
+            %This performs a truncation on potential data and processed
+            %data as well if there is some
+            
+            %Truncate the time series
+            oUnemap.TimeSeries = oUnemap.TimeSeries(bIndexesToKeep);
+            
+            %Get an array of columns with the potential data from each
+            %electrode
+            aPotentialData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential');
+            %Select the indexes to keep
+            aPotentialData = aPotentialData(bIndexesToKeep,:);
+            %Truncate the potential data
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential',aPotentialData);
+
+            if ~isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                %perform on existing potential data as well
+                aProcessedData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+                aProcessedData = aProcessedData(bIndexesToKeep,:);
+                oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aProcessedData);
+            end
+            
+        end
+        
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
             %   previously

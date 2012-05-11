@@ -47,7 +47,7 @@ classdef BasePotential < BaseEntity
                         %Apply a spline approximation to smooth the data
                         OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
                     end
-                case 'RemoveSplineInterpolation'
+                case 'RemoveInterpolation'
                     %Split the input cell array into data and beats
                     aElectrodeData = cell2mat(aInData(1,1));
                     aBeats = cell2mat(aInData(1,2));
@@ -82,6 +82,9 @@ classdef BasePotential < BaseEntity
                     aAverages = aAverages(2:size(aAverages,1),:);
                     %Loop through channels
                     for j = 1:y;
+                        %Pass in a cell array with the first element being
+                        %an array of the indexes of averages and the second
+                        %being the actual averages them selves. 
                         OutData(:,j) = fInterpolate({aAverages(:,1),aAverages(:,j+1)},iOrder,x);
                     end
 

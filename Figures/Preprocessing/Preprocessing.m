@@ -146,25 +146,12 @@ classdef Preprocessing < SubFigure
                 
         % --------------------------------------------------------------------
         function oFilterMenu_Callback(oFigure, src, event)
-            %Build 50Hz notch filter
-            %Get nyquist frequency
-            wo = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.ADConversion.SamplingRate/2;
-            [z p k] = butter(3, [49 51]./wo, 'stop'); % 10th order filter
-            [sos,g] = zp2sos(z,p,k); % Convert to 2nd order sections form
-            oFilter = dfilt.df2sos(sos,g); % Create filter object
-            fvtool(oFilter);
+            % Get the currently selected channel
             iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));
-            %Check if this filter should be applied to processed or
-            %original data
-            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data(1))
-                aFilteredData = filter(oFilter,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential);
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
-            else
-                aFilteredData = filter(oFilter,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data);
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
-            end
+            % Filter the channel data
+            oFigure.oParentFigure.oGuiHandle.oUnemap.FilterElectrodeData(iChannel);
+            % Plot the result
             oFigure.PlotProcessed(iChannel);
-            
         end
         
         % --------------------------------------------------------------------
@@ -244,8 +231,13 @@ classdef Preprocessing < SubFigure
         end
         
         function TruncateData(oFigure, src, event)
-            %Get the time indexes of the data that has been selected
-            dIndexes = event.XData;
+            %Get the boolean time indexes of the data that has been selected
+            bIndexes = event.Indexes;
+            %Negate this so that we can select the potential data we want
+            %to keep.
+            bIndexes = ~bIndexes;
+            %Truncate data that is not selected
+            oFigure.oParentFigure.oGuiHandle.oUnemap.TruncateArrayData(bIndexes);
         end
         
         function PlotProcessed(oFigure, iChannel)

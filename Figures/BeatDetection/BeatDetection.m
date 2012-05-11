@@ -9,7 +9,7 @@ classdef BeatDetection < SubFigure
     %   each beat.
     
     properties
-        ComparePlotsOutput;
+        
     end
     
     methods
@@ -105,7 +105,6 @@ classdef BeatDetection < SubFigure
             %Add a listener so that the figure knows when a user has
             %accepted the fit
             addlistener(oComparePlotsFigure,'Accepted',@(src,event) oFigure.RemoveInterBeatVariation(src, event));
-            
         end
         
         % --------------------------------------------------------------------
@@ -194,7 +193,7 @@ classdef BeatDetection < SubFigure
         
         function RemoveInterBeatVariation(oFigure,src,event)
             %Take the calculated fit and apply it to the electrode data
-            oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveInterBeatVariation(oFigure.ComparePlotsOutput);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveInterBeatVariation(event.Y2Data);
         end
     end
     

@@ -12,26 +12,33 @@ classdef AnalyseSignals < SubFigure
         function oFigure = AnalyseSignals(oParent)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'AnalyseSignals',@AnalyseSignals_OpeningFcn);
+            
+            %Get constants
+            oFigure.SubPlotXdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.xDim;
+            oFigure.SubPlotYdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.yDim;
+            
             %Set callbacks
             set(oFigure.oGuiHandle.oConnectorPopUp, 'callback', @(src, event)  oConnectorPopUp_Callback(oFigure, src, event));
-            %Set up the slider panel
-            aSliderTexts = [oFigure.oGuiHandle.txtBeatLeft,oFigure.oGuiHandle.txtBeatRight];
+            %Set up the slider panels
+            aBeatSliderTexts = [oFigure.oGuiHandle.txtBeatLeft,oFigure.oGuiHandle.txtBeatRight];
             iNumberOfBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
             sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Beats'}, {'Min', 1, 'Max', iNumberOfBeats , 'Value', 1, ...
-                'Callback', @(src, event) oBeatSlider_Callback(oFigure, src, event),'SliderStep',[1/iNumberOfBeats  0.1]},{},{},'%0.0f',...
-                oFigure.oGuiHandle.pnBeats, oFigure.oGuiHandle.oBeatSlider,oFigure.oGuiHandle.oBeatEdit,aSliderTexts);
+                'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',[1/iNumberOfBeats  0.1]},{'string',1},{},'%0.0f',...
+                oFigure.oGuiHandle.pnBeats, oFigure.oGuiHandle.oBeatSlider,oFigure.oGuiHandle.oBeatEdit,aBeatSliderTexts);
+            aChannelSliderTexts = [oFigure.oGuiHandle.txtChannelLeft,oFigure.oGuiHandle.txtChannelRight];
+            iNumberOfChannels =  oFigure.SubPlotXdim*oFigure.SubPlotYdim;
+            sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Channel'}, {'Min', 1, 'Max', iNumberOfChannels , 'Value', 1, ...
+                'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',[1/iNumberOfChannels 0.1]},{'string',1},{},'%0.0f',...
+                oFigure.oGuiHandle.pnChannels, oFigure.oGuiHandle.oChannelSlider,oFigure.oGuiHandle.oChannelEdit,aChannelSliderTexts);
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
-            oFigure.SubPlotXdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.xDim;
-            oFigure.SubPlotYdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.yDim;
-            
-            oFigure.PlotElectrode(1);           
+            oFigure.PlotElectrode(1,1);           
             oFigure.CreateSubPlot();
-            oFigure.PlotBeat(1,1);
+            oFigure.PlotBeat(1,1,1);
 
             
             % --- Executes just before BaselineCorrection is made visible.
@@ -75,20 +82,32 @@ classdef AnalyseSignals < SubFigure
         end
         
         function oConnectorPopUp_Callback(oFigure, src, event)
-            dCurrentConnector = oFigure.GetPopUpSelectionDouble('oConnectorPopUp');
-            %Replot
-            oFigure.PlotBeat(dCurrentConnector,1);
-            oFigure.PlotElectrode(1 + 24*(dCurrentConnector-1));
+            oFigure.Replot();
         end
         
-        function oBeatSlider_Callback(oFigure, src, event)
-            dCurrentConnector = oFigure.GetPopUpSelectionDouble('oConnectorPopUp');
-            oFigure.PlotBeat(dCurrentConnector,round(get(oFigure.oGuiHandle.oBeatSlider,'Value')));
-            
+        function oSlider_Callback(oFigure, src, event)
+           oFigure.Replot();
         end
+               
      end
      
      methods (Access = private)
+         function iBeatNumber = GetSelectedBeat(oFigure)
+             iBeatNumber = round(get(oFigure.oGuiHandle.oBeatSlider,'Value'));
+         end
+         
+         function iChannelNumber = GetSelectedChannel(oFigure)
+             iChannelNumber = round(get(oFigure.oGuiHandle.oChannelSlider,'Value'));
+         end
+         
+         function Replot(oFigure)
+             dCurrentConnector = oFigure.GetPopUpSelectionDouble('oConnectorPopUp');
+            iChannelNumber = oFigure.GetSelectedChannel();
+            iBeatNumber = oFigure.GetSelectedBeat();
+            oFigure.PlotBeat(dCurrentConnector,iChannelNumber,iBeatNumber);
+            oFigure.PlotElectrode(iChannelNumber + oFigure.SubPlotXdim*oFigure.SubPlotYdim*(dCurrentConnector-1),iBeatNumber);
+         end
+         
          function CreateSubPlot(oFigure)
              %Create the space for the subplot that will contain all the
              %signals
@@ -115,7 +134,7 @@ classdef AnalyseSignals < SubFigure
              end
          end
          
-         function PlotBeat(oFigure,dCurrentConnector,dBeat)
+         function PlotBeat(oFigure,dCurrentConnector,dCurrentChannel,dBeat)
              %Plot the beats for the selected connector, all channels, in the subplot 
              
              %Get the array of handles to the subplots that are children of
@@ -144,7 +163,7 @@ classdef AnalyseSignals < SubFigure
                      TimeMin = min(aTime);
                      %Get the handle to current plot
                      oSignalPlot = oFigure.Helper.GetHandle(aSubPlots, sprintf('oSignalplot%d',iIndex));
-                     %Create a label that shows the channel name
+                     %Plot the data and slope
                      plot(oSignalPlot,aTime,aData,'k');
                      hold(oSignalPlot,'on');
                      plot(oSignalPlot,aTime,aSlope,'-r');
@@ -154,12 +173,16 @@ classdef AnalyseSignals < SubFigure
                      axis(oSignalPlot,[TimeMin, TimeMax, YMin - 0.5, YMax + 1]);
                      %Create a label that shows the channel name
                      oLabel = text(TimeMin,YMax + 0.2,char(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Name));
+                     if iIndex == dCurrentChannel;
+                        set(oLabel,'color','b','FontWeight','bold','FontUnits','normalized');
+                        set(oLabel,'FontSize',0.1);
+                     end
                      set(oLabel,'parent',oSignalPlot);
                  end
              end
          end
          
-         function PlotElectrode(oFigure,iChannel)
+         function PlotElectrode(oFigure,iChannel,iBeat)
              %Plot all the beats for the selected channel in the axes at
              %the bottom
              oAxes = oFigure.oGuiHandle.oSignalAxes;
@@ -172,15 +195,23 @@ classdef AnalyseSignals < SubFigure
              YMin = min(aProcessedData);
              TimeMax = max(aTime);
              TimeMin = min(aTime);
+             %Get the currently selected beat
+             
+             aSelectedBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data(...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,1):...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,2));
+             aSelectedTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,1):...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,2));
+             %Plot all the data        
+             cla(oAxes);
              plot(oAxes,aTime,aProcessedData,'k');
              axis(oAxes,[TimeMin, TimeMax, YMin - 0.2, YMax + 0.2]);
              hold(oAxes,'on');
              plot(oAxes,aTime,aBeatData,'-g');
+             plot(oAxes,aSelectedTime,aSelectedBeat,'-b');
              hold(oAxes,'off');
-             %Create a label that shows the channel name
-%              oLabel = text(TimeMin,YMax + 0.2,char(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Name));
-%              set(oLabel,'parent',oSignalPlot);
-             
+                         
          end
      end
 end

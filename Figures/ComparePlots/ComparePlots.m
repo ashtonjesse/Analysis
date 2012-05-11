@@ -32,7 +32,7 @@ classdef ComparePlots < SubFigure
             
             %Plot the data
             oFigure.PlotData(1);
-            zoom on;
+            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
             
             function ComparePlots_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -73,8 +73,7 @@ classdef ComparePlots < SubFigure
         end
         
         function oOkButton_Callback(oFigure, src, event)
-            oFigure.oParentFigure.ComparePlotsOutput = oFigure.Y2Data;           
-            notify(oFigure,'Accepted');
+            notify(oFigure,'Accepted',DataAcceptedEvent(oFigure.XData, oFigure.Y1Data,oFigure.Y2Data));
             oFigure.Close_fcn(src, event);
         end
         

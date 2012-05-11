@@ -25,16 +25,16 @@ classdef SelectData < SubFigure
             oFigure = oFigure@SubFigure(oParent,'SelectData',@SelectData_OpeningFcn);
             
             set(oFigure.oGuiHandle.oButton, 'callback', @(src, event) oButton_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDataCursorTool, 'oncallback', @(src, event) oDataCursorOnTool_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDataCursorTool, 'offcallback', @(src, event) oDataCursorOffTool_Callback(oFigure, src, event));
+            
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Plot the data
             cla(oFigure.oGuiHandle.oAxes);
             plot(oFigure.oGuiHandle.oAxes,XData,YData,'k');
-            
-            %Turn brushing on so that the user can select a range of data
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
-            
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             function SelectData_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -82,6 +82,7 @@ classdef SelectData < SubFigure
    end
     
     methods (Access = public)
+        %% Public methods and callbacks
         function oFigure = Close_fcn(oFigure, src, event)
             deleteme(oFigure);
         end
@@ -97,8 +98,27 @@ classdef SelectData < SubFigure
             %Get the popup selection
             sSelection = oFigure.GetPopUpSelectionDouble('oBottomPopUp');
             %Notify listeners and pass the selected data
-            notify(oFigure,'DataSelected',DataSelectedEvent(brushedData{1}(brushedIdx),brushedData{2}(brushedIdx),sSelection));
+            notify(oFigure,'DataSelected',DataSelectedEvent(brushedData{1}(brushedIdx),brushedData{2}(brushedIdx),brushedIdx,sSelection));
             oFigure.Close_fcn;
+        end
+        
+        function oDataCursorOnTool_Callback(oFigure, src, event)
+            %Turn brushing on so that the user can select a range of data
+            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
+            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
+        end
+        
+        function oDataCursorOffTool_Callback(oFigure, src, event)
+            %Turn brushing on so that the user can select a range of data
+            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+        end
+        
+        function oZoomOnTool_Callback(oFigure, src, event)
+            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag), 'on');
+        end
+        
+        function oZoomOffTool_Callback(oFigure, src, event)
+            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag), 'off');
         end
     end
 end
