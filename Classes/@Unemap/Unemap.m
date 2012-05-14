@@ -111,6 +111,15 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
         end
         
+        function iIndexes = GetClosestBeat(oUnemap,dChannel,dTime)
+                %Get the start times of all the beats
+                aIntervalStart = oUnemap.TimeSeries(oUnemap.Electrodes(dChannel).Processed.BeatIndexes(:,1));
+                %Find the index of the closest time to the input time 
+                [Value, iMinIndex] = min(abs(aIntervalStart - dTime));
+                %Return the beat index of this time
+                iIndexes = {iMinIndex, oUnemap.Electrodes(dChannel).Processed.BeatIndexes(iMinIndex,:)};
+        end
+        
         function ProcessArrayData(oUnemap, sProcedure, iOrder)
             %Does some checks and then calls the inherited ProcessData
             %method
