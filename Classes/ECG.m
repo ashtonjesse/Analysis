@@ -34,6 +34,17 @@ classdef ECG < BasePotential
             aOutData = ProcessData@BasePotential(oBasePotential, aInData, varargin);
         end
         %% Class specific methods
+        function TruncateData(oECG, bIndexesToKeep)
+            %This performs a truncation on the ECG data 
+            
+            %Truncate the time series
+            oECG.TimeSeries = oECG.TimeSeries(bIndexesToKeep);
+            
+            %Truncate the original potential data
+            oECG.Original = oECG.Original(bIndexesToKeep);
+                                
+        end
+        
         function oECG = GetECGFromMATFile(oECG, sFile)
             %   Get an entity by loading a mat file that has been saved
             %   previously

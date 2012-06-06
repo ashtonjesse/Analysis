@@ -8,23 +8,34 @@ function CalculateVrms(oUnemap, varargin)
 %                 oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms(...
 %                 iPolynomialOrder, iWindowSize, 'MovingAverage')
 
-% Get the dimensions
-x = length(oUnemap.TimeSeries);
-y = oUnemap.oExperiment.Unemap.NumberOfChannels;
 
-% Initialise the aVrms array
-aVrms = zeros(x,1);
 %Check if there is Processed.Data
 if isnan(oUnemap.Electrodes(1).Processed.Data(1))
-    %Calculate Vrms of the original data
-    aData = cell2mat({oUnemap.Electrodes(:).Potential});
+
+   %Calculate Vrms of the original data
+    aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Potential');
+    % Get the dimensions
+    x = length(oUnemap.TimeSeries);
+    y = size(aData,2);
+    
+    % Initialise the aVrms array
+    aVrms = zeros(x,1);
+    
     for k = 1:x;
         %Calculate the Vrms for signal k
         aVrms(k) = sqrt(sum(aData(k,:).^2) / y);
     end
 else
     %Calculate Vrms of the processed data
-    aData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
+    %aData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
+    aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data');
+    
+    % Get the dimensions
+    x = length(oUnemap.TimeSeries);
+    y = size(aData,2);
+    
+    % Initialise the aVrms array
+    aVrms = zeros(x,1);
     
     for k = 1:x;
         %Calculate the Vrms for signal k

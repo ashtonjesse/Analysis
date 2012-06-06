@@ -238,6 +238,7 @@ classdef Preprocessing < SubFigure
             bIndexes = ~bIndexes;
             %Truncate data that is not selected
             oFigure.oParentFigure.oGuiHandle.oUnemap.TruncateArrayData(bIndexes);
+            oFigure.oParentFigure.oGuiHandle.oECG.TruncateData(bIndexes);
         end
         
         function PlotProcessed(oFigure, iChannel)
@@ -248,14 +249,20 @@ classdef Preprocessing < SubFigure
             end
             %If there has been some processing done then plot the data
             if ~isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data(1))
-                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
-                if get(oFigure.oGuiHandle.oCheckBoxBeats,'Value')
-                    hold(oAxes, 'on');
+                if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats,'-g');
-                    hold(oAxes, 'off');
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
+                    if get(oFigure.oGuiHandle.oCheckBoxBeats,'Value')
+                        hold(oAxes, 'on');
+                        plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                            oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats,'-g');
+                        hold(oAxes, 'off');
+                    end
+                else
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r');
                 end
+                
                 axis(oAxes, 'auto');
                 sTitle = sprintf('Processed Signal for Channel %d', iChannel);
                 title(oAxes,sTitle);

@@ -1,6 +1,11 @@
 TODO
 
-* Accept/Reject signals by button
 * Mark activation times with a button and be able to move marker
+* Be able to adjust the window of a beat by selecting from the electrode trace.
 * Create new figure called MapElectrodeData
-	- Has a diagram of the electrode locations in space and updates with the currently selected connector.
+	- Has a diagram with the electrode glyphs plotted and a box around those electrodes currently shown in AnalyseSignals
+	- Can select to map activation which loops through all beats and creates maps of activation with isoactivation contours
+	- The map that is shown corresponds to the currently selected beat (or a slider can be used)
+	- Has update button that recalculates maps based on user changes in activation times / rejected electrodes
+	- Can click on brush which replots just the electrode locations and draw a square around the electrodes to select those to display in AnalyseSignals
+	

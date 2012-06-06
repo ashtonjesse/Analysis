@@ -16,7 +16,9 @@ Electrodes(i).Accepted
 Electrodes(i).Name
 Electrodes(i).Potential
 Electrodes(i).Coords
-Electrodes(i).Activation
+Electrodes(i).Selected
+Electrodes(i).Activation(j{Method}).Indexes
+Electrodes(i).Activation(j).Method
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data

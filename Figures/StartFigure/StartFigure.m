@@ -104,7 +104,7 @@ classdef StartFigure < BaseFigure
             %Call built-in file dialog to select filename
             [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the unemap .mat file',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
-            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+            if (~ischar(sDataFileName))
                 return
             end
             
@@ -117,7 +117,7 @@ classdef StartFigure < BaseFigure
             %Call built-in file dialog to select filename
             [sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the ecg .mat file',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
-            if (~ischar(sDataFileName) && ~ischar(sExpFileName))
+            if (~ischar(sDataFileName))
                 return
             end
             

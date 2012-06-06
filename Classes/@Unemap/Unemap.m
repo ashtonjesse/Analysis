@@ -28,6 +28,7 @@ classdef Unemap < BasePotential
         function Save(oUnemap,sPath)
             SaveEntity(oUnemap,sPath);
         end
+        
         %% Inherited methods
         function aOutData = ProcessData(oUnemap, aInData, sProcedure, iOrder)
             aOutData = ProcessData@BasePotential(oUnemap, aInData, sProcedure, iOrder);
@@ -44,8 +45,16 @@ classdef Unemap < BasePotential
         function aOutData = GetBeats(oUnemap, aInData, aPeaks)
             aOutData = GetBeats@BasePotential(oUnemap, aInData, aPeaks);
         end
-                       
-        %% Class specific methods
+                
+        %% Methods relating to Electrode potential raw and processed data
+        function AcceptChannel(oUnemap,iElectrodeNumber)
+            oUnemap.Electrodes(iElectrodeNumber).Accepted = 1;
+        end
+        
+        function RejectChannel(oUnemap,iElectrodeNumber)
+            oUnemap.Electrodes(iElectrodeNumber).Accepted = 0;
+        end
+        
         function GetCurvature(oUnemap,iElectrodeNumber)
             if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(iElectrodeNumber))
                 error('Unemap.GetCurvature.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
@@ -75,8 +84,8 @@ classdef Unemap < BasePotential
                 error('Unemap.RemoveInterBeatVariation.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Get the electrode processed data and detected beats
-                aElectrodeData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
-                aBeats = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Beats');
+                aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+                aBeats = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats');
                 %Concatenate these arrays into a cell array for passing to
                 %ProcessData
                 aInData = {aElectrodeData,aBeats};
@@ -86,11 +95,11 @@ classdef Unemap < BasePotential
         
         function RemoveInterBeatVariation(oUnemap, aFitData)
             %Get the electrode processed data 
-            aElectrodeData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
+            aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
             %Remove the fit
             aOutData = aElectrodeData - aFitData;
             %Save this to the electrode data
-            oUnemap.Electrodes = MultiLevelSubsAsgn(DataHelper,oUnemap.Electrodes,'Processed','Data',aOutData); 
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aOutData); 
         end
         
         function GetArrayBeats(oUnemap, aPeaks)
@@ -103,7 +112,7 @@ classdef Unemap < BasePotential
                 %Detect beats on the processed data
                 %Concatenate all the electrode processed data into one
                 %array
-                aInData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
+                aInData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
             end
             aOutData = oUnemap.GetBeats(aInData,aPeaks);
             %Split again into the Electrodes
@@ -111,13 +120,13 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
         end
         
-        function iIndexes = GetClosestBeat(oUnemap,dChannel,dTime)
+        function iIndexes = GetClosestBeat(oUnemap,iElectrodeNumber,dTime)
                 %Get the start times of all the beats
-                aIntervalStart = oUnemap.TimeSeries(oUnemap.Electrodes(dChannel).Processed.BeatIndexes(:,1));
+                aIntervalStart = oUnemap.TimeSeries(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(:,1));
                 %Find the index of the closest time to the input time 
                 [Value, iMinIndex] = min(abs(aIntervalStart - dTime));
                 %Return the beat index of this time
-                iIndexes = {iMinIndex, oUnemap.Electrodes(dChannel).Processed.BeatIndexes(iMinIndex,:)};
+                iIndexes = {iMinIndex, oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iMinIndex,:)};
         end
         
         function ProcessArrayData(oUnemap, sProcedure, iOrder)
@@ -132,6 +141,7 @@ classdef Unemap < BasePotential
                         oUnemap.ProcessData(oUnemap.Electrodes(i).Potential,sProcedure,iOrder);
                     oUnemap.GetSlope(i);
                     oUnemap.GetCurvature(i);
+                    oUnemap.AcceptChannel(i);
                     %Update the waitbar
                         waitbar(i/iTotal,oWaitbar,sprintf(...
                             'Please wait... Baseline Correcting Signal %d',i));
@@ -143,6 +153,7 @@ classdef Unemap < BasePotential
                         oUnemap.ProcessData(oUnemap.Electrodes(i).Processed.Data,sProcedure,iOrder);
                     oUnemap.GetSlope(i);
                     oUnemap.GetCurvature(i);
+                    oUnemap.AcceptChannel(i);
                     %Update the waitbar
                     waitbar(i/iTotal,oWaitbar,sprintf(...
                         'Please wait... Spline Smoothing Signal %d',i));
@@ -151,22 +162,25 @@ classdef Unemap < BasePotential
             close(oWaitbar);
         end
         
-        function ProcessElectrodeData(oUnemap, sProcedure, iOrder, iChannel)
+        function ProcessElectrodeData(oUnemap, sProcedure, iOrder, iElectrodeNumber)
             %Does some checks and then calls the inherited ProcessData
             %method
             
-            if isnan(oUnemap.Electrodes(iChannel).Processed.Data(1))
+            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
                 %Perform the processing on the original data
-                oUnemap.Electrodes(iChannel).Processed.Data = ...
-                        oUnemap.ProcessData(oUnemap.Electrodes(iChannel).Potential,sProcedure,iOrder);
+                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
+                        oUnemap.ProcessData(oUnemap.Electrodes(iElectrodeNumber).Potential,sProcedure,iOrder);
             else
                 %Perform the processing on already processed data
-                oUnemap.Electrodes(iChannel).Processed.Data = ...
-                        oUnemap.ProcessData(oUnemap.Electrodes(iChannel).Processed.Data,sProcedure,iOrder);
+                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
+                        oUnemap.ProcessData(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,sProcedure,iOrder);
             end
+            oUnemap.GetSlope(iElectrodeNumber);
+            oUnemap.GetCurvature(iElectrodeNumber);
+            oUnemap.AcceptChannel(iElectrodeNumber);
         end
         
-        function FilterElectrodeData(oUnemap, iChannel)
+        function FilterElectrodeData(oUnemap, iElectrodeNumber)
             %Build 50Hz notch filter and apply to selected channel
             
             %Get nyquist frequency
@@ -176,12 +190,12 @@ classdef Unemap < BasePotential
             oFilter = dfilt.df2sos(sos,g); % Create filter object
             %Check if this filter should be applied to processed or
             %original data
-            if isnan(oUnemap.Electrodes(iChannel).Processed.Data(1))
-                aFilteredData = filter(oFilter,oUnemap.Electrodes(iChannel).Potential);
-                oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
+            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
+                aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Potential);
+                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
             else
-                aFilteredData = filter(oFilter,oUnemap.Electrodes(iChannel).Processed.Data);
-                oUnemap.Electrodes(iChannel).Processed.Data = aFilteredData;
+                aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Processed.Data);
+                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
             end
         end
         
@@ -209,6 +223,30 @@ classdef Unemap < BasePotential
             
         end
         
+        %% Methods relating to Electrode Activation data
+        function MarkActivation(oUnemap, sMethod)
+             if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                error('Unemap.GetActivationTime.VerifyInput:NoProcessedData',...
+                    'You need to have processed data before calculating an activation time');
+             else
+                 %Choose the method to apply
+                 switch (sMethod)
+                     case 'SteepestSlope'
+                         for i = 1:size(oUnemap.Electrodes,2);
+                             % Get slope data if this has not been done already
+                             if isnan(oUnemap.Electrodes(i).Processed.Slope)
+                                 oUnemap.GetSlope(i);
+                             end
+                             oUnemap.Electrodes(i).Activation(1).Indexes = fSteepestSlope(oUnemap.TimeSeries, ...
+                                 oUnemap.Electrodes(i).Processed.Slope, ...
+                                 oUnemap.Electrodes(i).Processed.BeatIndexes);
+                             oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
+                         end
+                         
+                 end
+            end
+        end
+        %% Functions for reconstructing entity
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
             %   previously
