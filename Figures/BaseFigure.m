@@ -5,13 +5,16 @@ classdef BaseFigure < handle
     properties
         oGuiHandle;
         sFigureTag;
+        oDAL;
     end
     
     methods
         %% Constructor
         function oFigure = BaseFigure(sGuiFileName,OpeningFcn)
             %Class constructor - creates and initialises the gui. 
-
+            
+            %Get the DAL for this class
+            oFigure.oDAL = BaseFigureDAL();
             gui_Singleton = 1;
             gui_State = struct('gui_Name',sGuiFileName, 'gui_Singleton',  gui_Singleton, 'gui_OpeningFcn', OpeningFcn, 'gui_OutputFcn',  @BaselineCorrection_OutputFcn, 'gui_LayoutFcn',  [] , 'gui_Callback',   []);
             %Make the gui figure, get its handles and store locally
@@ -73,6 +76,9 @@ classdef BaseFigure < handle
             sValue = aString(iIndex);
         end
         
+        function SaveAxesImage(oFigure,oAxesHandle)
+            
+        end
     end
 end
 

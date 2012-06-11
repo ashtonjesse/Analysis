@@ -3,20 +3,18 @@ classdef AnalyseSignals < SubFigure
     %   Detailed explanation goes here
     
     properties
-        Helper = DataHelper();
-        SelectedConnector = 1;
         SelectedBeat = 1;
         SelectedChannel = 1;
         SubPlotXdim;
         SubPlotYdim;
+        NumberofChannels;
         LineColours=['r','b','g'];
+        oMapElectrodesFigure;
     end
         
     methods
         %% Properties access
-         function set.SelectedChannel(oFigure,Value)
-             oFigure.SelectedChannel =  Value + oFigure.SubPlotXdim*oFigure.SubPlotYdim*(oFigure.SelectedConnector-1);
-         end
+         
     end
     
     methods
@@ -27,23 +25,30 @@ classdef AnalyseSignals < SubFigure
             %Get constants
             oFigure.SubPlotXdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.xDim;
             oFigure.SubPlotYdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.yDim;
+            oFigure.NumberofChannels = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels;
             
             %Set callbacks
-            set(oFigure.oGuiHandle.oConnectorPopUp, 'callback', @(src, event)  oConnectorPopUp_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bRejectChannel, 'callback', @(src, event)  bAcceptChannel_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oActivationMenu, 'callback', @(src, event) oActivationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oMapElectrodesMenu, 'callback', @(src, event) oMapElectrodesMenu_Callback(oFigure, src, event));
+            
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
+            oFigure.oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
+            %Add a listener so that the figure knows when a user has
+            %made a channel selection
+            addlistener(oFigure.oMapElectrodesFigure,'ChannelSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
+            
+            %Draw plots
             oFigure.CreateSubPlot();
+            %Fill plots
             oFigure.Replot();
 
             % --- Executes just before BaselineCorrection is made visible.
@@ -58,7 +63,7 @@ classdef AnalyseSignals < SubFigure
                 %subfunction :) :)
                 
                 %Set ui control creation attributes 
-                set(handles.oConnectorPopUp, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12'});
+
                 
                 %Set the output attribute
                 handles.output = hObject;
@@ -83,14 +88,10 @@ classdef AnalyseSignals < SubFigure
      methods (Access = public)
          %% Ui control callbacks
         function oFigure = Close_fcn(oFigure, src, event)
-           deleteme(oFigure);
+            deletefigure(oFigure.oMapElectrodesFigure);
+            deleteme(oFigure);
         end
-        
-        function oConnectorPopUp_Callback(oFigure, src, event)
-            oFigure.SelectedConnector = oFigure.GetPopUpSelectionDouble('oConnectorPopUp');
-            oFigure.Replot();
-        end
-     
+    
         function oSignalPlot_Callback(oFigure, src, event)
             oFigure.SelectedChannel = str2double(get(src,'tag'));
             oFigure.Replot();
@@ -113,6 +114,16 @@ classdef AnalyseSignals < SubFigure
                 % Toggle button is not pressed
                 oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.SelectedChannel);
             end
+            oFigure.Replot();
+        end
+       
+        function ChannelSelectionChange(oFigure,src,event)
+            %An event listener callback
+            %Is called when the user selects a new set of channels and hits
+            %the update selection menu option in MapElectrodes.fig
+            %Draw plots
+            oFigure.CreateSubPlot();
+            %Fill plots
             oFigure.Replot();
         end
         
@@ -138,22 +149,11 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
-        % --------------------------------------------------------------------
-        function oMapElectrodesMenu_Callback(oFigure, src, event)
-            MapElectrodes(oFigure);
-        end
+        
         
      end
      
      methods (Access = private)
-        
-         function iChannelIndex = GetSelectedChannelIndex(oFigure)
-             %Convert the channel number into an index of the plots
-             %visible.
-             iChannelIndex = oFigure.SelectedChannel - ...
-                 oFigure.SubPlotXdim*oFigure.SubPlotYdim*(oFigure.SelectedConnector-1);
-         end
-         
          function Replot(oFigure)
             oFigure.PlotBeat();
             oFigure.PlotElectrode();
@@ -171,110 +171,109 @@ classdef AnalyseSignals < SubFigure
          function CreateSubPlot(oFigure)
              %Create the space for the subplot that will contain all the
              %signals
-             
+            
+             %Find the bounds of the selected area
+             iMinChannel = min(oFigure.oMapElectrodesFigure.SelectedChannels);
+             iMaxChannel = max(oFigure.oMapElectrodesFigure.SelectedChannels);
+             %Convert into row and col indices
+             [iMinRow iMinCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMinChannel);
+             [iMaxRow iMaxCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMaxChannel);
              %Divide up the space for the subplots
-             xDiv = 1/oFigure.SubPlotXdim;
-             yDiv = 1/oFigure.SubPlotYdim;
-             %Initialise the position of the subplots
-             aPosition = [0, 0,  yDiv, xDiv]; %[left bottom width height]
-             
-             for i = oFigure.SubPlotXdim:-1:1
-                 for j = 1:oFigure.SubPlotYdim
-                     %Get the subplot index
-                     iIndex = ((-i+3)*8)+j;
-                     %Create a subplot in the position specified
-                     oSignalPlot = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals, 'Tag', ...
-                         sprintf('%d',iIndex));
-                     %Set some callbacks
-                     
-                     aCurrent = aPosition;
-                     %Plots are added from left to right
-                     aPosition = [aCurrent(1) + yDiv, ((-i+3)*xDiv), yDiv, xDiv];
-                 end
-                 %Plots are added bottom to top
-                 aPosition = [0, aPosition(2) + xDiv, yDiv, xDiv];
+             xDiv = 1/(iMaxRow-iMinRow+1); 
+             yDiv = 1/(iMaxCol-iMinCol+1);
+                         
+             %Loop through the selected channels
+             for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
+                 [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(oFigure.oMapElectrodesFigure.SelectedChannels(i));
+                 %Normalise the row and columns to the minimum.
+                 iRow = iRow - iMinRow;
+                 iCol = iCol - iMinCol;
+                 %Create the position vector for the next plot
+                 aPosition = [iCol*yDiv, iRow*xDiv, yDiv, xDiv];%[left bottom width height]
+                 %Create a subplot in the position specified
+                 oSignalPlot = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals, 'Tag', ...
+                     sprintf('%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
              end
          end
          
          function PlotBeat(oFigure)
-             %Plot the beats for the selected connector, all channels, in the subplot 
+             %Plot the beats for the selected channels in the subplot 
              
              %Get the array of handles to the subplots that are children of
              %pnSignals panel
              aSubPlots = get(oFigure.oGuiHandle.pnSignals,'children');
              %Get the current property values
              iBeat = oFigure.SelectedBeat;
-             iCurrentChannel = oFigure.GetSelectedChannelIndex();
              
-             for i = oFigure.SubPlotXdim:-1:1
-                 for j = 1:oFigure.SubPlotYdim
-                     iIndex = ((-i+3)*8)+j;
-                     %The channel data to plot on the iIndex subplot
-                     iChannelIndex = iIndex + oFigure.SubPlotXdim*oFigure.SubPlotYdim*(oFigure.SelectedConnector-1);
-                     oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelIndex);
-                     %Get the data
-                     aData = oElectrode.Processed.Data(...
-                         oElectrode.Processed.BeatIndexes(iBeat,1):...
-                         oElectrode.Processed.BeatIndexes(iBeat,2));
-                     aSlope = oElectrode.Processed.Slope(...
-                         oElectrode.Processed.BeatIndexes(iBeat,1):...
-                         oElectrode.Processed.BeatIndexes(iBeat,2));
-                     aTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
-                         oElectrode.Processed.BeatIndexes(iBeat,1):...
-                         oElectrode.Processed.BeatIndexes(iBeat,2));
-                     %Get these values so that we can place text in the
-                     %right place
-                     YMax = max([max(aData),max(aSlope)]);
-                     YMin = min([min(aData),min(aSlope)]);
-                     TimeMax = max(aTime);
-                     TimeMin = min(aTime);
-                     %Get the handle to current plot
-                     oSignalPlot = oFigure.Helper.GetHandle(aSubPlots, sprintf('%d',iIndex));
-                     set(oSignalPlot,'XTick',[],'YTick',[], 'Tag', ...
-                         sprintf('%d',iIndex),'NextPlot','replacechildren');
-                     %Plot the data and slope
-                     if oElectrode.Accepted
-                         %If the signal is accepted then plot it as black
-                         plot(oSignalPlot,aTime,aData,'k');
-                         hold(oSignalPlot,'on');
-                         plot(oSignalPlot,aTime,aSlope,'-r');
-                         if ~isempty(oElectrode.Activation)
-                             %Mark the activation times with a line
-                             %Label the line with the activation time
-
-                             oLine = line([aTime(oElectrode.Activation(1).Indexes(iBeat)) ...
-                                 aTime(oElectrode.Activation(1).Indexes(iBeat))], ...
-                                 [aSlope(oElectrode.Activation(1).Indexes(iBeat)) - 1 ...
-                                 aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1]);
-                             set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSignalPlot, ...
-                                 'linewidth',2);
-                             oActivationLabel = text(aTime(oElectrode.Activation(1).Indexes(iBeat)), ...
-                                 aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1.1, ...
-                                 num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
-                             set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','normalized');
-                             set(oActivationLabel,'FontSize',0.07);
-                             set(oActivationLabel,'parent',oSignalPlot);
-                         end
-                         hold(oSignalPlot,'off');
-                     else
-                         %The signal is not accepted so plot it as red
-                         %without gradient
-                         plot(oSignalPlot,aTime,aData,'-r');
+             for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
+                 iChannelIndex = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                 %The channel data to plot on the iIndex subplot
+                 oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelIndex);
+                 %Get the data
+                 aData = oElectrode.Processed.Data(...
+                     oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2));
+                 aSlope = oElectrode.Processed.Slope(...
+                     oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2));
+                 aTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
+                     oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2));
+                 %Get these values so that we can place text in the
+                 %right place
+                 YMax = max([max(aData),max(aSlope)]);
+                 YMin = min([min(aData),min(aSlope)]);
+                 TimeMax = max(aTime);
+                 TimeMin = min(aTime);
+                 %Get the handle to current plot
+                 oSignalPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, sprintf('%d',iChannelIndex));
+                 set(oSignalPlot,'XTick',[],'YTick',[], 'Tag', ...
+                     sprintf('%d',iChannelIndex),'NextPlot','replacechildren');
+                 %Plot the data and slope
+                 if oElectrode.Accepted
+                     %If the signal is accepted then plot it as black
+                     plot(oSignalPlot,aTime,aData,'k');
+                     hold(oSignalPlot,'on');
+                     plot(oSignalPlot,aTime,aSlope,'-r');
+                     if ~isempty(oElectrode.Activation)
+                         %Mark the activation times with a line
+                         %Label the line with the activation time
+                         oLine = line([aTime(oElectrode.Activation(1).Indexes(iBeat)) ...
+                             aTime(oElectrode.Activation(1).Indexes(iBeat))], ...
+                             [aSlope(oElectrode.Activation(1).Indexes(iBeat)) - 1 ...
+                             aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1]);
+                         set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSignalPlot, ...
+                             'linewidth',2);
+                         oActivationLabel = text(aTime(oElectrode.Activation(1).Indexes(iBeat)), ...
+                             aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1.1, ...
+                             num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
+                         set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','normalized');
+                         set(oActivationLabel,'FontSize',0.12);
+                         set(oActivationLabel,'parent',oSignalPlot);
                      end
-                     
-                     %Set some callbacks for this subplot
-                     set(oSignalPlot, 'buttondownfcn', @(src, event)  oSignalPlot_Callback(oFigure, src, event));
-                     %Set the axis on the subplot
-                     axis(oSignalPlot,[TimeMin, TimeMax, YMin - 0.5, YMax + 1]);
-                     %Create a label that shows the channel name
-                     oLabel = text(TimeMin,YMax + 0.2,char(oElectrode.Name));
-                     if iIndex == iCurrentChannel;
-                        set(oLabel,'color','b','FontWeight','bold','FontUnits','normalized');
-                        set(oLabel,'FontSize',0.1);
-                     end
-                     set(oLabel,'parent',oSignalPlot);
+                     hold(oSignalPlot,'off');
+                 else
+                     %The signal is not accepted so plot it as red
+                     %without gradient
+                     plot(oSignalPlot,aTime,aData,'-r');
                  end
+    
+                 %Set some callbacks for this subplot
+                 set(oSignalPlot, 'buttondownfcn', @(src, event)  oSignalPlot_Callback(oFigure, src, event));
+                 %Set the axis on the subplot
+                 axis(oSignalPlot,[TimeMin, TimeMax, YMin - 0.5, YMax + 1]);
+                 %Create a label that shows the channel name
+                 oLabel = text(TimeMin,YMax + 0.2,char(oElectrode.Name));
+                 if iChannelIndex == oFigure.SelectedChannel;
+                     set(oLabel,'color','b','FontWeight','bold','FontUnits','normalized');
+                     set(oLabel,'FontSize',0.18);
+                 else
+                     set(oLabel,'FontUnits','normalized');
+                     set(oLabel,'FontSize',0.15);
+                 end
+                 set(oLabel,'parent',oSignalPlot);
              end
+             
          end
          
          function PlotElectrode(oFigure)

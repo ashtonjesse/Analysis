@@ -8,7 +8,7 @@ classdef Unemap < BasePotential
         Electrodes = [];       
         RMS = [];
     end
-            
+    
     methods
         function oUnemap = Unemap()
             %% Constructor
@@ -221,6 +221,51 @@ classdef Unemap < BasePotential
                 oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aProcessedData);
             end
             
+        end
+        
+        function aInterpData = InterpolatePotentialData(oUnemap,iBeat,iInterval)
+            %Interpolate the potential field for a given beat and return in
+            %struct 
+
+            %Get the beat indexes from the first beat (this assumes that
+            %beat indexes for every electrode are the same).
+            aBeatIndexes = oUnemap.Electrodes(1).Processed.BeatIndexes;
+            %Turn the coords into a 2 column matrix
+            aCoords = [0, 0];
+            for j = 1:size(oUnemap.Electrodes,2)
+                %I don't give a fuck that this is not an efficient way to
+                %do this.
+                aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
+            end
+            aCoords = aCoords(2:end,:);
+            %Get the electrode processed data 
+            aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+            aTimeData = oUnemap.TimeSeries(aBeatIndexes(iBeat,1):aBeatIndexes(iBeat,2));
+            %Get just the data associated with this beat and transpose it
+            %so that it is the same shape as the Coords vector
+            aBeat = transpose(aElectrodeData(aBeatIndexes(iBeat,1):aBeatIndexes(iBeat,2),:));
+            %Build the interpolation mesh
+            [Xi Yi] = meshgrid(min(aCoords(:,1)):iInterval:max(aCoords(:,1)),min(aCoords(:,2)):iInterval:max(aCoords(:,2)));
+            %Loop through time getting interpolants and evaluating on mesh
+            %grid
+            aInterpData = struct();
+            for i = 1:size(aBeat,2);
+                oInterpolant = TriScatteredInterp(aCoords(:,1),aCoords(:,2),aBeat(:,i));
+                aInterpData(i).Field = oInterpolant(Xi, Yi);
+                aInterpData(i).Xi = Xi;
+                aInterpData(i).Yi = Yi;
+                aInterpData(i).Time =  aTimeData(i);
+            end
+            
+        end
+        
+        function [row, col] = GetRowColIndexesForElectrode(oUnemap, iElectrodeNumber)
+            %Convert the channel number (1...288) into a row and column
+            %index in terms of the whole array
+            iNumberOfChannels = oUnemap.oExperiment.Unemap.NumberOfChannels;
+            iYdim = oUnemap.oExperiment.Plot.Electrodes.yDim; %Actually named the wrong dimension...
+            row = ceil((iElectrodeNumber - floor(iElectrodeNumber/((iNumberOfChannels/2) + 1)) * (iNumberOfChannels/2))/iYdim);
+            col = iElectrodeNumber + floor(iElectrodeNumber/((iNumberOfChannels/2)+1)) * iYdim - (ceil(iElectrodeNumber/iYdim)-1) * iYdim;
         end
         
         %% Methods relating to Electrode Activation data

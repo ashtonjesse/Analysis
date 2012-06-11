@@ -16,7 +16,6 @@ Electrodes(i).Accepted
 Electrodes(i).Name
 Electrodes(i).Potential
 Electrodes(i).Coords
-Electrodes(i).Selected
 Electrodes(i).Activation(j{Method}).Indexes
 Electrodes(i).Activation(j).Method
 Electrodes(i).Processed.Slope
@@ -25,7 +24,7 @@ Electrodes(i).Processed.Data
 Electrodes(i).Processed.BaselinePolyOrder
 Electrodes(i).Processed.SplineOrder
 Electrodes(i).Processed.Beats
-Electrodes(i).Processed.BeatIndexes
+Electrodes(i).Processed.BeatIndexes %%A 2 column array that contains the start and end indexes of Processed.Data for each beat. Is stored for each electrode but actually is the same for all electrodes
 
 Experiment: (BaseEntity)
 oExperiment.Date
