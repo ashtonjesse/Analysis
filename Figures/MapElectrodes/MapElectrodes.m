@@ -138,7 +138,7 @@ classdef MapElectrodes < SubFigure
         
         function oGenPotentialMenu_Callback(oFigure, src, event)
             %Generate potential maps for current beat
-            oFigure.Potentials = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.1);
+            oFigure.Potentials = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.1,'natural');
             %Set up slider
             set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
             set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
@@ -172,6 +172,9 @@ classdef MapElectrodes < SubFigure
                  %Label the point with the channel name
                  oLabel = text(oElectrodes(i).Coords(1) - 0.1, oElectrodes(i).Coords(2) + 0.07, ...
                      oElectrodes(i).Name);
+                 if ~oElectrodes(i).Accepted
+                     set(oLabel,'color','r');
+                 end
                  set(oLabel,'FontWeight','bold','FontUnits','normalized');
                  set(oLabel,'FontSize',0.015);
                  set(oLabel,'parent',oFigure.oGuiHandle.oMapAxes);

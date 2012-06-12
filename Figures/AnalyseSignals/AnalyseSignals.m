@@ -10,6 +10,7 @@ classdef AnalyseSignals < SubFigure
         NumberofChannels;
         LineColours=['r','b','g'];
         oMapElectrodesFigure;
+        Dragging;
     end
         
     methods
@@ -92,6 +93,48 @@ classdef AnalyseSignals < SubFigure
             deleteme(oFigure);
         end
     
+        function StartDrag(oFigure, src, event)
+            %The function that fires when a line on a subplot is dragged
+            oFigure.Dragging = 1;
+            oSignalPlot = get(src,'Parent');
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oSignalPlot)));
+        end
+        
+        function StopDrag(oFigure, src, event)
+            %The function that fires when the user lets go of a line on a
+            %subplot
+            if oFigure.Dragging
+                %Make sure that the windowbuttonmotionfcn is no longer active
+                set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', '');
+                oFigure.Dragging = 0;
+                %The tag of the current axes is the channel number
+                iChannelNumber = oFigure.SelectedChannel;
+                %Get the handle to these axes from the panel children
+                oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
+                oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('%d',iChannelNumber));
+                %Get the handle to the line on these axes
+                oAxesChildren = get(oAxes,'children');
+                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, sprintf('ActLine%d',iChannelNumber));
+                %Get the xdata of this line and convert it into a timeseries
+                %index
+                dXdata = get(oLine, 'XData');
+                %Update the activation for this electrode and beat number
+                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateActivationMark(iChannelNumber, oFigure.SelectedBeat, dXdata(1));
+                %Refresh the plot
+                oFigure.Replot();
+            end
+        end
+        
+        function Drag(oFigure, src, event)
+            %The function that fires while a line on a subplot is being
+            %dragged
+            oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
+            oAxesTag = get(event.ParentAxesHandle,'tag');
+            oAxesChildren = get(event.ParentAxesHandle,'children');
+            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, sprintf('ActLine%s',oAxesTag));
+            set(oLine, 'XData', oPoint(1)*[1 1]);
+        end
+        
         function oSignalPlot_Callback(oFigure, src, event)
             oFigure.SelectedChannel = str2double(get(src,'tag'));
             oFigure.Replot();
@@ -243,7 +286,8 @@ classdef AnalyseSignals < SubFigure
                              [aSlope(oElectrode.Activation(1).Indexes(iBeat)) - 1 ...
                              aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1]);
                          set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSignalPlot, ...
-                             'linewidth',2);
+                             'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+                         set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
                          oActivationLabel = text(aTime(oElectrode.Activation(1).Indexes(iBeat)), ...
                              aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1.1, ...
                              num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));

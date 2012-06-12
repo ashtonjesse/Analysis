@@ -169,7 +169,15 @@ classdef DataHelper
                 end
             end
         end
-
+        
+        function iMinIndex = ConvertTimeToSeriesIndex(oDataHelper,aTimeSeries,dTime)
+            %Return the index of the time point closest to the time
+            %specified in dTime
+            
+            %Find the abs difference of all times vs the dTime
+            aDiff = abs(aTimeSeries - dTime);
+            [dMin, iMinIndex] = min(aDiff);
+        end
         
     end
        

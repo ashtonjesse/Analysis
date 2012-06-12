@@ -223,23 +223,26 @@ classdef Unemap < BasePotential
             
         end
         
-        function aInterpData = InterpolatePotentialData(oUnemap,iBeat,iInterval)
+        function aInterpData = InterpolatePotentialData(oUnemap,iBeat,iInterval,sMethod)
             %Interpolate the potential field for a given beat and return in
             %struct 
 
             %Get the beat indexes from the first beat (this assumes that
             %beat indexes for every electrode are the same).
             aBeatIndexes = oUnemap.Electrodes(1).Processed.BeatIndexes;
-            %Turn the coords into a 2 column matrix
+            %Get the electrode processed data 
+            aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+             %Turn the coords into a 2 column matrix
             aCoords = [0, 0];
             for j = 1:size(oUnemap.Electrodes,2)
                 %I don't give a fuck that this is not an efficient way to
                 %do this.
                 aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
+                if ~oUnemap.Electrodes(j).Accepted
+                    aElectrodeData(:,j) = NaN; 
+                end
             end
             aCoords = aCoords(2:end,:);
-            %Get the electrode processed data 
-            aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
             aTimeData = oUnemap.TimeSeries(aBeatIndexes(iBeat,1):aBeatIndexes(iBeat,2));
             %Get just the data associated with this beat and transpose it
             %so that it is the same shape as the Coords vector
@@ -250,7 +253,7 @@ classdef Unemap < BasePotential
             %grid
             aInterpData = struct();
             for i = 1:size(aBeat,2);
-                oInterpolant = TriScatteredInterp(aCoords(:,1),aCoords(:,2),aBeat(:,i));
+                oInterpolant = TriScatteredInterp(aCoords(:,1),aCoords(:,2),aBeat(:,i),sMethod);
                 aInterpData(i).Field = oInterpolant(Xi, Yi);
                 aInterpData(i).Xi = Xi;
                 aInterpData(i).Yi = Yi;
@@ -270,7 +273,8 @@ classdef Unemap < BasePotential
         
         %% Methods relating to Electrode Activation data
         function MarkActivation(oUnemap, sMethod)
-             if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+            %Mark activation for whole array based on the specified method 
+            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
                 error('Unemap.GetActivationTime.VerifyInput:NoProcessedData',...
                     'You need to have processed data before calculating an activation time');
              else
@@ -291,6 +295,18 @@ classdef Unemap < BasePotential
                  end
             end
         end
+        
+        function UpdateActivationMark(oUnemap, iElectrodeNumber, iBeat, dTime)
+            %Update the activation time index for the specified channel and
+            %beat number
+            
+            %Convert the time into an index
+            iIndex = oUnemap.oDAL.oHelper.ConvertTimeToSeriesIndex(oUnemap.TimeSeries(...
+                oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,1):...
+                oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,2)), dTime);
+            oUnemap.Electrodes(iElectrodeNumber).Activation(1).Indexes(iBeat) = iIndex; 
+        end
+        
         %% Functions for reconstructing entity
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
