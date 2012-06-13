@@ -223,7 +223,7 @@ classdef Unemap < BasePotential
             
         end
         
-        function aInterpData = InterpolatePotentialData(oUnemap,iBeat,iInterval,sMethod)
+        function [aInterpData, cmin, cmax] = InterpolatePotentialData(oUnemap,iBeat,iInterval,sMethod)
             %Interpolate the potential field for a given beat and return in
             %struct 
 
@@ -252,7 +252,18 @@ classdef Unemap < BasePotential
             %Loop through time getting interpolants and evaluating on mesh
             %grid
             aInterpData = struct();
+            %initialise colour limits
+            cmin = 100;
+            cmax = 0;
             for i = 1:size(aBeat,2);
+                newcmin = min(aBeat(:,i));
+                if newcmin < cmin
+                    cmin = newcmin;
+                end
+                newcmax = max(aBeat(:,i));
+                if newcmax > cmax
+                    cmax = newcmax;
+                end
                 oInterpolant = TriScatteredInterp(aCoords(:,1),aCoords(:,2),aBeat(:,i),sMethod);
                 aInterpData(i).Field = oInterpolant(Xi, Yi);
                 aInterpData(i).Xi = Xi;
@@ -305,6 +316,32 @@ classdef Unemap < BasePotential
                 oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,1):...
                 oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,2)), dTime);
             oUnemap.Electrodes(iElectrodeNumber).Activation(1).Indexes(iBeat) = iIndex; 
+        end
+        
+        function oMapData = PrepareActivationMap(oUnemap)
+            %Get the inputs for a mapping call for activation times 
+            
+            %Get the electrode processed data 
+            aActivationIndexes = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Activation','Indexes');
+            aActivationTimes = oUnemap.TimeSeries(aActivationIndexes);
+            aActivationTimes = transpose(aActivationTimes);
+            
+            %Turn the coords into a 2 column matrix
+            aCoords = [0, 0];
+            for j = 1:size(oUnemap.Electrodes,2)
+                %I don't give a fuck that this is not an efficient way to
+                %do this.
+                aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
+                if ~oUnemap.Electrodes(j).Accepted
+                    aActivationTimes(j,:) = NaN; 
+                end
+            end
+            aCoords = aCoords(2:end,:);
+            oMapData = struct();
+            oMapData.x = aCoords(:,1);
+            oMapData.y = aCoords(:,2);
+            oMapData.z = aActivationTimes;
+             
         end
         
         %% Functions for reconstructing entity

@@ -97,6 +97,7 @@ classdef AnalyseSignals < SubFigure
             %The function that fires when a line on a subplot is dragged
             oFigure.Dragging = 1;
             oSignalPlot = get(src,'Parent');
+            oFigure.SelectedChannel = str2double(get(oSignalPlot,'tag'));
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oSignalPlot)));
         end
         
@@ -214,7 +215,14 @@ classdef AnalyseSignals < SubFigure
          function CreateSubPlot(oFigure)
              %Create the space for the subplot that will contain all the
              %signals
-            
+             
+             %Clear the signal plot panel first
+             %Get the array of handles to the plot objects
+             aPlotObjects = get(oFigure.oGuiHandle.pnSignals,'children');
+             %Loop through list and delete
+             for i = 1:size(aPlotObjects,1)
+                 delete(aPlotObjects(i));
+             end
              %Find the bounds of the selected area
              iMinChannel = min(oFigure.oMapElectrodesFigure.SelectedChannels);
              iMaxChannel = max(oFigure.oMapElectrodesFigure.SelectedChannels);
@@ -330,6 +338,7 @@ classdef AnalyseSignals < SubFigure
              oAxes = oFigure.oGuiHandle.oElectrodeAxes;
              aProcessedData = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data;
              aBeatData = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats;
+             aBeatIndexes = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes;
              aTime = transpose(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
              
              %Get these values so that we can place text in the
@@ -354,6 +363,13 @@ classdef AnalyseSignals < SubFigure
                  hold(oAxes,'on');
                  plot(oAxes,aTime,aBeatData,'-g');
                  plot(oAxes,aSelectedTime,aSelectedBeat,'-b');
+                 %Loop through beats and label
+                 for j = 1:size(aBeatIndexes,1);
+                     oBeatLabel = text(aTime(aBeatIndexes(j,1)),YMax, num2str(j));
+                     set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','normalized');
+                     set(oBeatLabel,'FontSize',0.12);
+                     set(oBeatLabel,'parent',oAxes);
+                 end
                  hold(oAxes,'off');
                  %Set callback
                  set(oAxes, 'buttondownfcn', @(src, event)  oElectrodePlot_Callback(oFigure, src, event));

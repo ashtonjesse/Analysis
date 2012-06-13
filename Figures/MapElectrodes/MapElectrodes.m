@@ -5,6 +5,9 @@ classdef MapElectrodes < SubFigure
     properties
         SelectedChannels;
         Potentials;
+        Activation;
+        cmin;
+        cmax;
     end
     
     events
@@ -49,10 +52,13 @@ classdef MapElectrodes < SubFigure
                 %Set ui control creation attributes 
                 set(handles.rdTopButton, 'string', 'Show Electrodes');
                 set(handles.rdTopButton, 'value', 1);
+                set(handles.rdTopButton, 'visible', 'off');
                 set(handles.rdMiddleButton, 'string', 'Show Potential');
-                set(handles.rdMiddleButton, 'enable', 'off');
+                set(handles.rdMiddleButton, 'value', 0);
+                set(handles.rdMiddleButton, 'visible', 'off');
                 set(handles.rdBottomButton, 'string', 'Show Activation');
-                set(handles.rdBottomButton, 'enable', 'off');
+                set(handles.rdBottomButton, 'value', 1);
+                set(handles.rdBottomButton, 'visible', 'off');
                 set(handles.oSliderPanel,'visible','off');
                 
                 %Set the output attribute
@@ -133,22 +139,54 @@ classdef MapElectrodes < SubFigure
         end
 
         function oSlider_Callback(oFigure, src, event)
-            oFigure.PlotPotential();
+            ButtonState = [get(oFigure.oGuiHandle.rdMiddleButton,'Value') get(oFigure.oGuiHandle.rdBottomButton,'Value')];
+            if ButtonState(1) == 1;
+                oFigure.PlotPotential(oFigure.cmin, oFigure.cmax);
+            elseif ButtonState(2) == 1;
+                oFigure.PlotActivation();
+            end
+            
         end
         
         function oGenPotentialMenu_Callback(oFigure, src, event)
             %Generate potential maps for current beat
-            oFigure.Potentials = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.1,'natural');
+            [oFigure.Potentials, oFigure.cmin, oFigure.cmax] = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.05,'linear');
             %Set up slider
-            set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
-            set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-                size(oFigure.Potentials,2), 'Value', 1,'SliderStep',[1/size(oFigure.Potentials,2)  0.02]);
-            set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
-            set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Potentials,2));
-            oFigure.PlotPotential();
+            if strcmp(get(oFigure.oGuiHandle.oSliderPanel,'visible'),'off');
+                set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
+            else
+                set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+                    size(oFigure.Potentials,2), 'Value', 1,'SliderStep',[1/size(oFigure.Potentials,2)  0.02]);
+                set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
+                set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Potentials,2));
+            end
+            %Plot the potential field with color bar max and min set
+            oFigure.PlotPotential(oFigure.cmin,oFigure.cmax);
+            %Make the show electrodes button visible
+            set(oFigure.oGuiHandle.rdTopButton,'visible','on');
+            set(oFigure.oGuiHandle.rdMiddleButton,'value',1);
+            set(oFigure.oGuiHandle.rdBottomButton,'value',0);
+            
         end
         
         function oGenActivationMenu_Callback(oFigure, src, event);
+            %Generate activation map for the current beat
+            oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
+            %Set up slider
+            if strcmp(get(oFigure.oGuiHandle.oSliderPanel,'visible'),'off');
+                set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
+            else
+                set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+                    size(oFigure.Activation.z,2), 'Value', 1,'SliderStep',[1/size(oFigure.Activation.z,2)  0.02]);
+                set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
+                set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Activation.z,2));
+            end
+            %Plot the potential field with color bar max and min set
+            oFigure.PlotActivation();
+            %Make the show electrodes button invisible
+            set(oFigure.oGuiHandle.rdTopButton,'visible','off');
+            set(oFigure.oGuiHandle.rdMiddleButton,'value',0);
+            set(oFigure.oGuiHandle.rdBottomButton,'value',1);
             
         end
      end
@@ -192,14 +230,26 @@ classdef MapElectrodes < SubFigure
              for i = 1:size(aPlotObjects,1)
                  delete(aPlotObjects(i));
              end
-             oFigure.PlotPotential();
+             oFigure.PlotPotential(oFigure.cmin,oFigure.cmax);
          end
          
          function  PlotActivation(oFigure)
              %Plots a map of non-intepolated activation times
+             
+             iBeat = get(oFigure.oGuiHandle.oSlider,'Value');
+             if ~isinteger(iBeat)
+                 %Round down to nearest integer if a double is supplied
+                 iBeat = round(iBeat(1));
+             end
+             scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
+             title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation Map for beat %d',iBeat));
+             colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+             colorbar('peer',oFigure.oGuiHandle.oMapAxes);
+             colorbar('location','EastOutside');
+             set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
          end
          
-         function PlotPotential(oFigure)
+         function PlotPotential(oFigure,varargin)
              %Plots a map of interpolated potential field
              
              %Get the current time step
@@ -212,16 +262,22 @@ classdef MapElectrodes < SubFigure
              if ButtonState == get(oFigure.oGuiHandle.rdTopButton,'Max')
                  % radio button is pressed
                  contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potentials(iTimeStep).Xi,oFigure.Potentials(iTimeStep).Yi,oFigure.Potentials(iTimeStep).Field);
-                 title(oFigure.oGuiHandle.oMapAxes,strcat(sprintf('Potential Map at Time %0.4f',oFigure.Potentials(iTimeStep).Time),' ms'));
-                 %Set the axis on the subplot
-                 axis(oFigure.oGuiHandle.oMapAxes,[min(min(oFigure.Potentials(iTimeStep).Xi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Xi)) + 0.5, ...
-                     min(min(oFigure.Potentials(iTimeStep).Yi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Yi) + 0.5)]);
                  oFigure.PlotElectrodes()
              elseif ButtonState == get(oFigure.oGuiHandle.rdTopButton,'Min')
                  % radio button is not pressed
                  contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potentials(iTimeStep).Xi,oFigure.Potentials(iTimeStep).Yi,oFigure.Potentials(iTimeStep).Field);
+                 set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[], 'NextPlot','replacechildren');
              end
-             
+             title(oFigure.oGuiHandle.oMapAxes,strcat(sprintf('Potential Map at Time %0.4f',oFigure.Potentials(iTimeStep).Time),' ms'));
+             %Set the axis on the subplot
+             axis(oFigure.oGuiHandle.oMapAxes,[min(min(oFigure.Potentials(iTimeStep).Xi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Xi)) + 0.5, ...
+                 min(min(oFigure.Potentials(iTimeStep).Yi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Yi) + 0.5)]);
+             colormap(oFigure.oGuiHandle.oMapAxes,jet);
+             if ~isempty(varargin)
+                 set(oFigure.oGuiHandle.oMapAxes,'CLim',[varargin{1,1} varargin{1,2}]);
+             end
+             colorbar('peer',oFigure.oGuiHandle.oMapAxes);
+             colorbar('location','EastOutside');
          end
      end
 end
