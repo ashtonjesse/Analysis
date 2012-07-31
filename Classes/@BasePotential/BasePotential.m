@@ -16,7 +16,7 @@ classdef BasePotential < BaseEntity
     
     methods (Access = public)
         %% Public methods that are inherited
-        function OutData = ProcessData(oBasePotential, aInData, sProcedure, iOrder)
+        function OutData = ProcessData(oBasePotential, aInData, sProcedure, varargin)
             % This function processes data depending on the specified procedure 
             %  to be performed. 
             % After aInData the arguments should be listed:
@@ -36,18 +36,21 @@ classdef BasePotential < BaseEntity
             
             switch sProcedure
                 case 'RemoveMedianAndFitPolynomial'
+                    iOrder = cell2mat(varargin{1,1});
                     %Loop through all the columns
                     for k = 1:size(aInData,2);
                         %Remove the polynomial approximation to the baseline from the data
                         OutData(:,k) =  oBasePotential.PerformCorrection(aInData(:,k),iOrder);
                     end
                 case 'SplineSmoothData'
+                    iOrder = cell2mat(varargin{1,1});
                     %Loop through all the columns
                     for k = 1:size(aInData,2);
                         %Apply a spline approximation to smooth the data
                         OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
                     end
                 case 'RemoveInterpolation'
+                    iOrder = cell2mat(varargin{1,1});
                     %Split the input cell array into data and beats
                     aElectrodeData = cell2mat(aInData(1,1));
                     aBeats = cell2mat(aInData(1,2));
@@ -87,9 +90,11 @@ classdef BasePotential < BaseEntity
                         %being the actual averages them selves. 
                         OutData(:,j) = fInterpolate({aAverages(:,1),aAverages(:,j+1)},iOrder,x);
                     end
-
+                case 'NeighbourhoodAverage'
+                    oImage = mat2gray(aInData);
+                    iBlockDim = cell2mat(varargin{1,1});
+                    OutData = colfilt(oImage,[iBlockDim iBlockDim],'sliding',@(oBasePotential) SubtractNeighbourhoodAverage(oBasePotential));
             end
-
         end
         
     end
@@ -108,6 +113,10 @@ classdef BasePotential < BaseEntity
             %Remove the polynomial approximation to the baseline from the
             %data
             aOut = aRemoveMedian-aBaselinePolynomial;
+        end
+        
+        function aOut = SubtractNeighbourhoodAverage(oBasePotential)
+            x = 1;
         end
     end
     

@@ -129,37 +129,53 @@ classdef Unemap < BasePotential
                 iIndexes = {iMinIndex, oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iMinIndex,:)};
         end
         
-        function ProcessArrayData(oUnemap, sProcedure, iOrder)
+        function UpdateBeatIndexes(oUnemap, iBeat, aIndexRange)
+            
+        end
+        
+        function ProcessArrayData(oUnemap, sProcedure, varargin)
             %Does some checks and then calls the inherited ProcessData
             %method
-            oWaitbar = waitbar(0,'Please wait...');
-            iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
-            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
-                %Perform the processing on the original data
-                for i=1:iTotal
-                    oUnemap.Electrodes(i).Processed.Data = ...
-                        oUnemap.ProcessData(oUnemap.Electrodes(i).Potential,sProcedure,iOrder);
-                    oUnemap.GetSlope(i);
-                    oUnemap.GetCurvature(i);
-                    oUnemap.AcceptChannel(i);
-                    %Update the waitbar
-                        waitbar(i/iTotal,oWaitbar,sprintf(...
-                            'Please wait... Baseline Correcting Signal %d',i));
+            switch sProcedure
+                case 'NeighbourhoodAverage'
+                if ~isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                    aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+                    iBlockDim = varargin{1,1};
+                    aArrayData = oUnemap.ReshapeData('RowsToArray',aElectrodeData(1,:));
+                else
+                    error('Unemap.ProcessArrayData:NeighbourhoodAverage', 'You need to have processed data before performing a neighbourhood average');
                 end
-            else
-                %Perform the processing on already processed data
-                for i=1:iTotal
-                    oUnemap.Electrodes(i).Processed.Data = ...
-                        oUnemap.ProcessData(oUnemap.Electrodes(i).Processed.Data,sProcedure,iOrder);
-                    oUnemap.GetSlope(i);
-                    oUnemap.GetCurvature(i);
-                    oUnemap.AcceptChannel(i);
-                    %Update the waitbar
-                    waitbar(i/iTotal,oWaitbar,sprintf(...
-                        'Please wait... Spline Smoothing Signal %d',i));
-                end
+                otherwise
+                    iOrder = varargin{1,1};
+                    oWaitbar = waitbar(0,'Please wait...');
+                    iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
+                    if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+                        %Perform the processing on the original data
+                        for i=1:iTotal
+                            oUnemap.Electrodes(i).Processed.Data = ...
+                                oUnemap.ProcessData(oUnemap.Electrodes(i).Potential,sProcedure,iOrder);
+                            oUnemap.GetSlope(i);
+                            oUnemap.GetCurvature(i);
+                            oUnemap.AcceptChannel(i);
+                            %Update the waitbar
+                            waitbar(i/iTotal,oWaitbar,sprintf(...
+                                'Please wait... Baseline Correcting Signal %d',i));
+                        end
+                    else
+                        %Perform the processing on already processed data
+                        for i=1:iTotal
+                            oUnemap.Electrodes(i).Processed.Data = ...
+                                oUnemap.ProcessData(oUnemap.Electrodes(i).Processed.Data,sProcedure,iOrder);
+                            oUnemap.GetSlope(i);
+                            oUnemap.GetCurvature(i);
+                            oUnemap.AcceptChannel(i);
+                            %Update the waitbar
+                            waitbar(i/iTotal,oWaitbar,sprintf(...
+                                'Please wait... Spline Smoothing Signal %d',i));
+                        end
+                    end
+                    close(oWaitbar);
             end
-            close(oWaitbar);
         end
         
         function ProcessElectrodeData(oUnemap, sProcedure, iOrder, iElectrodeNumber)
@@ -282,6 +298,28 @@ classdef Unemap < BasePotential
             col = iElectrodeNumber + floor(iElectrodeNumber/((iNumberOfChannels/2)+1)) * iYdim - (ceil(iElectrodeNumber/iYdim)-1) * iYdim;
         end
         
+        function aOutData = ReshapeData(oUnemap,sProcedure,aInData)
+            %Depending on the specified procedure this function turns
+            %a row of time data from electrodes into a matrix in the shape
+            %of the array from which these electrodes came from, or vice versa. 
+            %Note that some of the array dimensions are hard coded at the
+            %moment...
+            
+            %Assumes that the aInData is in the form of time x electrodes
+            %and that the columns refer to electrodes from 1 to
+            %NumOfChannels
+            %Determine what to do
+            switch sProcedure
+                case 'RowsToArray'
+                    aOutData = zeros(18,16);
+                    %Loop through all the electrodes
+                    for i = 1:size(aInData,2);
+                        [row col] = oUnemap.GetRowColIndexesForElectrode(i);
+                        aOutData(row, col) = aInData(i);
+                    end
+                case 'ArrayToRows'
+            end
+        end
         %% Methods relating to Electrode Activation data
         function MarkActivation(oUnemap, sMethod)
             %Mark activation for whole array based on the specified method 

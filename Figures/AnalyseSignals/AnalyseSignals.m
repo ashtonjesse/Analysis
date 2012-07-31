@@ -35,7 +35,9 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oActivationMenu, 'callback', @(src, event) oActivationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
-            
+            set(oFigure.oGuiHandle.oAdjustBeatMenu, 'callback', @(src, event) oAdjustBeatMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -51,6 +53,7 @@ classdef AnalyseSignals < SubFigure
             oFigure.CreateSubPlot();
             %Fill plots
             oFigure.Replot();
+            oFigure.PlotECG();
 
             % --- Executes just before BaselineCorrection is made visible.
             function AnalyseSignals_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -171,6 +174,31 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
+        function bUpdateBeat_Callback(oFigure, src, event)
+            %Update the currently selected beat 
+            
+            % Find the brushline object in the figure
+            hBrushLine = findall(oFigure.oGuiHandle.(oFigure.sFigureTag),'tag','Brushing');
+            % Get the Xdata and Ydata attitributes of this
+            brushedData = get(hBrushLine, {'Xdata','Ydata'});
+            % The data that has not been selected is labelled as NaN so get
+            % rid of this
+            brushedIdx = ~isnan([brushedData{:,1}]);
+            [row, colIndices] = find(brushedIdx);
+            if ~isempty(colIndices)
+                dMean = mean(colIndices);
+                aBeatIndexes = colIndices(colIndices < dMean);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(oFigure.SelectedBeat,aBeatIndexes);
+                
+            else
+                error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+            end
+            
+            %Reset the gui
+            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+            set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+        end
+        
         %% Menu Callbacks
         % -----------------------------------------------------------------
         function oFileMenu_Callback(oFigure, src, event)
@@ -193,8 +221,11 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
-        
-        
+        function oAdjustBeatMenu_Callback(oFigure, src, event)
+            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
+            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
+            set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'on');
+        end
      end
      
      methods (Access = private)
@@ -255,6 +286,30 @@ classdef AnalyseSignals < SubFigure
              aSubPlots = get(oFigure.oGuiHandle.pnSignals,'children');
              %Get the current property values
              iBeat = oFigure.SelectedBeat;
+             %Find the max and min Y axis values for this selection
+             %Initialise variables to keep track
+             LastYMax = 0;
+             LastYMin = 9999;
+             for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
+                 iChannelIndex = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                 %The channel data to plot on the iIndex subplot
+                 oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelIndex);
+                 %Get the data
+                 aData = oElectrode.Processed.Data(...
+                     oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2));
+                 aSlope = oElectrode.Processed.Slope(...
+                     oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2));
+                 YMax = max([max(aData),max(aSlope)]);
+                 YMin = min([min(aData),min(aSlope)]);
+                 if YMax > LastYMax
+                     LastYMax = YMax;
+                 end
+                 if YMin < LastYMin
+                     LastYMin = YMin;
+                 end
+             end
              
              for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
                  iChannelIndex = oFigure.oMapElectrodesFigure.SelectedChannels(i);
@@ -272,8 +327,6 @@ classdef AnalyseSignals < SubFigure
                      oElectrode.Processed.BeatIndexes(iBeat,2));
                  %Get these values so that we can place text in the
                  %right place
-                 YMax = max([max(aData),max(aSlope)]);
-                 YMin = min([min(aData),min(aSlope)]);
                  TimeMax = max(aTime);
                  TimeMin = min(aTime);
                  %Get the handle to current plot
@@ -296,11 +349,10 @@ classdef AnalyseSignals < SubFigure
                          set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSignalPlot, ...
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
-                         oActivationLabel = text(aTime(oElectrode.Activation(1).Indexes(iBeat)), ...
-                             aSlope(oElectrode.Activation(1).Indexes(iBeat)) + 1.1, ...
+                         oActivationLabel = text(TimeMin + 0.035, LastYMax + 0.2, ...
                              num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
                          set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','normalized');
-                         set(oActivationLabel,'FontSize',0.12);
+                         set(oActivationLabel,'FontSize',0.2);
                          set(oActivationLabel,'parent',oSignalPlot);
                      end
                      hold(oSignalPlot,'off');
@@ -313,12 +365,12 @@ classdef AnalyseSignals < SubFigure
                  %Set some callbacks for this subplot
                  set(oSignalPlot, 'buttondownfcn', @(src, event)  oSignalPlot_Callback(oFigure, src, event));
                  %Set the axis on the subplot
-                 axis(oSignalPlot,[TimeMin, TimeMax, YMin - 0.5, YMax + 1]);
+                 axis(oSignalPlot,[TimeMin, TimeMax, LastYMin - 0.5, LastYMax + 1]);
                  %Create a label that shows the channel name
-                 oLabel = text(TimeMin,YMax + 0.2,char(oElectrode.Name));
+                 oLabel = text(TimeMin,LastYMax + 0.2,char(oElectrode.Name));
                  if iChannelIndex == oFigure.SelectedChannel;
                      set(oLabel,'color','b','FontWeight','bold','FontUnits','normalized');
-                     set(oLabel,'FontSize',0.18);
+                     set(oLabel,'FontSize',0.2);
                  else
                      set(oLabel,'FontUnits','normalized');
                      set(oLabel,'FontSize',0.15);
@@ -379,8 +431,33 @@ classdef AnalyseSignals < SubFigure
                  plot(oAxes,aTime,aProcessedData,'-r');
                  axis(oAxes,[TimeMin, TimeMax, YMin - 0.2, YMax + 0.2]);
              end
-             
+             set(oAxes, 'XTickLabel','');
          end
+         
+         function PlotECG(oFigure)
+             % Plot ECG Data
+            
+            %Clear axes and set to be visible
+            cla(oFigure.oGuiHandle.oECGAxes);
+            %Find axis limits
+            TimeMin = min(oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries);
+            TimeMax = max(oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries);
+            YMin = min(oFigure.oParentFigure.oGuiHandle.oECG.Original);
+            YMax = max(oFigure.oParentFigure.oGuiHandle.oECG.Original);
+            %Plot the ECG channel data
+            plot(oFigure.oGuiHandle.oECGAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.oECG.Original,'k');
+            hold(oFigure.oGuiHandle.oECGAxes, 'on');
+            plot(oFigure.oGuiHandle.oECGAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
+                transpose(oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats),'-g');
+            axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
+            hold(oFigure.oGuiHandle.oECGAxes, 'off');
+            oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
+            set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
+         end
+             
      end
 end
 

@@ -22,5 +22,5 @@ ECGAmp.AcCouplingFrequency = 10
 ECGAmp.HighFilter = 10000
 ECGAmp.LowFilter = 50
 ECGAmp.LineFilter = 50
-Plot.Electrodes.xDim =  3
+Plot.Electrodes.xDim = 3
 Plot.Electrodes.yDim = 8

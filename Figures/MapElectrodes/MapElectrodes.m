@@ -27,6 +27,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenPotentialMenu, 'callback', @(src, event) oGenPotentialMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenActivationMenu, 'callback', @(src, event) oGenActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oProcessSignalsMenu, 'callback', @(src, event) oProcessSignalsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.rdTopButton, 'callback', @(src, event) rdTopButton_Callback(oFigure, src, event));
             
             %set up slider
@@ -114,6 +115,10 @@ classdef MapElectrodes < SubFigure
             
         end
         
+        function oProcessSignalsMenu_Callback(oFigure, src, event)
+            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData('NeighbourhoodAverage',3);
+        end
+        
         function oDataCursorOnTool_Callback(oFigure, src, event)
             %Turn brushing on so that the user can select a range of data
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
@@ -121,7 +126,7 @@ classdef MapElectrodes < SubFigure
         end
         
         function oDataCursorOffTool_Callback(oFigure, src, event)
-            %Turn brushing on so that the user can select a range of data
+            %Turn brushing off 
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
         end
         
