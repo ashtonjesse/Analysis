@@ -132,7 +132,7 @@ classdef StartFigure < BaseFigure
         function oFigure = bPreprocessing_Callback(oFigure, src, event)
             %Open the Preprocessing figure passing this figure as the
             %parent
-            Preprocessing(oFigure);
+            WaveletAnalysis(oFigure);
         end
         
         function oFigure = bDetectBeats_Callback(oFigure, src, event)
