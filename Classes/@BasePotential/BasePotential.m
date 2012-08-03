@@ -29,28 +29,32 @@ classdef BasePotential < BaseEntity
             %       *SplineSmoothData - Apply a spline approximation of a specified order.
             %           For this the second input should be iOrder, the
             %           order of the spline to apply.
-            %       *RemoveSplineInterpolation - Using cubic spline
+            %       *RemoveInterpolation - Using linear
             %       interpolation between isoelectric points to remove this
             %       variation between beats
             OutData = zeros(size(aInData,1),size(aInData,2));
             
             switch sProcedure
                 case 'RemoveMedianAndFitPolynomial'
-                    iOrder = cell2mat(varargin{1,1});
+                    iOrder = varargin{1,1};
                     %Loop through all the columns
                     for k = 1:size(aInData,2);
                         %Remove the polynomial approximation to the baseline from the data
                         OutData(:,k) =  oBasePotential.PerformCorrection(aInData(:,k),iOrder);
                     end
                 case 'SplineSmoothData'
-                    iOrder = cell2mat(varargin{1,1});
+                    iOrder = varargin{1,1};
                     %Loop through all the columns
                     for k = 1:size(aInData,2);
                         %Apply a spline approximation to smooth the data
                         OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
                     end
+                case 'Filter'
+                    iOrder = varargin{1,1};
+                    iNumberofPoints = varargin{1,2};
+                    
                 case 'RemoveInterpolation'
-                    iOrder = cell2mat(varargin{1,1});
+                    iOrder = varargin{1,1};
                     %Split the input cell array into data and beats
                     aElectrodeData = cell2mat(aInData(1,1));
                     aBeats = cell2mat(aInData(1,2));

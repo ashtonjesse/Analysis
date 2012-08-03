@@ -1,6 +1,11 @@
 classdef Unemap < BasePotential
-    %Unemap is a class that is associated with the potential data
-    %from an experiment
+    %Unemap is a class that wraps the mat binary array that holds the data
+    %associated with potential recordings taken using Unemap. It contains
+    %methods that can be carried out on this data as well as the methods to
+    %construct and save Unemap entities. Most methods act on
+    %Unemap.Electrodes(i).Potential but some act on
+    %Unemap.Electrodes(i).Activation data. 
+    
 
     properties (SetAccess = public)
         TimeSeries = [];
@@ -178,7 +183,7 @@ classdef Unemap < BasePotential
             end
         end
         
-        function ProcessElectrodeData(oUnemap, sProcedure, iOrder, iElectrodeNumber)
+        function ProcessElectrodeData(oUnemap, sProcedure, iElectrodeNumber, varargin)
             %Does some checks and then calls the inherited ProcessData
             %method
             
@@ -196,23 +201,54 @@ classdef Unemap < BasePotential
             oUnemap.AcceptChannel(iElectrodeNumber);
         end
         
-        function FilterElectrodeData(oUnemap, iElectrodeNumber)
-            %Build 50Hz notch filter and apply to selected channel
+        function FilterElectrodeData(oUnemap, iElectrodeNumber, varargin)
+            %Apply specified filter and to selected channel
             
-            %Get nyquist frequency
-            wo = oUnemap.oExperiment.Unemap.ADConversion.SamplingRate/2;
-            [z p k] = butter(3, [49 51]./wo, 'stop'); % 10th order filter
-            [sos,g] = zp2sos(z,p,k); % Convert to 2nd order sections form
-            oFilter = dfilt.df2sos(sos,g); % Create filter object
-            %Check if this filter should be applied to processed or
-            %original data
-            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
-                aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Potential);
-                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
+            %Check inputs
+            if ~isempty(varargin)
+                sFilterType = varargin{1,1};
             else
-                aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Processed.Data);
-                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
+                %If there is no specified inputs then set the default of
+                %the filter type (and the switch will continue)
+                sFilterType = '';
             end
+                
+            %Determine filter type
+            switch(sFilterType)
+                case '50HzNotch'
+                    %Get nyquist frequency
+                    wo = oUnemap.oExperiment.Unemap.ADConversion.SamplingRate/2;
+                    [z p k] = butter(3, [49 51]./wo, 'stop'); % 10th order filter
+                    [sos,g] = zp2sos(z,p,k); % Convert to 2nd order sections form
+                    oFilter = dfilt.df2sos(sos,g); % Create filter object
+                    %Check if this filter should be applied to processed or
+                    %original data
+                    if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
+                        aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Potential);
+                        oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
+                    else
+                        aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Processed.Data);
+                        oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
+                    end
+                    
+                case 'SovitzkyGolay'
+                    %More input checks
+                    if size(varargin,2) == 3
+                        iOrder = varargin{1,2};
+                        iNumberofPoints = varargin{1,3};
+                        %Apply filter
+                        if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
+                            oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
+                                sgolayfilt(oUnemap.Electrodes(iElectrodeNumber).Potential,iOrder,iNumberofPoints);
+                        else
+                            oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
+                                sgolayfilt(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,iOrder,iNumberofPoints);
+                        end
+
+                    end
+                    
+            end
+                
         end
         
         function TruncateArrayData(oUnemap, bIndexesToKeep)

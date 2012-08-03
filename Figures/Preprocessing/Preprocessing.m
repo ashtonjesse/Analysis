@@ -22,6 +22,8 @@ classdef Preprocessing < SubFigure
             %set(oFigure.oGuiHandle.oSignalSlider, 'callback', @(src, event) oSignalSlider_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.pmPolynomialOrder , 'callback', @(src, event)  pmPolynomialOrder_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.pmSplineOrder, 'callback', @(src, event)  pmSplineOrder_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.pmFilterOrder, 'callback', @(src, event)  pmFilterOrder_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.pmWindowSize, 'callback', @(src, event)  pmWindowSize_Callback(oFigure, src, event));
             
             aSliderTexts = [oFigure.oGuiHandle.oSliderText1,oFigure.oGuiHandle.oSliderText2];
             sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Channel'}, {'Min', 1, 'Max', ...
@@ -62,7 +64,9 @@ classdef Preprocessing < SubFigure
                 %Set ui control creation attributes 
                 set(handles.pmPolynomialOrder, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
                 set(handles.pmSplineOrder, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
-                set(handles.oCheckBoxBaseline, 'string', 'Baseline Correction');
+                set(handles.pmFilterOrder, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
+                set(handles.pmWindowSize, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
+                set(handles.oCheckBoxBaseline, 'string', 'Baseline Correction')
                 set(handles.oCheckBoxSpline, 'string', 'Spline');
                 set(handles.oCheckBoxFilter, 'string', 'Filter');
                 set(handles.oCheckBoxBeats, 'string', 'Plot beats');
@@ -112,7 +116,15 @@ classdef Preprocessing < SubFigure
         function pmSplineOrder_Callback(oFigure, src, event)
 
         end
-               
+        
+        % --------------------------------------------------------------------
+        function pmFilterOrder_Callback(oFigure, src, event)
+
+        end
+        % --------------------------------------------------------------------
+        function pmWindowSize_Callback(oFigure, src, event)
+
+        end
         %% Menu Callbacks
         % -----------------------------------------------------------------
         function oFileMenu_Callback(oFigure, src, event)
@@ -146,10 +158,12 @@ classdef Preprocessing < SubFigure
                 
         % --------------------------------------------------------------------
         function oFilterMenu_Callback(oFigure, src, event)
-            % Get the currently selected channel
+            % Get the currently selected channel and inputs
             iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));
+            iOrder = oFigure.GetPopUpSelectionDouble('pmFilterOrder');
+            iNumberofPoints = oFigure.GetPopUpSelectionDouble('pmWindowSize');
             % Filter the channel data
-            oFigure.oParentFigure.oGuiHandle.oUnemap.FilterElectrodeData(iChannel);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.FilterElectrodeData(iChannel, 'SovitzkyGolay',iOrder,iNumberofPoints);
             % Plot the result
             oFigure.PlotProcessed(iChannel);
         end
@@ -193,6 +207,8 @@ classdef Preprocessing < SubFigure
             %   Apply the selected processing steps to all the channels in oUnemap.Electrodes and save.
             bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
             bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
+            bFilter = get(oFigure.oGuiHandle.oCheckBoxFilter,'Value');
+            
             if bBaseline
                 %   Get the polynomial order from the selection made in the listbox
                 %   control
@@ -210,6 +226,10 @@ classdef Preprocessing < SubFigure
                 %Smooth the data with a spline approximation
                 oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData(...
                     'SplineSmoothData',iSplineOrder);
+            end
+            
+            if bFilter
+                
             end
         end
         

@@ -79,6 +79,14 @@ classdef BaseFigure < handle
         function SaveAxesImage(oFigure,oAxesHandle)
             
         end
+        
+        function nValue = GetSliderIntegerValue(oFigure, sSliderTag)
+            dCurrentValue = get(oFigure.oGuiHandle.(sSliderTag),'Value');
+            if ~isinteger(dCurrentValue)
+                %Round down to nearest integer if a double is supplied
+                nValue = round(dCurrentValue);
+            end
+        end
     end
 end
 
