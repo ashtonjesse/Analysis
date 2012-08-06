@@ -35,10 +35,22 @@ classdef Unemap < BasePotential
         end
         
         %% Inherited methods
-        function aOutData = ProcessData(oUnemap, aInData, sProcedure, iOrder)
-            aOutData = ProcessData@BasePotential(oUnemap, aInData, sProcedure, iOrder);
+        function [aOutData, aBaselinePolynomial] = RemoveMedianAndFitPolynomial(oUnemap, aInData, iOrder)
+            [aOutData, aBaselinePolynomial] = RemoveMedianAndFitPolynomial@BasePotential(oUnemap, aInData, iOrder);
         end
-                      
+        
+        function aOutData = SplineSmoothData(oUnemap, aInData, iOrder)
+            aOutData = SplineSmoothData@BasePotential(oUnemap, aInData, iOrder);
+        end
+        
+        function aOutData = FilterData(oUnemap, aInData, sFilterType, varargin)
+            aOutData = FilterData@BasePotential(oUnemap, aInData, sFilterType, varargin);
+        end
+        
+        function aOutData = RemoveLinearInterpolation(oUnemap, aInData, iOrder)
+            aOutData = RemoveLinearInterpolation@BasePotential(oUnemap, aInData, iOrder);
+        end
+        
         function aOutData = CalculateCurvature(oUnemap, aInData ,iNumberofPoints,iModelOrder)
             aOutData = CalculateCurvature@BasePotential(oUnemap, aInData, iNumberofPoints,iModelOrder);
         end
@@ -61,7 +73,7 @@ classdef Unemap < BasePotential
         end
         
         function GetCurvature(oUnemap,iElectrodeNumber)
-            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(iElectrodeNumber))
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
                 error('Unemap.GetCurvature.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Perform on processed data
@@ -71,7 +83,7 @@ classdef Unemap < BasePotential
         end
         
         function GetSlope(oUnemap,iElectrodeNumber)
-            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(iElectrodeNumber))
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
                 error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Perform on processed data
@@ -85,8 +97,8 @@ classdef Unemap < BasePotential
             %in amplitude by fitting a polynomial to the isoelectric lines
             %preceeding each beat
             
-            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
-                error('Unemap.RemoveInterBeatVariation.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+                error('Unemap.GetInterBeatVariation.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Get the electrode processed data and detected beats
                 aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
@@ -99,19 +111,23 @@ classdef Unemap < BasePotential
         end
         
         function RemoveInterBeatVariation(oUnemap, aFitData)
-            %Get the electrode processed data 
-            aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
-            %Remove the fit
-            aOutData = aElectrodeData - aFitData;
-            %Save this to the electrode data
-            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aOutData); 
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+                error('Unemap.RemoveInterBeatVariation.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
+            else
+                %Get the electrode processed data
+                aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+                %Remove the fit
+                aOutData = aElectrodeData - aFitData;
+                %Save this to the electrode data
+                oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aOutData);
+            end
         end
         
         function GetArrayBeats(oUnemap, aPeaks)
             %Does some checks and then calls the inherited GetBeats
             %method
             
-            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
                 error('Unemap.GetArrayBeats.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Detect beats on the processed data
@@ -126,129 +142,96 @@ classdef Unemap < BasePotential
         end
         
         function iIndexes = GetClosestBeat(oUnemap,iElectrodeNumber,dTime)
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+                error('Unemap.GetClosestBeat.VerifyInput:NoProcessedData', 'You need to have processed data');
+            else
                 %Get the start times of all the beats
                 aIntervalStart = oUnemap.TimeSeries(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(:,1));
-                %Find the index of the closest time to the input time 
+                %Find the index of the closest time to the input time
                 [Value, iMinIndex] = min(abs(aIntervalStart - dTime));
                 %Return the beat index of this time
                 iIndexes = {iMinIndex, oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iMinIndex,:)};
+            end
         end
         
         function UpdateBeatIndexes(oUnemap, iBeat, aIndexRange)
             
         end
         
-        function ProcessArrayData(oUnemap, sProcedure, varargin)
-            %Does some checks and then calls the inherited ProcessData
-            %method
-            switch sProcedure
-                case 'NeighbourhoodAverage'
-                if ~isnan(oUnemap.Electrodes(1).Processed.Data(1))
-                    aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
-                    iBlockDim = varargin{1,1};
-                    aArrayData = oUnemap.ReshapeData('RowsToArray',aElectrodeData(1,:));
-                else
-                    error('Unemap.ProcessArrayData:NeighbourhoodAverage', 'You need to have processed data before performing a neighbourhood average');
-                end
-                otherwise
-                    iOrder = varargin{1,1};
-                    oWaitbar = waitbar(0,'Please wait...');
-                    iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
-                    if isnan(oUnemap.Electrodes(1).Processed.Data(1))
-                        %Perform the processing on the original data
-                        for i=1:iTotal
-                            oUnemap.Electrodes(i).Processed.Data = ...
-                                oUnemap.ProcessData(oUnemap.Electrodes(i).Potential,sProcedure,iOrder);
-                            oUnemap.GetSlope(i);
-                            oUnemap.GetCurvature(i);
-                            oUnemap.AcceptChannel(i);
-                            %Update the waitbar
-                            waitbar(i/iTotal,oWaitbar,sprintf(...
-                                'Please wait... Baseline Correcting Signal %d',i));
-                        end
-                    else
-                        %Perform the processing on already processed data
-                        for i=1:iTotal
-                            oUnemap.Electrodes(i).Processed.Data = ...
-                                oUnemap.ProcessData(oUnemap.Electrodes(i).Processed.Data,sProcedure,iOrder);
-                            oUnemap.GetSlope(i);
-                            oUnemap.GetCurvature(i);
-                            oUnemap.AcceptChannel(i);
-                            %Update the waitbar
-                            waitbar(i/iTotal,oWaitbar,sprintf(...
-                                'Please wait... Spline Smoothing Signal %d',i));
-                        end
-                    end
-                    close(oWaitbar);
+        function ProcessArrayData(oUnemap, aInOptions)
+            % Loops through all the electrodes in the array and makes calls
+            % to the inherited processing methods
+            
+            % % %             switch sProcedure
+            % % %                 case 'NeighbourhoodAverage'
+            % % %                 if ~isnan(oUnemap.Electrodes(1).Processed.Data(1))
+            % % %                     aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+            % % %                     iBlockDim = varargin{1,1};
+            % % %                     aArrayData = oUnemap.ReshapeData('RowsToArray',aElectrodeData(1,:));
+            % % %                 else
+            % % %                     error('Unemap.ProcessArrayData:NeighbourhoodAverage', 'You need to have processed data before performing a neighbourhood average');
+            % % %                 end
+            % % %                 otherwise
+            oWaitbar = waitbar(0,'Please wait...');
+            iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
+            %Loop through the channels
+            for i=1:iTotal
+                %Update the waitbar
+                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Signal %d',i));
+                oUnemap.ProcessElectrodeData(i,aInOptions);
             end
+            close(oWaitbar);
+            
         end
         
-        function ProcessElectrodeData(oUnemap, sProcedure, iElectrodeNumber, varargin)
-            %Does some checks and then calls the inherited ProcessData
-            %method
-            
-            if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
-                %Perform the processing on the original data
-                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
-                        oUnemap.ProcessData(oUnemap.Electrodes(iElectrodeNumber).Potential,sProcedure,iOrder);
-            else
-                %Perform the processing on already processed data
-                oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
-                        oUnemap.ProcessData(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,sProcedure,iOrder);
-            end
-            oUnemap.GetSlope(iElectrodeNumber);
-            oUnemap.GetCurvature(iElectrodeNumber);
-            oUnemap.AcceptChannel(iElectrodeNumber);
+        function ProcessElectrodeData(oUnemap, iChannel, aInOptions)
+            % makes a call to the inherited processing method for the
+            % specified channel
+             for j = 1:size(aInOptions,2)
+                 %Loop through the entries in aInOptions - an input
+                 %struct that contains processing procedures to run and
+                 %and their inputs
+                 switch(aInOptions(j).Procedure)
+                     case 'RemoveMedianAndFitPolynomial'
+                         iOrder = aInOptions(j).Inputs;
+                         [aOutData, aBaselinePolynomial] = ...
+                             oUnemap.RemoveMedianAndFitPolynomial(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iOrder);
+                         oUnemap.Electrodes(iChannel).Processed.Data = aOutData;
+                         oUnemap.Electrodes(iChannel).Processed.BaselinePolyOrder = iOrder;
+                         oUnemap.Electrodes(iChannel).Processed.BaselinePoly = aBaselinePolynomial;
+                     case 'SplineSmoothData'
+                         iOrder = aInOptions(j).Inputs;
+                         oUnemap.Electrodes(iChannel).Processed.Data = ...
+                             oUnemap.SplineSmoothData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iOrder);
+                     case 'FilterData'
+                         if strcmp(aInOptions(j).Inputs{1,1},'50HzNotch')
+                             dSamplingFreq = aInOptions(j).Inputs{1,2};
+                             oUnemap.Electrodes(iChannel).Processed.Data = ...
+                                 oUnemap.FilterData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,'50HzNotch',dSamplingFreq);
+                         elseif strcmp(aInOptions(j).Inputs{1,1},'SovitzkyGolay')
+                             iOrder = aInOptions(j).Inputs{1,2};
+                             iWindowSize = aInOptions(j).Inputs{1,3};
+                             oUnemap.Electrodes(iChannel).Processed.Data = ...
+                                 oUnemap.FilterData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,'SovitzkyGolay',iOrder,iWindowSize);
+                         end
+                     case 'RemoveLinearInterpolation'
+                         iOrder = aInOptions(j).Inputs;
+                         oUnemap.Electrodes(iChannel).Processed.Data = ...
+                             oUnemap.RemoveLinearInterpolation(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iOrder);
+                 end
+                 oUnemap.Electrodes(iChannel).Status = 'Processed';
+             end
+             %Calculate slope and curvature
+             oUnemap.GetSlope(iChannel);
+             oUnemap.GetCurvature(iChannel);
+             %Each channel is accepted by default
+             oUnemap.AcceptChannel(iChannel);
         end
         
-        function FilterElectrodeData(oUnemap, iElectrodeNumber, varargin)
-            %Apply specified filter and to selected channel
-            
-            %Check inputs
-            if ~isempty(varargin)
-                sFilterType = varargin{1,1};
-            else
-                %If there is no specified inputs then set the default of
-                %the filter type (and the switch will continue)
-                sFilterType = '';
-            end
-                
-            %Determine filter type
-            switch(sFilterType)
-                case '50HzNotch'
-                    %Get nyquist frequency
-                    wo = oUnemap.oExperiment.Unemap.ADConversion.SamplingRate/2;
-                    [z p k] = butter(3, [49 51]./wo, 'stop'); % 10th order filter
-                    [sos,g] = zp2sos(z,p,k); % Convert to 2nd order sections form
-                    oFilter = dfilt.df2sos(sos,g); % Create filter object
-                    %Check if this filter should be applied to processed or
-                    %original data
-                    if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
-                        aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Potential);
-                        oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
-                    else
-                        aFilteredData = filter(oFilter,oUnemap.Electrodes(iElectrodeNumber).Processed.Data);
-                        oUnemap.Electrodes(iElectrodeNumber).Processed.Data = aFilteredData;
-                    end
-                    
-                case 'SovitzkyGolay'
-                    %More input checks
-                    if size(varargin,2) == 3
-                        iOrder = varargin{1,2};
-                        iNumberofPoints = varargin{1,3};
-                        %Apply filter
-                        if isnan(oUnemap.Electrodes(iElectrodeNumber).Processed.Data(1))
-                            oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
-                                sgolayfilt(oUnemap.Electrodes(iElectrodeNumber).Potential,iOrder,iNumberofPoints);
-                        else
-                            oUnemap.Electrodes(iElectrodeNumber).Processed.Data = ...
-                                sgolayfilt(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,iOrder,iNumberofPoints);
-                        end
-
-                    end
-                    
-            end
-                
+        function ClearProcessedData(oUnemap, iChannel)
+            %Clear the Processed data associated with this channel
+            oUnemap.Electrodes(iChannel).Processed.Data = [];
+            oUnemap.Electrodes(iChannel).Status = 'Potential';
         end
         
         function TruncateArrayData(oUnemap, bIndexesToKeep)
@@ -266,7 +249,7 @@ classdef Unemap < BasePotential
             %Truncate the potential data
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential',aPotentialData);
 
-            if ~isnan(oUnemap.Electrodes(1).Processed.Data(1))
+            if strcmp(oUnemap.Electrodes(1).Status,'Processed')
                 %perform on existing potential data as well
                 aProcessedData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
                 aProcessedData = aProcessedData(bIndexesToKeep,:);
@@ -359,7 +342,7 @@ classdef Unemap < BasePotential
         %% Methods relating to Electrode Activation data
         function MarkActivation(oUnemap, sMethod)
             %Mark activation for whole array based on the specified method 
-            if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+            if strcmp(oUnemap.Electrodes(1).Status,'Potential')
                 error('Unemap.GetActivationTime.VerifyInput:NoProcessedData',...
                     'You need to have processed data before calculating an activation time');
              else
@@ -466,5 +449,6 @@ classdef Unemap < BasePotential
             oUnemap.oDAL.GetDataFromSignalFile(oUnemap,sFile);
         end
     end
+    
 end
 

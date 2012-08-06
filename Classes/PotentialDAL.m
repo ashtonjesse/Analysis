@@ -65,6 +65,7 @@ classdef PotentialDAL < BaseDAL
                         oElectrodes(iElectrodeCount).Activation = [];
                         oElectrodes(iElectrodeCount).Potential = [];
                         oElectrodes(iElectrodeCount).Processed = [];
+                        oElectrodes(iElectrodeCount).Status = 'Potential';
                     case 'position'
                          %Split the oValue on the ,
                          [~,~,~,~,~,~,splitstring] = regexpi(oValue,',');
@@ -94,7 +95,7 @@ classdef PotentialDAL < BaseDAL
             aFileContents = oPotentialDAL.LoadFromFile(sFile);
             %Get the potential data and initialise processed.data
             for i = 1:oUnemap.oExperiment.Unemap.NumberOfChannels
-                oUnemap.Electrodes(i).Potential = aFileContents(:,i+1);
+                oUnemap.Electrodes(i).Potential.Data = aFileContents(:,i+1);
                 oUnemap.Electrodes(i).Processed.Data = NaN(size(aFileContents,1),1);
             end
             %Get the Timeseries data

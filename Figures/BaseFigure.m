@@ -87,6 +87,16 @@ classdef BaseFigure < handle
                 nValue = round(dCurrentValue);
             end
         end
+        
+        function nValue = GetEditInputDouble(oFigure,sEditTag)
+            %   Get the value entered by the user into the edit box
+            aString = get(oFigure.oGuiHandle.(sEditTag),'String');
+            if ~isempty(aString) && ~isempty(str2num(aString))
+                nValue = str2double(aString);
+            else
+                nValue = 0;
+            end
+        end
     end
 end
 

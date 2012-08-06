@@ -42,8 +42,7 @@ classdef BaseDAL
             %   Save the specificed entity
             save(sPath, 'oEntity');
         end
-        
-        
+
     end
     
 end

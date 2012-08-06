@@ -1,9 +1,5 @@
 To load signals into database:
-* Run H:\Perlscripts\BatchSig2Text.pl
-* Edit D:\Users\jash042\Documents\PhD\Analysis\Utilities\mInitialiseExperiment.m to hold details of
-experiment
-* Edit D:\Users\jash042\Documents\PhD\Analysis\Utilities\mInitialiseData.m paths at the top to direct 
-to correct locations
+* Run D:\Users\jash042\Documents\PhD\Analysis\Perlscripts\BatchSig2Text.pl
 * Run D:\Users\jash042\Documents\PhD\Analysis\Signals\mProcessSignalFiles.m entering in details for each
 signal file
 

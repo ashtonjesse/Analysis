@@ -19,6 +19,7 @@ classdef BaseEntity < handle
             % Save the Entity to the specified location
             oEntity.oDAL.SaveThisEntity(oEntity,sPath);
         end
+
     end
     
 end

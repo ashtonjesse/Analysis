@@ -17,14 +17,7 @@ classdef Preprocessing < SubFigure
         function oFigure = Preprocessing(oParent)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'Preprocessing',@Preprocessing_OpeningFcn);
-            
-            %Set the callback functions to the controls
-            %set(oFigure.oGuiHandle.oSignalSlider, 'callback', @(src, event) oSignalSlider_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.pmPolynomialOrder , 'callback', @(src, event)  pmPolynomialOrder_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.pmSplineOrder, 'callback', @(src, event)  pmSplineOrder_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.pmFilterOrder, 'callback', @(src, event)  pmFilterOrder_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.pmWindowSize, 'callback', @(src, event)  pmWindowSize_Callback(oFigure, src, event));
-            
+                        
             aSliderTexts = [oFigure.oGuiHandle.oSliderText1,oFigure.oGuiHandle.oSliderText2];
             sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Channel'}, {'Min', 1, 'Max', ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels, 'Value', 1, ...
@@ -34,10 +27,8 @@ classdef Preprocessing < SubFigure
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oFilterMenu, 'callback', @(src, event) oFilterMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oBaselineMenu, 'callback', @(src, event) oBaselineMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oSplineMenu, 'callback', @(src, event) oSplineMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oApplyMenu, 'callback', @(src, event) oApplyMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oApplyChannelMenu, 'callback', @(src, event) oApplyChannelMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oApplyAllMenu, 'callback', @(src, event) oApplyAllMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateMenu, 'callback', @(src, event) oTruncateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
@@ -62,18 +53,13 @@ classdef Preprocessing < SubFigure
                 % varargin   command line arguments to BaselineCorrection (see VARARGIN)
                 
                 %Set ui control creation attributes 
-                set(handles.pmPolynomialOrder, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
-                set(handles.pmSplineOrder, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
-                set(handles.pmFilterOrder, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
-                set(handles.pmWindowSize, 'string', {'1','2','3','4','5','6','7','8','9','10','11','12','13','14'});
-                set(handles.oCheckBoxBaseline, 'string', 'Baseline Correction')
-                set(handles.oCheckBoxSpline, 'string', 'Spline');
+                set(handles.oCheckBoxBaseline, 'string', 'Fit Polynomial')
+                set(handles.oCheckBoxSpline, 'string', 'Spline Smooth');
                 set(handles.oCheckBoxFilter, 'string', 'Filter');
+                set(handles.oCheckBoxDeprocess, 'string', 'Delete Processed Data');
                 set(handles.oCheckBoxBeats, 'string', 'Plot beats');
-                set(handles.oCheckBoxBaseline, 'TooltipString', 'Baseline Correction');
-                set(handles.oCheckBoxSpline, 'TooltipString', 'Spline');
-                set(handles.oCheckBoxFilter, 'TooltipString', 'Filter');
                 set(handles.oCheckBoxBeats, 'TooltipString', 'Plot beats');
+                set(handles.oCheckBoxOriginal, 'string', 'Plot Original');
                 
                 %Set the output attribute
                 handles.output = hObject;
@@ -94,6 +80,16 @@ classdef Preprocessing < SubFigure
             nValue = GetPopUpSelectionDouble@BaseFigure(oFigure,sPopUpMenuTag);
         end
         
+        function nValue = GetSliderIntegerValue(oFigure, sSliderTag)
+            nValue = GetSliderIntegerValue@BaseFigure(oFigure, sSliderTag);
+        end
+        
+        function nValue = GetEditInputDouble(oFigure, sEditTag)
+            nValue = GetEditInputDouble@BaseFigure(oFigure, sEditTag);
+            if nValue <= 0
+                error('Preprocessing.GetEditInputDouble.VerifyInput:Incorrect', 'You have entered a number incorrectly.')
+            end
+        end
     end
     
     methods
@@ -105,8 +101,9 @@ classdef Preprocessing < SubFigure
         % --------------------------------------------------------------------
         function oSlider_Callback(oFigure, src, event)
            % Plot the data associated with this channel
-            oFigure.PlotOriginal(get(oFigure.oGuiHandle.oSlider,'Value'));
-            oFigure.PlotProcessed(get(oFigure.oGuiHandle.oSlider,'Value'));
+           iChannel = oFigure.GetSliderIntegerValue('oSlider');
+           oFigure.PlotOriginal(iChannel);
+           oFigure.PlotProcessed(iChannel);
         end
         % --------------------------------------------------------------------
         function pmPolynomialOrder_Callback(oFigure, src, event)
@@ -139,7 +136,7 @@ classdef Preprocessing < SubFigure
         % --------------------------------------------------------------------
         function oTruncateMenu_Callback(oFigure, src, event)
             %Open the SelectData figure to select the data to truncate
-            if isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.Data(1))
+            if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Status,'Potential')
                 sInstructions = 'Select a range of data to truncate.';
             else
                 sInstructions = 'Select a range of data to truncate. This truncation will only be applied to the potential data (not any processed data)';
@@ -157,95 +154,61 @@ classdef Preprocessing < SubFigure
         end
                 
         % --------------------------------------------------------------------
-        function oFilterMenu_Callback(oFigure, src, event)
-            % Get the currently selected channel and inputs
-            iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));
-            iOrder = oFigure.GetPopUpSelectionDouble('pmFilterOrder');
-            iNumberofPoints = oFigure.GetPopUpSelectionDouble('pmWindowSize');
-            % Filter the channel data
-            oFigure.oParentFigure.oGuiHandle.oUnemap.FilterElectrodeData(iChannel, 'SovitzkyGolay',iOrder,iNumberofPoints);
-            % Plot the result
+        function oApplyChannelMenu_Callback(oFigure, src, event)
+            %Apply processing steps to the currently selected channel
+            
+            %Get the channel index
+            iChannel = oFigure.GetSliderIntegerValue('oSlider');
+           
+            bDeProcess = get(oFigure.oGuiHandle.oCheckBoxDeprocess,'Value');
+            if bDeProcess 
+                %The DeProcess checkbox is checked so clear the processed
+                %data
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ClearProcessedData(iChannel);
+            else
+                %Work out from the checkbox selections which processing steps
+                %are to be carried out and get the Input options
+                aInOptions = oFigure.GetInputsForProcessing();
+                
+                %Process the data
+                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(iChannel, aInOptions);
+            end
+            %Replot the results
             oFigure.PlotProcessed(iChannel);
+            if get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
+                oFigure.PlotPolynomial(iChannel);
+            end
         end
         
         % --------------------------------------------------------------------
-        function oBaselineMenu_Callback(oFigure, src, event)
-            %Takes the polynomial order specified in the popup and applies
-            %this polynomial fit to the data 
+        function oApplyAllMenu_Callback(oFigure, src, event)
+            %   Apply the selected processing steps to all the channels in
+            %   oUnemap.Electrodes
             
-            %Get the polynomial order from the selection made in the popup
-            iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
-            %Get the currently selected channel
-            iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));
-            %Remove baseline 
-            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(...
-                'RemoveMedianAndFitPolynomial', iPolynomialOrder,iChannel);
+            %Work out from the checkbox selections which processing steps
+            %are to be carried out and get the Input options
+            aInOptions = oFigure.GetInputsForProcessing();
             
-            %Plot the data with the baseline removed.
+            %Process the data
+            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData(aInOptions);
+            
+            %Replot the results
+            iChannel = oFigure.GetSliderIntegerValue('oSlider');
             oFigure.PlotProcessed(iChannel);
-        end
-        
-        % --------------------------------------------------------------------
-        function oSplineMenu_Callback(oFigure, src, event)
-            
-            %Get the spline approximation order from the selection made in the popup
-            iSplineOrder = oFigure.GetPopUpSelectionDouble('pmSplineOrder');
-            %Get the currently selected channel
-            iChannel = round(get(oFigure.oGuiHandle.oSlider,'Value'));           
-            
-            %Smooth with a spline
-            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(...
-                'SplineSmoothData', iSplineOrder,iChannel);
-                        
-            %Plot the Spline approximation
-             oFigure.PlotProcessed(iChannel);
-            
-        end
-        
-        % --------------------------------------------------------------------
-        function oApplyMenu_Callback(oFigure, src, event)
-            %   Apply the selected processing steps to all the channels in oUnemap.Electrodes and save.
-            bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
-            bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
-            bFilter = get(oFigure.oGuiHandle.oCheckBoxFilter,'Value');
-            
-            if bBaseline
-                %   Get the polynomial order from the selection made in the listbox
-                %   control
-                iPolynomialOrder = oFigure.GetPopUpSelectionDouble('pmPolynomialOrder');
-                
-                %  Remove baseline - do all the channels
-                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData(...
-                    'RemoveMedianAndFitPolynomial', iPolynomialOrder);
-            end
-            
-            if bSpline
-                %Get the spline approximation order from the selection made in the popup
-                iSplineOrder = oFigure.GetPopUpSelectionDouble('pmSplineOrder');
-                
-                %Smooth the data with a spline approximation
-                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData(...
-                    'SplineSmoothData',iSplineOrder);
-            end
-            
-            if bFilter
-                
+            if get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
+                oFigure.PlotPolynomial(iChannel);
             end
         end
-        
     end
     
     %% Private methods
     methods (Access = private)
         function PlotOriginal(oFigure, iChannel)
-            if ~isinteger(iChannel)
-                %Round down to nearest integer if a double is supplied
-                iChannel = round(iChannel(1));
-            end
-            sTitle = sprintf('Original Signal for Channel %d',iChannel);
             oAxes = oFigure.oGuiHandle.oTopAxes;
+            cla(oAxes);
+            sTitle = sprintf('Original Signal for Channel %d',iChannel);
             plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential,'k');
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
             axis(oAxes, 'auto');
             title(oAxes, sTitle);
         end
@@ -263,15 +226,18 @@ classdef Preprocessing < SubFigure
         
         function PlotProcessed(oFigure, iChannel)
             oAxes = oFigure.oGuiHandle.oMiddleAxes;
-            if ~isinteger(iChannel)
-                %Round down to nearest integer if a double is supplied
-                iChannel = round(iChannel(1));
-            end
+            cla(oAxes);
             %If there has been some processing done then plot the data
-            if ~isnan(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data(1))
+            if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
                 if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                         oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
+                    hold(oAxes, 'on');
+                    if get(oFigure.oGuiHandle.oCheckBoxOriginal,'Value')
+                        plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                            oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'-b');
+                        hold(oAxes, 'off');
+                    end
                     if get(oFigure.oGuiHandle.oCheckBoxBeats,'Value')
                         hold(oAxes, 'on');
                         plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
@@ -287,9 +253,54 @@ classdef Preprocessing < SubFigure
                 sTitle = sprintf('Processed Signal for Channel %d', iChannel);
                 title(oAxes,sTitle);
             else
-                %Else clear the axes and hide them
-                cla(oAxes);
+                %Else hide the axes
                 set(oAxes,'Visible','off');
+            end
+            
+        end
+        
+        function PlotPolynomial(oFigure, iChannel)
+            oAxes = oFigure.oGuiHandle.oMiddleAxes;
+            if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
+                hold(oAxes, 'on');
+                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BaselinePoly,'-r');
+                hold(oAxes,'off');
+            end
+        end
+        
+        function aInOptions = GetInputsForProcessing(oFigure)
+            %Call this function to check the checkbox inputs to determine
+            %what processing steps are to be carried out.
+            
+            %Get the values of the checkboxes to see which processing steps
+            %have been selected
+            bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
+            bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
+            bFilter = get(oFigure.oGuiHandle.oCheckBoxFilter,'Value');
+            %Initialise Options array and counter
+            aInOptions = [];
+            i = 1;
+            
+            if bBaseline
+                iPolynomialOrder = oFigure.GetEditInputDouble('edtPolynomialOrder');
+                aInOptions(i).Procedure = 'RemoveMedianAndFitPolynomial';
+                aInOptions(i).Inputs = iPolynomialOrder;
+                i = i + 1;
+            end
+            
+            if bSpline
+                iSplineOrder = oFigure.GetEditInputDouble('edtSplineOrder');
+                aInOptions(i).Procedure = 'SplineSmoothData';
+                aInOptions(i).Inputs = iSplineOrder;
+                i = i + 1;
+            end
+            
+            if bFilter
+                iOrder = oFigure.GetEditInputDouble('edtFilterOrder');
+                iWindowSize = oFigure.GetEditInputDouble('edtWindowSize');
+                aInOptions(i).Procedure = 'FilterData';
+                aInOptions(i).Inputs = {'SovitzkyGolay',iOrder,iWindowSize};
             end
             
         end
