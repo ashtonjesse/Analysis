@@ -42,13 +42,13 @@ classdef WaveletAnalysis < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Turn zoom on for this figure
-            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag), 'on');                       
-            
+            set(oFigure.oZoom,'enable','on'); 
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             %Plot the original and processed data of the first signal
             oFigure.CreateSubPlot();
             oFigure.PlotOriginal(1);
             
-            % --- Executes just before BaselineCorrection is made visible.
+            % --- Executes just before Figure is made visible.
             function WaveletAnalysis_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
                 % hObject    handle to figure 
@@ -90,11 +90,40 @@ classdef WaveletAnalysis < SubFigure
         end
         
         % --------------------------------------------------------------------
+        function PostZoom_Callback(oFigure, src, event)
+            %Synchronize the zoom of all the axes
+            
+            %Get the axes handles
+            aPlotObjects = get(oFigure.oGuiHandle.oAxesPanel,'children');
+            %Get the handle for the scalogram axes
+            oScalogramAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, 'ScalogramAxes');
+            %Get the current axes and selected limit
+            oCurrentAxes = event.Axes;
+            oLim = get(oCurrentAxes,'XLim');
+            %Get the maximum time series value
+            dMaxTime = max(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
+            iScalogramRes = size(oFigure.Coefficients,2);
+            oScalogramLim = oLim*(iScalogramRes/dMaxTime);
+            %Loop through the axes and set the new x limits
+            for i = 1:length(aPlotObjects)
+                if aPlotObjects(i) == oScalogramAxes
+                    %If the current axes is the scalogram axes adjust the
+                    %scale to suit the image resolution
+                    set(oScalogramAxes,'XLim',oScalogramLim);
+                else
+                    set(aPlotObjects(i),'XLim',oLim);
+                end
+            end
+ 
+            
+        end
+        
+        % --------------------------------------------------------------------
         function oSlider_Callback(oFigure, src, event)
            % Plot the data associated with this channel
            iChannel = oFigure.GetSliderIntegerValue('oSlider');
            oFigure.PlotOriginal(iChannel);
-           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential,...
+           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,...
                 1:oFigure.NumberOfScales,'gaus1');
             oFigure.PlotScalogram();
         end
@@ -159,7 +188,6 @@ classdef WaveletAnalysis < SubFigure
                  subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oAxesPanel, 'Tag', ...
                      sprintf('ScaleAxes%d',i));
              end
-             
         end
          
         function PlotOriginal(oFigure, iChannel)
@@ -169,7 +197,7 @@ classdef WaveletAnalysis < SubFigure
             set(oSignalPlot,'NextPlot','replacechildren');
             %Plot the signal data for the currently selected channels
             plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential,'k');
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
             axis(oSignalPlot, 'tight');
         end
         

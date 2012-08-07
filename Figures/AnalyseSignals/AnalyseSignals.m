@@ -55,7 +55,7 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
             oFigure.PlotECG();
 
-            % --- Executes just before BaselineCorrection is made visible.
+            % --- Executes just before Figure is made visible.
             function AnalyseSignals_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
                 % hObject    handle to figure 

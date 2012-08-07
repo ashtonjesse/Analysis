@@ -6,6 +6,7 @@ classdef BaseFigure < handle
         oGuiHandle;
         sFigureTag;
         oDAL;
+        oZoom;
     end
     
     methods
@@ -16,19 +17,21 @@ classdef BaseFigure < handle
             %Get the DAL for this class
             oFigure.oDAL = BaseFigureDAL();
             gui_Singleton = 1;
-            gui_State = struct('gui_Name',sGuiFileName, 'gui_Singleton',  gui_Singleton, 'gui_OpeningFcn', OpeningFcn, 'gui_OutputFcn',  @BaselineCorrection_OutputFcn, 'gui_LayoutFcn',  [] , 'gui_Callback',   []);
+            gui_State = struct('gui_Name',sGuiFileName, 'gui_Singleton',  gui_Singleton, 'gui_OpeningFcn', OpeningFcn, 'gui_OutputFcn',  @BaseFigure_OutputFcn, 'gui_LayoutFcn',  [] , 'gui_Callback',   []);
             %Make the gui figure, get its handles and store locally
             oOutput = gui_mainfcn(gui_State);
             oFigure.oGuiHandle = guihandles(oOutput);            
             
             %Set the figure tag
             oFigure.sFigureTag = strcat(sGuiFileName,'Fig');
+            %Create a zoom object
+            oFigure.oZoom = zoom(oFigure.oGuiHandle.(oFigure.sFigureTag));
             
             % --- Outputs from this function are returned to the command line.
             % Currently don't need to use this function but need it is here to get
             % gui_mainfcn to work without me having to overload it and
             % rewrite it
-            function varargout = BaselineCorrection_OutputFcn(hObject, eventdata, handles)
+            function varargout = BaseFigure_OutputFcn(hObject, eventdata, handles)
                 % varargout  cell array for returning output args (see VARARGOUT);
                 % hObject    handle to figure (not initialised properly)
                 % eventdata  reserved - to be defined in a future version of MATLAB
