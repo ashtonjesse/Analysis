@@ -366,6 +366,7 @@ classdef AnalyseSignals < SubFigure
                  set(oSignalPlot, 'buttondownfcn', @(src, event)  oSignalPlot_Callback(oFigure, src, event));
                  %Set the axis on the subplot
                  axis(oSignalPlot,[TimeMin, TimeMax, LastYMin - 0.5, LastYMax + 1]);
+             
                  %Create a label that shows the channel name
                  oLabel = text(TimeMin,LastYMax + 0.2,char(oElectrode.Name));
                  if iChannelIndex == oFigure.SelectedChannel;

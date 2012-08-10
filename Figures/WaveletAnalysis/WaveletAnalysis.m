@@ -123,7 +123,7 @@ classdef WaveletAnalysis < SubFigure
            % Plot the data associated with this channel
            iChannel = oFigure.GetSliderIntegerValue('oSlider');
            oFigure.PlotOriginal(iChannel);
-           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,...
+           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,...
                 1:oFigure.NumberOfScales,'gaus1');
             oFigure.PlotScalogram();
         end
@@ -197,7 +197,7 @@ classdef WaveletAnalysis < SubFigure
             set(oSignalPlot,'NextPlot','replacechildren');
             %Plot the signal data for the currently selected channels
             plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
             axis(oSignalPlot, 'tight');
         end
         
@@ -226,13 +226,13 @@ classdef WaveletAnalysis < SubFigure
                 rnear = 0;
                 r0 = 0;
                 for i = 1:1:7,
-                    rnear = rnear + exp(-((i - 1)^2*0.061))*real(oFigure.Coefficients(i,:));
-                    r0 = r0 + exp(-((i - 1)^2*0.061));
+                    rnear = rnear + exp(-(((i - 1)^2)*0.061))*real(oFigure.Coefficients(i,:));
+                    r0 = r0 + exp(-(((i - 1)^2)*0.061));
                 end;
                 rnear = rnear/r0;
                 rfar = 0;
                 for i = 1:1:7,
-                    rfar = rfar + exp(-((i - 1)^2*0.061))*real(oFigure.Coefficients(end + 1 - i,:));
+                    rfar = rfar + exp(-(((i - 1)^2)*0.061))*real(oFigure.Coefficients(end + 1 - i,:));
                 end;
                 rfar = rfar/r0;
                 oAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, sprintf('ScaleAxes%d',(((oFigure.NumberOfScales)/5)+1)));

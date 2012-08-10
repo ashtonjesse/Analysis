@@ -61,5 +61,3 @@ oECG.oExperiment;
 oECG.Original;
 oECG.TimeSeries;
 oECG.Processed.Beats;
-
-Activation:

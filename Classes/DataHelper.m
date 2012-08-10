@@ -180,6 +180,31 @@ classdef DataHelper
         end
         
     end
-       
+    
+    methods (Static)
+        function aOutData = ColToArray(aInData,iXDim,iYDim)
+            %Reshape the column vector into an array. iXDim is the number
+            %of rows in the basic grouping block of the array multiplied by
+            %the number of grouping blocks and iYDim is the number of
+            %columns in the grouping block.
+            
+            %Reshape the array into iXDim x iYDim
+            aHalfWay = transpose(reshape(aInData,iYDim,iXDim));
+            [iMaxRows, iMaxColumns] = size(aHalfWay);
+            %Reshape the array so that the grouping blocks are arranged
+            %correctly
+            aOutData = [aHalfWay(1:(iMaxRows/2),1:iMaxColumns) , aHalfWay((iMaxRows/2)+1:iMaxRows,1:iMaxColumns)];
+        end
+        
+        function aOutData = ArrayToCol(aInData)
+            %Reshape an array in to a column vector. iXDim is the number
+            %of rows in the basic grouping block of the array multiplied by
+            %the number of grouping blocks and iYDim is the number of
+            %columns in the grouping block.
+            [iMaxRows, iMaxColumns] = size(aInData);
+            aHalfWay = [aInData(1:iMaxRows,1:(iMaxColumns/2)) ; aInData(1:iMaxRows,((iMaxColumns/2)+1):iMaxColumns)];
+            aHalfWay = transpose(aHalfWay);
+            aOutData = reshape(aHalfWay,iMaxRows*iMaxColumns,1);
+        end
+    end
 end
-

@@ -10,7 +10,7 @@ classdef Preprocessing < SubFigure
     %   of the parent figure and auto errors will be thrown if this is done. 
     
     properties 
-
+        CurrentZoomLimits = [];
     end
     
     methods
@@ -38,13 +38,14 @@ classdef Preprocessing < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Turn zoom on for this figure
-            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag), 'on');                       
+            set(oFigure.oZoom,'enable','on'); 
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
             %Plot the original and processed data of the first signal
             oFigure.PlotOriginal(1);
             oFigure.PlotProcessed(1);
                        
-            % --- Executes just before BaselineCorrection is made visible.
+            % --- Executes just before the figure is made visible.
             function Preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
                 % hObject    handle to figure 
@@ -106,6 +107,19 @@ classdef Preprocessing < SubFigure
            oFigure.PlotProcessed(iChannel);
         end
         % --------------------------------------------------------------------
+        function PostZoom_Callback(oFigure, src, event)
+            %Synchronize the zoom of all the axes
+            
+            %Get the current axes and selected limit
+            oCurrentAxes = event.Axes;
+            oLim = get(oCurrentAxes,'XLim');
+            oFigure.CurrentZoomLimits = oLim;
+            %Apply to axes
+            set(oFigure.oGuiHandle.oTopAxes,'XLim',oLim);
+            set(oFigure.oGuiHandle.oMiddleAxes,'XLim',oLim);
+            
+        end
+        % --------------------------------------------------------------------
         function pmPolynomialOrder_Callback(oFigure, src, event)
             
         end
@@ -142,7 +156,7 @@ classdef Preprocessing < SubFigure
                 sInstructions = 'Select a range of data to truncate. This truncation will only be applied to the potential data (not any processed data)';
             end
             oSelectDataFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Potential,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Potential.Data,...
                 {{'oInstructionText','string',sInstructions} ; ...
                 {'oBottomText','visible','off'} ; ...
                 {'oBottomPopUp','visible','off'} ; ...
@@ -159,20 +173,14 @@ classdef Preprocessing < SubFigure
             
             %Get the channel index
             iChannel = oFigure.GetSliderIntegerValue('oSlider');
-           
-            bDeProcess = get(oFigure.oGuiHandle.oCheckBoxDeprocess,'Value');
-            if bDeProcess 
-                %The DeProcess checkbox is checked so clear the processed
-                %data
-                oFigure.oParentFigure.oGuiHandle.oUnemap.ClearProcessedData(iChannel);
-            else
-                %Work out from the checkbox selections which processing steps
-                %are to be carried out and get the Input options
-                aInOptions = oFigure.GetInputsForProcessing();
-                
-                %Process the data
-                oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(iChannel, aInOptions);
-            end
+            
+            %Work out from the checkbox selections which processing steps
+            %are to be carried out and get the Input options
+            aInOptions = oFigure.GetInputsForProcessing();
+            
+            %Process the data
+            oFigure.oParentFigure.oGuiHandle.oUnemap.ProcessElectrodeData(iChannel, aInOptions);
+
             %Replot the results
             oFigure.PlotProcessed(iChannel);
             if get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
@@ -211,6 +219,10 @@ classdef Preprocessing < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
             axis(oAxes, 'auto');
             title(oAxes, sTitle);
+            if ~isempty(oFigure.CurrentZoomLimits)
+                    %Apply the current zoom limits if there are some
+                    set(oAxes,'XLim',oFigure.CurrentZoomLimits);
+            end
         end
         
         function TruncateData(oFigure, src, event)
@@ -228,7 +240,8 @@ classdef Preprocessing < SubFigure
             oAxes = oFigure.oGuiHandle.oMiddleAxes;
             cla(oAxes);
             %If there has been some processing done then plot the data
-            if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
+%             if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
+                set(oAxes,'Visible','on');
                 if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                         oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
@@ -244,12 +257,15 @@ classdef Preprocessing < SubFigure
                             oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats,'-g');
                         hold(oAxes, 'off');
                     end
-                else
-                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r');
-                end
-                
+%                 else
+%                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+%                         oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r');
+%                 end
                 axis(oAxes, 'auto');
+                if ~isempty(oFigure.CurrentZoomLimits)
+                    %Apply the current zoom limits if there are some
+                    set(oAxes,'XLim',oFigure.CurrentZoomLimits);
+                end
                 sTitle = sprintf('Processed Signal for Channel %d', iChannel);
                 title(oAxes,sTitle);
             else
@@ -275,34 +291,38 @@ classdef Preprocessing < SubFigure
             
             %Get the values of the checkboxes to see which processing steps
             %have been selected
-            bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
-            bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
-            bFilter = get(oFigure.oGuiHandle.oCheckBoxFilter,'Value');
+            bDeProcess = get(oFigure.oGuiHandle.oCheckBoxDeprocess,'Value');
             %Initialise Options array and counter
             aInOptions = [];
             i = 1;
-            
-            if bBaseline
-                iPolynomialOrder = oFigure.GetEditInputDouble('edtPolynomialOrder');
-                aInOptions(i).Procedure = 'RemoveMedianAndFitPolynomial';
-                aInOptions(i).Inputs = iPolynomialOrder;
-                i = i + 1;
+            if bDeProcess
+                aInOptions(i).Procedure = 'ClearData';
+            else
+                bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
+                bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
+                bFilter = get(oFigure.oGuiHandle.oCheckBoxFilter,'Value');
+                
+                if bBaseline
+                    iPolynomialOrder = oFigure.GetEditInputDouble('edtPolynomialOrder');
+                    aInOptions(i).Procedure = 'RemoveMedianAndFitPolynomial';
+                    aInOptions(i).Inputs = iPolynomialOrder;
+                    i = i + 1;
+                end
+                
+                if bSpline
+                    iSplineOrder = oFigure.GetEditInputDouble('edtSplineOrder');
+                    aInOptions(i).Procedure = 'SplineSmoothData';
+                    aInOptions(i).Inputs = iSplineOrder;
+                    i = i + 1;
+                end
+                
+                if bFilter
+                    iOrder = oFigure.GetEditInputDouble('edtFilterOrder');
+                    iWindowSize = oFigure.GetEditInputDouble('edtWindowSize');
+                    aInOptions(i).Procedure = 'FilterData';
+                    aInOptions(i).Inputs = {'SovitzkyGolay',iOrder,iWindowSize};
+                end
             end
-            
-            if bSpline
-                iSplineOrder = oFigure.GetEditInputDouble('edtSplineOrder');
-                aInOptions(i).Procedure = 'SplineSmoothData';
-                aInOptions(i).Inputs = iSplineOrder;
-                i = i + 1;
-            end
-            
-            if bFilter
-                iOrder = oFigure.GetEditInputDouble('edtFilterOrder');
-                iWindowSize = oFigure.GetEditInputDouble('edtWindowSize');
-                aInOptions(i).Procedure = 'FilterData';
-                aInOptions(i).Inputs = {'SovitzkyGolay',iOrder,iWindowSize};
-            end
-            
         end
     end
         

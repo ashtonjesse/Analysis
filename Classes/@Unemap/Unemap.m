@@ -73,7 +73,7 @@ classdef Unemap < BasePotential
         end
         
         function GetCurvature(oUnemap,iElectrodeNumber)
-            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+            if strcmp(oUnemap.Electrodes(iElectrodeNumber).Status,'Potential');
                 error('Unemap.GetCurvature.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Perform on processed data
@@ -83,7 +83,7 @@ classdef Unemap < BasePotential
         end
         
         function GetSlope(oUnemap,iElectrodeNumber)
-            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+            if strcmp(oUnemap.Electrodes(iElectrodeNumber).Status,'Potential');
                 error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
             else
                 %Perform on processed data
@@ -162,16 +162,6 @@ classdef Unemap < BasePotential
             % Loops through all the electrodes in the array and makes calls
             % to the inherited processing methods
             
-            % % %             switch sProcedure
-            % % %                 case 'NeighbourhoodAverage'
-            % % %                 if ~isnan(oUnemap.Electrodes(1).Processed.Data(1))
-            % % %                     aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
-            % % %                     iBlockDim = varargin{1,1};
-            % % %                     aArrayData = oUnemap.ReshapeData('RowsToArray',aElectrodeData(1,:));
-            % % %                 else
-            % % %                     error('Unemap.ProcessArrayData:NeighbourhoodAverage', 'You need to have processed data before performing a neighbourhood average');
-            % % %                 end
-            % % %                 otherwise
             oWaitbar = waitbar(0,'Please wait...');
             iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
             %Loop through the channels
@@ -199,10 +189,12 @@ classdef Unemap < BasePotential
                          oUnemap.Electrodes(iChannel).Processed.Data = aOutData;
                          oUnemap.Electrodes(iChannel).Processed.BaselinePolyOrder = iOrder;
                          oUnemap.Electrodes(iChannel).Processed.BaselinePoly = aBaselinePolynomial;
+                         oUnemap.FinishProcessing(iChannel);
                      case 'SplineSmoothData'
                          iOrder = aInOptions(j).Inputs;
                          oUnemap.Electrodes(iChannel).Processed.Data = ...
                              oUnemap.SplineSmoothData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iOrder);
+                         oUnemap.FinishProcessing(iChannel);
                      case 'FilterData'
                          if strcmp(aInOptions(j).Inputs{1,1},'50HzNotch')
                              dSamplingFreq = aInOptions(j).Inputs{1,2};
@@ -214,18 +206,28 @@ classdef Unemap < BasePotential
                              oUnemap.Electrodes(iChannel).Processed.Data = ...
                                  oUnemap.FilterData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,'SovitzkyGolay',iOrder,iWindowSize);
                          end
+                         oUnemap.FinishProcessing(iChannel);
                      case 'RemoveLinearInterpolation'
                          iOrder = aInOptions(j).Inputs;
                          oUnemap.Electrodes(iChannel).Processed.Data = ...
                              oUnemap.RemoveLinearInterpolation(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iOrder);
+                     case 'ClearData'
+                         oUnemap.ClearProcessedData(iChannel);
                  end
-                 oUnemap.Electrodes(iChannel).Status = 'Processed';
              end
-             %Calculate slope and curvature
-             oUnemap.GetSlope(iChannel);
-             oUnemap.GetCurvature(iChannel);
-             %Each channel is accepted by default
-             oUnemap.AcceptChannel(iChannel);
+        end
+        
+        function FinishProcessing(oUnemap,iChannel)
+            %A function to call after applying some processing steps
+            
+            %The channel is now processed
+            oUnemap.Electrodes(iChannel).Status = 'Processed';
+            %Calculate slope and curvature
+            oUnemap.GetSlope(iChannel);
+            oUnemap.GetCurvature(iChannel);
+            %Each channel is accepted by default
+            oUnemap.AcceptChannel(iChannel);
+            
         end
         
         function ClearProcessedData(oUnemap, iChannel)
@@ -243,11 +245,11 @@ classdef Unemap < BasePotential
             
             %Get an array of columns with the potential data from each
             %electrode
-            aPotentialData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential');
+            aPotentialData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential','Data');
             %Select the indexes to keep
             aPotentialData = aPotentialData(bIndexesToKeep,:);
             %Truncate the potential data
-            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential',aPotentialData);
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Potential','Data',aPotentialData);
 
             if strcmp(oUnemap.Electrodes(1).Status,'Processed')
                 %perform on existing potential data as well
@@ -316,29 +318,71 @@ classdef Unemap < BasePotential
             row = ceil((iElectrodeNumber - floor(iElectrodeNumber/((iNumberOfChannels/2) + 1)) * (iNumberOfChannels/2))/iYdim);
             col = iElectrodeNumber + floor(iElectrodeNumber/((iNumberOfChannels/2)+1)) * iYdim - (ceil(iElectrodeNumber/iYdim)-1) * iYdim;
         end
-        
-        function aOutData = ReshapeData(oUnemap,sProcedure,aInData)
-            %Depending on the specified procedure this function turns
-            %a row of time data from electrodes into a matrix in the shape
-            %of the array from which these electrodes came from, or vice versa. 
-            %Note that some of the array dimensions are hard coded at the
-            %moment...
+               
+        function ApplyNeighbourhoodAverage(oUnemap, aInOptions)
+            %This function takes a struct as an input specifying an
+            %averaging function to apply and bounds of a kernel over which to apply
+            %the function. In this way it performs a subtraction of some
+            %neighbourhood average from each signal to remove common
+            %components
             
-            %Assumes that the aInData is in the form of time x electrodes
-            %and that the columns refer to electrodes from 1 to
-            %NumOfChannels
-            %Determine what to do
-            switch sProcedure
-                case 'RowsToArray'
-                    aOutData = zeros(18,16);
-                    %Loop through all the electrodes
-                    for i = 1:size(aInData,2);
-                        [row col] = oUnemap.GetRowColIndexesForElectrode(i);
-                        aOutData(row, col) = aInData(i);
+            %Get the average method from aInputs struct
+            sAverageMethod = aInOptions.Procedure;
+            %Get the template region
+            dKernelBounds = aInOptions.KernelBounds;
+            %Get the timeseries data for all electrodes
+            aArrayTimeSeries = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+            aProcessedTimeSeries = zeros(size(aArrayTimeSeries,1),size(aArrayTimeSeries,2));
+            
+            %Get the shape of the array information in the form that is
+            %suitable for DataHelper.ColToArray
+            iRows = oUnemap.oExperiment.Unemap.NumberOfPlugs * oUnemap.oExperiment.Plot.Electrodes.xDim;
+            iColumns = oUnemap.oExperiment.Plot.Electrodes.yDim;
+            oWaitbar = waitbar(0,'Please wait...');
+            iLength = length(oUnemap.TimeSeries);
+            switch (sAverageMethod)
+                case 'Mean'
+                    for i = 1:iLength
+                        %update the waitbar
+                        waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Timepoint %d',i));
+                        %Get the data for this time point
+                        aTimePoint = aArrayTimeSeries(i,:);
+                        %dMean = mean(aTimePoint);
+                        %Reshape the vector into an array
+                        aReshapedArray = DataHelper.ColToArray(aTimePoint,iRows,iColumns);
+                        aSubtractedMean = colfilt(aReshapedArray,dKernelBounds,'sliding',@SubtractMean);
+                        %Return the array to the correct shape and save in
+                        %processed array
+                        aProcessedTimeSeries(i,:) = DataHelper.ArrayToCol(aSubtractedMean);
                     end
-                case 'ArrayToRows'
+                    %Save the result
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aProcessedTimeSeries);
             end
+            %close the waitbar
+            close(oWaitbar);
+            
+            %subfunction that does the mean subtraction
+            function aOut = SubtractMean(aIn)
+                %Loop through columns and 
+                %find mean of non-zero elements
+                [Xdim Ydim] = size(aIn);
+                aOut = zeros(1, Ydim);
+                iMidPoint = ceil(Xdim/2);
+                for j = 1:Ydim;
+                    %Subtract all the nonzero elements from the centre
+                    %element
+                    dDiff = aIn(iMidPoint,j) - aIn(aIn(:,j)~=0,j);
+                    %Count the number of nonzero elements
+                    iCount = length(dDiff);
+                    %Take the average of these differences (removing the
+                    %count of the 0 for the middle element)
+                    aOut(1,j) = sum(dDiff)/(iCount - 1);
+                    %aOut(1,j) = aIn(iMidPoint,j) - dMean;
+                end
+            end
+            
         end
+        
         %% Methods relating to Electrode Activation data
         function MarkActivation(oUnemap, sMethod)
             %Mark activation for whole array based on the specified method 

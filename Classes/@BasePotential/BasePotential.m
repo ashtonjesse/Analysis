@@ -119,31 +119,7 @@ classdef BasePotential < BaseEntity
                 OutData(:,j) = fInterpolate({aAverages(:,1),aAverages(:,j+1)},iOrder,x);
             end
         end
-        
-% % %         function OutData = ProcessData(oBasePotential, aInData, sProcedure, varargin)
-% % %             % This function processes data depending on the specified procedure 
-% % %             %  to be performed. 
-% % %             % After aInData the arguments should be listed:
-% % %             % - sProcedure: a string specifying the procedure to run:
-% % %             
-% % %             
-% % %             
-% % %             
-% % %             
-% % %                     
-% % %                     'NeighbourhoodAverage'
-% % %                     oImage = mat2gray(aInData);
-% % %                     iBlockDim = cell2mat(varargin{1,1});
-% % %                     OutData = colfilt(oImage,[iBlockDim iBlockDim],'sliding',@(oBasePotential) SubtractNeighbourhoodAverage(oBasePotential));
-% % %         end
-        
-    end
-    
-    methods (Access = private)
-        %% Private methods
-        function aOut = SubtractNeighbourhoodAverage(oBasePotential)
-            x = 1;
-        end
+      
     end
     
 end

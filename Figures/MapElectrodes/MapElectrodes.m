@@ -27,7 +27,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenPotentialMenu, 'callback', @(src, event) oGenPotentialMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenActivationMenu, 'callback', @(src, event) oGenActivationMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oProcessSignalsMenu, 'callback', @(src, event) oProcessSignalsMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oAverageMenu, 'callback', @(src, event) oAverageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.rdTopButton, 'callback', @(src, event) rdTopButton_Callback(oFigure, src, event));
             
             %set up slider
@@ -61,7 +61,8 @@ classdef MapElectrodes < SubFigure
                 set(handles.rdBottomButton, 'value', 1);
                 set(handles.rdBottomButton, 'visible', 'off');
                 set(handles.oSliderPanel,'visible','off');
-                
+                set(handles.txtRows,'string','Enter a kernel row count');
+                set(handles.txtCols,'string','Enter a kernel column count');
                 %Set the output attribute
                 handles.output = hObject;
                 %Update the gui handles 
@@ -115,8 +116,15 @@ classdef MapElectrodes < SubFigure
             
         end
         
-        function oProcessSignalsMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ProcessArrayData('NeighbourhoodAverage',3);
+        function oAverageMenu_Callback(oFigure, src, event)
+            %Prepare the input options for the ApplyNeighbourhoodAverage
+            %function
+            aInOptions = struct();
+            aInOptions.Procedure = 'Mean';
+            iRows = oFigure.GetEditInputDouble('edtRows');
+            iCols = oFigure.GetEditInputDouble('edtCols');
+            aInOptions.KernelBounds = [iRows iCols];
+            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
         
         function oDataCursorOnTool_Callback(oFigure, src, event)
