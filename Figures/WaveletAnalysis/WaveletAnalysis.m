@@ -27,7 +27,7 @@ classdef WaveletAnalysis < SubFigure
             aSliderTexts = [oFigure.oGuiHandle.oSliderText1,oFigure.oGuiHandle.oSliderText2];
             sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Channel'}, {'Min', 1, 'Max', ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels, 'Value', 1, ...
-                'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',[0.01  0.1]},{},{},'%0.0f',...
+                'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',[0.005  0.1]},{},{},'%0.0f',...
                 oFigure.oGuiHandle.oSliderPanel, oFigure.oGuiHandle.oSlider,oFigure.oGuiHandle.oSliderEdit,aSliderTexts);
             
             %Set the callback functions to the menu items 
@@ -123,7 +123,7 @@ classdef WaveletAnalysis < SubFigure
            % Plot the data associated with this channel
            iChannel = oFigure.GetSliderIntegerValue('oSlider');
            oFigure.PlotOriginal(iChannel);
-           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,...
+           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
                 1:oFigure.NumberOfScales,'gaus1');
             oFigure.PlotScalogram();
         end
@@ -198,6 +198,10 @@ classdef WaveletAnalysis < SubFigure
             %Plot the signal data for the currently selected channels
             plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
+            hold(oSignalPlot,'on');
+            plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,'-r');
+            hold(oSignalPlot,'off');
             axis(oSignalPlot, 'tight');
         end
         

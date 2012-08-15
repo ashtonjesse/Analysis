@@ -206,5 +206,17 @@ classdef DataHelper
             aHalfWay = transpose(aHalfWay);
             aOutData = reshape(aHalfWay,iMaxRows*iMaxColumns,1);
         end
+        
+        function dOutput = GetDoubleFromString(sInString)
+            %Read the string and extract the number
+              [~,~,~,matchstring,~,~,~] = regexp(sInString,'\d');
+             if ~isempty(matchstring)
+                 sCombined = '';
+                 for i = 1:length(matchstring)
+                     sCombined = strcat(sCombined,matchstring(i));
+                 end
+                 dOutput = str2double(sCombined);
+             end
+        end
     end
 end

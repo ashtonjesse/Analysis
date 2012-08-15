@@ -103,6 +103,7 @@ classdef Preprocessing < SubFigure
         function oSlider_Callback(oFigure, src, event)
            % Plot the data associated with this channel
            iChannel = oFigure.GetSliderIntegerValue('oSlider');
+           oFigure.CurrentZoomLimits = [];
            oFigure.PlotOriginal(iChannel);
            oFigure.PlotProcessed(iChannel);
         end
@@ -112,12 +113,14 @@ classdef Preprocessing < SubFigure
             
             %Get the current axes and selected limit
             oCurrentAxes = event.Axes;
-            oLim = get(oCurrentAxes,'XLim');
-            oFigure.CurrentZoomLimits = oLim;
+            oXLim = get(oCurrentAxes,'XLim');
+            oYLim = get(oCurrentAxes,'YLim');
+            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
             %Apply to axes
-            set(oFigure.oGuiHandle.oTopAxes,'XLim',oLim);
-            set(oFigure.oGuiHandle.oMiddleAxes,'XLim',oLim);
-            
+            set(oFigure.oGuiHandle.oTopAxes,'XLim',oXLim);
+            set(oFigure.oGuiHandle.oMiddleAxes,'XLim',oXLim);
+            set(oFigure.oGuiHandle.oTopAxes,'YLim',oYLim);
+            set(oFigure.oGuiHandle.oMiddleAxes,'YLim',oYLim);
         end
         % --------------------------------------------------------------------
         function pmPolynomialOrder_Callback(oFigure, src, event)
@@ -221,7 +224,8 @@ classdef Preprocessing < SubFigure
             title(oAxes, sTitle);
             if ~isempty(oFigure.CurrentZoomLimits)
                     %Apply the current zoom limits if there are some
-                    set(oAxes,'XLim',oFigure.CurrentZoomLimits);
+                    set(oAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+                    set(oAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
             end
         end
         
@@ -240,7 +244,7 @@ classdef Preprocessing < SubFigure
             oAxes = oFigure.oGuiHandle.oMiddleAxes;
             cla(oAxes);
             %If there has been some processing done then plot the data
-%             if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
+            if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
                 set(oAxes,'Visible','on');
                 if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
@@ -257,14 +261,15 @@ classdef Preprocessing < SubFigure
                             oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats,'-g');
                         hold(oAxes, 'off');
                     end
-%                 else
-%                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-%                         oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r');
-%                 end
+                else
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r');
+                end
                 axis(oAxes, 'auto');
                 if ~isempty(oFigure.CurrentZoomLimits)
                     %Apply the current zoom limits if there are some
-                    set(oAxes,'XLim',oFigure.CurrentZoomLimits);
+                    set(oAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+                    set(oAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
                 end
                 sTitle = sprintf('Processed Signal for Channel %d', iChannel);
                 title(oAxes,sTitle);
