@@ -163,7 +163,8 @@ classdef MapElectrodes < SubFigure
         
         function oGenPotentialMenu_Callback(oFigure, src, event)
             %Generate potential maps for current beat
-            [oFigure.Potentials, oFigure.cmin, oFigure.cmax] = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.05,'linear');
+            [oFigure.Potentials, oFigure.cmin, oFigure.cmax] = ...
+                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.05,'linear');
             %Set up slider
             if strcmp(get(oFigure.oGuiHandle.oSliderPanel,'visible'),'off');
                 set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
@@ -188,12 +189,12 @@ classdef MapElectrodes < SubFigure
             %Set up slider
             if strcmp(get(oFigure.oGuiHandle.oSliderPanel,'visible'),'off');
                 set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
-            else
-                set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-                    size(oFigure.Activation.z,2), 'Value', 1,'SliderStep',[1/size(oFigure.Activation.z,2)  0.02]);
-                set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
-                set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Activation.z,2));
             end
+            set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+                size(oFigure.Activation.z,2), 'Value', 1,'SliderStep',[1/size(oFigure.Activation.z,2)  0.02]);
+            set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
+            set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Activation.z,2));
+            set(oFigure.oGuiHandle.oSliderEdit,'string',1);
             %Plot the potential field with color bar max and min set
             oFigure.PlotActivation();
             %Make the show electrodes button invisible

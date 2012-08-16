@@ -155,7 +155,20 @@ classdef Unemap < BasePotential
         end
         
         function UpdateBeatIndexes(oUnemap, iBeat, aIndexRange)
+            %Change the beat information to that supplied by the new range
             
+            %Loop through the electrodes
+            for i = 1:length(oUnemap.Electrodes)
+                %Get the current range for this beat
+                aCurrentRange = oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:);
+                %Reset the current range of this beat to NaN
+                oUnemap.Electrodes(i).Processed.Beats(aCurrentRange(1):aCurrentRange(2)) = NaN;
+                %Set the new beat values
+                oUnemap.Electrodes(i).Processed.Beats(aIndexRange(1):aIndexRange(2)) = ...
+                    oUnemap.Electrodes(i).Processed.Data(aIndexRange(1):aIndexRange(2));
+                %Set the new beat indexes
+                oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:) = [aIndexRange(1) aIndexRange(2)];
+            end
         end
         
         function ProcessArrayData(oUnemap, aInOptions)
@@ -262,21 +275,21 @@ classdef Unemap < BasePotential
         
         function [aInterpData, cmin, cmax] = InterpolatePotentialData(oUnemap,iBeat,iInterval,sMethod)
             %Interpolate the potential field for a given beat and return in
-            %struct 
-
+            %struct
+            
             %Get the beat indexes from the first beat (this assumes that
             %beat indexes for every electrode are the same).
             aBeatIndexes = oUnemap.Electrodes(1).Processed.BeatIndexes;
-            %Get the electrode processed data 
+            %Get the electrode processed data
             aElectrodeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
-             %Turn the coords into a 2 column matrix
+            %Turn the coords into a 2 column matrix
             aCoords = [0, 0];
             for j = 1:size(oUnemap.Electrodes,2)
                 %I don't give a fuck that this is not an efficient way to
                 %do this.
                 aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
                 if ~oUnemap.Electrodes(j).Accepted
-                    aElectrodeData(:,j) = NaN; 
+                    aElectrodeData(:,j) = NaN;
                 end
             end
             aCoords = aCoords(2:end,:);
@@ -398,7 +411,7 @@ classdef Unemap < BasePotential
                              if isnan(oUnemap.Electrodes(i).Processed.Slope)
                                  oUnemap.GetSlope(i);
                              end
-                             oUnemap.Electrodes(i).Activation(1).Indexes = fSteepestSlope(oUnemap.TimeSeries, ...
+                             oUnemap.Electrodes(i).Activation(1).Indexes =  fSteepestSlope(oUnemap.TimeSeries, ...
                                  oUnemap.Electrodes(i).Processed.Slope, ...
                                  oUnemap.Electrodes(i).Processed.BeatIndexes);
                              oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
@@ -420,11 +433,23 @@ classdef Unemap < BasePotential
         end
         
         function oMapData = PrepareActivationMap(oUnemap)
-            %Get the inputs for a mapping call for activation times 
+            %Get the inputs for a mapping call for activation times,
+            %returning a struct containing the x and y locations of the
+            %electrodes and the activation times for each.
             
             %Get the electrode processed data 
             aActivationIndexes = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Activation','Indexes');
-            aActivationTimes = oUnemap.TimeSeries(aActivationIndexes);
+            aActivationTimes = zeros(size(aActivationIndexes,1),size(aActivationIndexes,2));
+            %Make the activation indexes absolute, normalise them and
+            %convert to ms
+            aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
+            for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+                aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
+                %Select accepted channels
+                aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));
+                aAcceptedTimes = oUnemap.TimeSeries(aAcceptedActivations);
+                aActivationTimes(i,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(i,:)) - min(aAcceptedTimes));
+            end
             aActivationTimes = transpose(aActivationTimes);
             
             %Turn the coords into a 2 column matrix
@@ -493,6 +518,7 @@ classdef Unemap < BasePotential
             oUnemap.oDAL.GetDataFromSignalFile(oUnemap,sFile);
         end
     end
+    
     
 end
 

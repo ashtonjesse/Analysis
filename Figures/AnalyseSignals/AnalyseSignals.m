@@ -37,6 +37,9 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAdjustBeatMenu, 'callback', @(src, event) oAdjustBeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
+            
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
             
             %Sets the figure close function. This lets the class know that
@@ -95,7 +98,15 @@ classdef AnalyseSignals < SubFigure
             deletefigure(oFigure.oMapElectrodesFigure);
             deleteme(oFigure);
         end
-    
+        
+        function oZoomOnTool_Callback(oFigure, src, event)
+            set(oFigure.oZoom,'enable','on'); 
+        end
+        
+        function oZoomOffTool_Callback(oFigure, src, event)
+            set(oFigure.oZoom,'enable','off'); 
+        end
+        
         function StartDrag(oFigure, src, event)
             %The function that fires when a line on a subplot is dragged
             oFigure.Dragging = 1;
@@ -183,13 +194,13 @@ classdef AnalyseSignals < SubFigure
             brushedData = get(hBrushLine, {'Xdata','Ydata'});
             % The data that has not been selected is labelled as NaN so get
             % rid of this
-            brushedIdx = ~isnan([brushedData{:,1}]);
+            brushedIdx = ~isnan([brushedData{3,1}]);
             [row, colIndices] = find(brushedIdx);
             if ~isempty(colIndices)
-                dMean = mean(colIndices);
-                aBeatIndexes = colIndices(colIndices < dMean);
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(oFigure.SelectedBeat,aBeatIndexes);
-                
+                aBeatIndexes = [colIndices(1) colIndices(end)];
+                dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
+                aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
             else
                 error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
             end
@@ -197,6 +208,7 @@ classdef AnalyseSignals < SubFigure
             %Reset the gui
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+            oFigure.Replot();
         end
         
         %% Menu Callbacks
@@ -362,10 +374,10 @@ classdef AnalyseSignals < SubFigure
                          set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSlopePlot, ...
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
-                         oActivationLabel = text(TimeMin + 0.035, SlopeYMax + 0.2, ...
+                         oActivationLabel = text(TimeMin + 0.03, SlopeYMax + 0.2, ...
                              num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
-                         set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','normalized');
-                         set(oActivationLabel,'FontSize',0.2);
+                         set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','points');
+                         set(oActivationLabel,'FontSize',10);
                          set(oActivationLabel,'parent',oSlopePlot);
                      end
                      hold(oSlopePlot,'off');
@@ -381,13 +393,13 @@ classdef AnalyseSignals < SubFigure
                  axis(oSignalPlot,[TimeMin, TimeMax, SignalYMin - 0.5, SignalYMax + 1]);
                  axis(oSlopePlot,[TimeMin, TimeMax, SlopeYMin - 0.5, SlopeYMax + 1]);
                  %Create a label that shows the channel name
-                 oLabel = text(TimeMin,SignalYMax + 0.2,char(oElectrode.Name));
+                 oLabel = text(TimeMin,SlopeYMax+0.2,char(oElectrode.Name));
                  if iChannelIndex == oFigure.SelectedChannel;
-                     set(oLabel,'color','b','FontWeight','bold','FontUnits','normalized');
-                     set(oLabel,'FontSize',0.2);
+                     set(oLabel,'color','b','FontWeight','bold','FontUnits','points');
+                     set(oLabel,'FontSize',12);%0.2
                  else
-                     set(oLabel,'FontUnits','normalized');
-                     set(oLabel,'FontSize',0.15);
+                     set(oLabel,'FontUnits','points');
+                     set(oLabel,'FontSize',10);%0.15
                  end
                  set(oLabel,'parent',oSlopePlot);
              end
