@@ -1,6 +1,5 @@
 classdef MapElectrodes < SubFigure
-    %   AnalyseSignals
-    
+    %   MapElectrodes.    
     
     properties
         SelectedChannels;
@@ -8,6 +7,7 @@ classdef MapElectrodes < SubFigure
         Activation;
         cmin;
         cmax;
+        PlotType; %A string specifying the currently displayed plot
     end
     
     events
@@ -25,18 +25,20 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oGenPotentialMenu, 'callback', @(src, event) oGenPotentialMenu_Callback(oFigure, src, event));
+            %set(oFigure.oGuiHandle.oGenPotentialMenu, 'callback', @(src, event) oGenPotentialMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenActivationMenu, 'callback', @(src, event) oGenActivationMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oAverageMenu, 'callback', @(src, event) oAverageMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.rdTopButton, 'callback', @(src, event) rdTopButton_Callback(oFigure, src, event));
+            %set(oFigure.oGuiHandle.oAverageMenu, 'callback', @(src, event) oAverageMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oReplotMenu, 'callback', @(src, event) oReplotMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSaveActivationMenu, 'callback', @(src, event) oSaveActivationMenu_Callback(oFigure, src, event));
             
-            %set up slider
-            aSliderTexts = [oFigure.oGuiHandle.oSliderTxtLeft,oFigure.oGuiHandle.oSliderTxtRight];
-            sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Scan through time'}, {'Min', 1, 'Max', ...
-               2, 'Value', 1, 'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',[0.1  0.02]},{},{},'%0.0f',...
-                oFigure.oGuiHandle.oSliderPanel, oFigure.oGuiHandle.oSlider,oFigure.oGuiHandle.oSliderEdit,aSliderTexts);
+            %Add a listener so that the figure knows when a user has
+            %made a beat selection
+            addlistener(oFigure.oParentFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
+            addlistener(oFigure.oParentFigure,'BeatSelected',@(src,event) oFigure.BeatSelectionListener(src, event));
             
             oFigure.PlotElectrodes();
+            oFigure.PlotType = 'JustElectrodes';
             %Set default selection
             oFigure.SelectedChannels = 1:(Xdim*Ydim);
             % --- Executes just before BaselineCorrection is made visible.
@@ -49,20 +51,7 @@ classdef MapElectrodes < SubFigure
                 
                 %Can actually access oParent from here as this is a
                 %subfunction :) :)
-                
-                %Set ui control creation attributes 
-                set(handles.rdTopButton, 'string', 'Show Electrodes');
-                set(handles.rdTopButton, 'value', 1);
-                set(handles.rdTopButton, 'visible', 'off');
-                set(handles.rdMiddleButton, 'string', 'Show Potential');
-                set(handles.rdMiddleButton, 'value', 0);
-                set(handles.rdMiddleButton, 'visible', 'off');
-                set(handles.rdBottomButton, 'string', 'Show Activation');
-                set(handles.rdBottomButton, 'value', 1);
-                set(handles.rdBottomButton, 'visible', 'off');
-                set(handles.oSliderPanel,'visible','off');
-                set(handles.txtRows,'string','Enter a kernel row count');
-                set(handles.txtCols,'string','Enter a kernel column count');
+
                 %Set the output attribute
                 handles.output = hObject;
                 %Update the gui handles 
@@ -96,6 +85,42 @@ classdef MapElectrodes < SubFigure
         function oToolMenu_Callback(oFigure, src, event)
 
         end
+        
+        % -----------------------------------------------------------------
+        function oViewMenu_Callback(oFigure, src, event)
+
+        end
+        
+        % -----------------------------------------------------------------
+        function oSaveActivationMenu_Callback(oFigure, src, event)
+            %Get the save file path
+            %Call built-in file dialog to select filename
+            sPathName = uigetdir('','Specify a file name template and path to save to ');
+            %Make sure the dialogs return char objects
+            if ~ischar(sPathName)
+                return
+            end
+            %Loop through the beats and save the axes image
+            iNumBeats = get(oFigure.oGuiHandle.oSlider,'max');
+            for i = 1:iNumBeats;
+                set(oFigure.oGuiHandle.oSlider,'Value',i);
+                oFigure.PlotActivation();
+                %Get the full file name
+                sFileName = sprintf('ActivationMap%d',i);
+                sLongFileName=strcat(sPathName,'\',sFileName);
+                oFigure.PrintFigureToFile(sLongFileName);
+            end
+        end
+        
+        % -----------------------------------------------------------------
+        function oReplotMenu_Callback(oFigure, src, event)
+            cla(oFigure.oGuiHandle.oMapAxes);
+            colorbar('peer',oFigure.oGuiHandle.oMapAxes,'off');
+            oTitle = get(oFigure.oGuiHandle.oMapAxes,'Title');
+            set(oTitle,'String','');
+            oFigure.PlotElectrodes();
+        end
+        
         % -----------------------------------------------------------------
         function oUpdateMenu_Callback(oFigure, src, event)
             % Find the brushline object in the figure
@@ -119,6 +144,8 @@ classdef MapElectrodes < SubFigure
         function oAverageMenu_Callback(oFigure, src, event)
             %Prepare the input options for the ApplyNeighbourhoodAverage
             %function
+            %This is currently not in operation as I removed the controls
+            %edtRows and edtCols
             aInOptions = struct();
             aInOptions.Procedure = 'Mean';
             iRows = oFigure.GetEditInputDouble('edtRows');
@@ -139,27 +166,6 @@ classdef MapElectrodes < SubFigure
         end
         
         %% Callbacks
-        function rdTopButton_Callback(oFigure, src, event)
-            ButtonState = get(oFigure.oGuiHandle.rdTopButton,'Value');
-            if ButtonState == get(oFigure.oGuiHandle.rdTopButton,'Max')
-                % radio button is pressed
-                oFigure.PlotElectrodes();
-            elseif ButtonState == get(oFigure.oGuiHandle.rdTopButton,'Min')
-                % radio button is not pressed
-                oFigure.RemoveElectrodes();
-                brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-            end
-        end
-
-        function oSlider_Callback(oFigure, src, event)
-            ButtonState = [get(oFigure.oGuiHandle.rdMiddleButton,'Value') get(oFigure.oGuiHandle.rdBottomButton,'Value')];
-            if ButtonState(1) == 1;
-                oFigure.PlotPotential(oFigure.cmin, oFigure.cmax);
-            elseif ButtonState(2) == 1;
-                oFigure.PlotActivation();
-            end
-            
-        end
         
         function oGenPotentialMenu_Callback(oFigure, src, event)
             %Generate potential maps for current beat
@@ -176,32 +182,42 @@ classdef MapElectrodes < SubFigure
             end
             %Plot the potential field with color bar max and min set
             oFigure.PlotPotential(oFigure.cmin,oFigure.cmax);
-            %Make the show electrodes button visible
-            set(oFigure.oGuiHandle.rdTopButton,'visible','on');
-            set(oFigure.oGuiHandle.rdMiddleButton,'value',1);
-            set(oFigure.oGuiHandle.rdBottomButton,'value',0);
             
         end
         
         function oGenActivationMenu_Callback(oFigure, src, event);
             %Generate activation map for the current beat
             oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
-            %Set up slider
-            if strcmp(get(oFigure.oGuiHandle.oSliderPanel,'visible'),'off');
-                set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
-            end
-            set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-                size(oFigure.Activation.z,2), 'Value', 1,'SliderStep',[1/size(oFigure.Activation.z,2)  0.02]);
-            set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
-            set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Activation.z,2));
-            set(oFigure.oGuiHandle.oSliderEdit,'string',1);
-            %Plot the potential field with color bar max and min set
-            oFigure.PlotActivation();
-            %Make the show electrodes button invisible
-            set(oFigure.oGuiHandle.rdTopButton,'visible','off');
-            set(oFigure.oGuiHandle.rdMiddleButton,'value',0);
-            set(oFigure.oGuiHandle.rdBottomButton,'value',1);
             
+            %Plot a 2D activation map
+            oFigure.PlotActivation();
+            
+            %Update the plot type
+            oFigure.PlotType = '2DActivation';
+        end
+        
+        function SlideValueListener(oFigure,src,event)
+            %An event listener callback
+            %Is called when the user selects a new beat using the
+            %SlideControl
+            
+            %Choose which plot to call.
+            switch (oFigure.PlotType)
+                case '2DActivation'
+                  oFigure.PlotActivation();
+            end
+        end
+       
+        function BeatSelectionListener(oFigure,src,event)
+            %An event listener callback
+            %Is called when the user selects a new beat using the electrode
+            %plot in AnalyseSignals
+            
+            %Choose which plot to call.
+            switch (oFigure.PlotType)
+                case '2DActivation'
+                  oFigure.PlotActivation();
+            end
         end
      end
      
@@ -249,17 +265,18 @@ classdef MapElectrodes < SubFigure
          
          function  PlotActivation(oFigure)
              %Plots a map of non-intepolated activation times
-             
-             iBeat = get(oFigure.oGuiHandle.oSlider,'Value');
-             if ~isinteger(iBeat)
-                 %Round down to nearest integer if a double is supplied
-                 iBeat = round(iBeat(1));
-             end
+             %Make sure the current figure is MapElectrodes
+             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+             %Get the beat number from the slide control
+             iBeat = oFigure.oParentFigure.oSlideControl.GetSliderIntegerValue('oSlider');
              scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
              title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation Map for beat %d',iBeat));
              colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
              colorbar('peer',oFigure.oGuiHandle.oMapAxes);
              colorbar('location','EastOutside');
+             %Set range
+             set(oFigure.oGuiHandle.oMapAxes,'CLim',[0 ceil(oFigure.Activation.MaxActivationTime)]);
+             %Remove ticks
              set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
          end
          
@@ -267,21 +284,14 @@ classdef MapElectrodes < SubFigure
              %Plots a map of interpolated potential field
              
              %Get the current time step
-             iTimeStep = get(oFigure.oGuiHandle.oSlider,'Value');
+             iTimeStep = get(oFigure.oGuiHandle.oSlider,'Value'); 
              if ~isinteger(iTimeStep)
                  %Round down to nearest integer if a double is supplied
                  iTimeStep = round(iTimeStep(1));
              end
-             ButtonState = get(oFigure.oGuiHandle.rdTopButton,'Value');
-             if ButtonState == get(oFigure.oGuiHandle.rdTopButton,'Max')
-                 % radio button is pressed
-                 contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potentials(iTimeStep).Xi,oFigure.Potentials(iTimeStep).Yi,oFigure.Potentials(iTimeStep).Field);
-                 oFigure.PlotElectrodes()
-             elseif ButtonState == get(oFigure.oGuiHandle.rdTopButton,'Min')
-                 % radio button is not pressed
-                 contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potentials(iTimeStep).Xi,oFigure.Potentials(iTimeStep).Yi,oFigure.Potentials(iTimeStep).Field);
-                 set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[], 'NextPlot','replacechildren');
-             end
+             contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potentials(iTimeStep).Xi,oFigure.Potentials(iTimeStep).Yi,oFigure.Potentials(iTimeStep).Field);
+             oFigure.PlotElectrodes()
+
              title(oFigure.oGuiHandle.oMapAxes,strcat(sprintf('Potential Map at Time %0.4f',oFigure.Potentials(iTimeStep).Time),' ms'));
              %Set the axis on the subplot
              axis(oFigure.oGuiHandle.oMapAxes,[min(min(oFigure.Potentials(iTimeStep).Xi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Xi)) + 0.5, ...

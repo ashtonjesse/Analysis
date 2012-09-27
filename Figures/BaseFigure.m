@@ -79,8 +79,8 @@ classdef BaseFigure < handle
             sValue = aString(iIndex);
         end
         
-        function SaveAxesImage(oFigure,oAxesHandle)
-            
+        function PrintFigureToFile(oFigure, sFilePath)
+            print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dpng','-r250',sFilePath);
         end
         
         function nValue = GetSliderIntegerValue(oFigure, sSliderTag)

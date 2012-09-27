@@ -397,27 +397,50 @@ classdef Unemap < BasePotential
         end
         
         %% Methods relating to Electrode Activation data
-        function MarkActivation(oUnemap, sMethod)
+        function MarkActivation(oUnemap, varargin)
             %Mark activation for whole array based on the specified method 
             if strcmp(oUnemap.Electrodes(1).Status,'Potential')
                 error('Unemap.GetActivationTime.VerifyInput:NoProcessedData',...
                     'You need to have processed data before calculating an activation time');
-             else
-                 %Choose the method to apply
-                 switch (sMethod)
-                     case 'SteepestSlope'
-                         for i = 1:size(oUnemap.Electrodes,2);
-                             % Get slope data if this has not been done already
-                             if isnan(oUnemap.Electrodes(i).Processed.Slope)
-                                 oUnemap.GetSlope(i);
-                             end
-                             oUnemap.Electrodes(i).Activation(1).Indexes =  fSteepestSlope(oUnemap.TimeSeries, ...
-                                 oUnemap.Electrodes(i).Processed.Slope, ...
-                                 oUnemap.Electrodes(i).Processed.BeatIndexes);
-                             oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
-                         end
-                         
-                 end
+            else
+                if size(varargin,2) == 1
+                    %only a method has been specified so mark activation
+                    %times for all beats
+                    sMethod = varargin{1}(1);
+                    %Choose the method to apply
+                    switch (sMethod)
+                        case 'SteepestSlope'
+                            for i = 1:size(oUnemap.Electrodes,2);
+                                % Get slope data if this has not been done already
+                                if isnan(oUnemap.Electrodes(i).Processed.Slope)
+                                    oUnemap.GetSlope(i);
+                                end
+                                oUnemap.Electrodes(i).Activation(1).Indexes =  fSteepestSlope(oUnemap.TimeSeries, ...
+                                    oUnemap.Electrodes(i).Processed.Slope, ...
+                                    oUnemap.Electrodes(i).Processed.BeatIndexes);
+                                oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
+                            end
+                    end
+                elseif size(varargin,2) == 2
+                    %Both a method and a beat number have been specified so
+                    %only mark activation times for this beat
+                    sMethod = varargin{1};
+                    iBeat = varargin{2};
+                    %Choose the method to apply
+                    switch (sMethod)
+                        case 'SteepestSlope'
+                            for i = 1:size(oUnemap.Electrodes,2);
+                                % Get slope data if this has not been done already
+                                if isnan(oUnemap.Electrodes(i).Processed.Slope)
+                                    oUnemap.GetSlope(i);
+                                end
+                                oUnemap.Electrodes(i).Activation(1).Indexes(iBeat) =  fSteepestSlope(oUnemap.TimeSeries, ...
+                                    oUnemap.Electrodes(i).Processed.Slope, ...
+                                    oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:));
+                                oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
+                            end
+                    end
+                end
             end
         end
         
@@ -443,19 +466,22 @@ classdef Unemap < BasePotential
             %Make the activation indexes absolute, normalise them and
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
+            dMaxAcceptedTime = 0;
             for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));
                 aAcceptedTimes = oUnemap.TimeSeries(aAcceptedActivations);
+                %Convert to ms
                 aActivationTimes(i,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(i,:)) - min(aAcceptedTimes));
+                dMaxAcceptedTime = max(max(aActivationTimes(i,logical(aAcceptedChannels))),dMaxAcceptedTime);
             end
             aActivationTimes = transpose(aActivationTimes);
             
             %Turn the coords into a 2 column matrix
             aCoords = [0, 0];
             for j = 1:size(oUnemap.Electrodes,2)
-                %I don't give a fuck that this is not an efficient way to
+                %I don't give a fck that this is not an efficient way to
                 %do this.
                 aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
                 if ~oUnemap.Electrodes(j).Accepted
@@ -467,7 +493,7 @@ classdef Unemap < BasePotential
             oMapData.x = aCoords(:,1);
             oMapData.y = aCoords(:,2);
             oMapData.z = aActivationTimes;
-             
+            oMapData.MaxActivationTime = dMaxAcceptedTime; 
         end
         
         %% Functions for reconstructing entity
