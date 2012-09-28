@@ -27,10 +27,13 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
             %set(oFigure.oGuiHandle.oGenPotentialMenu, 'callback', @(src, event) oGenPotentialMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenActivationMenu, 'callback', @(src, event) oGenActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.o2DActivationMenu, 'callback', @(src, event) o2DActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.o3DActivationMenu, 'callback', @(src, event) o3DActivationMenu_Callback(oFigure, src, event));
             %set(oFigure.oGuiHandle.oAverageMenu, 'callback', @(src, event) oAverageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oReplotMenu, 'callback', @(src, event) oReplotMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveActivationMenu, 'callback', @(src, event) oSaveActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oGenAverageMenu, 'callback', @(src, event) oGenAverageMenu_Callback(oFigure, src, event));
             
             %Add a listener so that the figure knows when a user has
             %made a beat selection
@@ -95,18 +98,19 @@ classdef MapElectrodes < SubFigure
         function oSaveActivationMenu_Callback(oFigure, src, event)
             %Get the save file path
             %Call built-in file dialog to select filename
-            sPathName = uigetdir('','Specify a file name template and path to save to ');
+            sPathName = uigetdir('','Specify a directory to save to');
             %Make sure the dialogs return char objects
             if ~ischar(sPathName)
                 return
             end
             %Loop through the beats and save the axes image
-            iNumBeats = get(oFigure.oGuiHandle.oSlider,'max');
+            iNumBeats =  get(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'max');
             for i = 1:iNumBeats;
-                set(oFigure.oGuiHandle.oSlider,'Value',i);
+                set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'Value',i);
+                set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSliderEdit,'String',i);
                 oFigure.PlotActivation();
                 %Get the full file name
-                sFileName = sprintf('ActivationMap%d',i);
+                sFileName = strcat(oFigure.sPlotType,sprintf('MapBeat%d',i));
                 sLongFileName=strcat(sPathName,'\',sFileName);
                 oFigure.PrintFigureToFile(sLongFileName);
             end
@@ -154,6 +158,42 @@ classdef MapElectrodes < SubFigure
             oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
         
+        function oGenAverageMenu_Callback(oFigure, src, event)
+            %Prepare average activation maps for beats preceeding, during
+            %and after stimulation period
+            oAverageData = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
+            %Produce average maps
+            oPlotData = struct();
+            oPlotData.x = oAverageData.x;
+            oPlotData.y = oAverageData.y;
+            oPlotData.MinCLim = 0;
+            oPlotData.MaxCLim = ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
+            %2D
+            %The prestim
+            oPlotData.z = oAverageData.PreStim.z;
+            AxesControl(oFigure,'2DScatter','2DPreStimAverage',oPlotData);
+            %During stim singleton
+            oPlotData.z = oAverageData.Stim.z;
+            AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
+            %Post stim
+            oPlotData.z = oAverageData.PostStim.z;
+            AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
+            %3D
+            oPlotData.MaxZLim = 0;
+            oPlotData.MaxCLim = 0;
+            oPlotData.MinZLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
+            oPlotData.MinCLim = oPlotData.MinZLim;
+            %The prestim
+            oPlotData.z = -oAverageData.PreStim.z;
+            AxesControl(oFigure,'3DTriSurf','3DPreStimAverage',oPlotData);
+            %During stim
+            oPlotData.z = -oAverageData.Stim.z;
+            AxesControl(oFigure,'3DTriSurf','3DStimAverage',oPlotData);
+            %Post stim
+            oPlotData.z = -oAverageData.PostStim.z;
+            AxesControl(oFigure,'3DTriSurf','3DPostStimAverage',oPlotData);
+        end
+        
         function oDataCursorOnTool_Callback(oFigure, src, event)
             %Turn brushing on so that the user can select a range of data
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
@@ -189,22 +229,38 @@ classdef MapElectrodes < SubFigure
             %Generate activation map for the current beat
             oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
             
-            %Plot a 2D activation map
-            oFigure.PlotActivation();
-            
+            %Plot 2D by default
             %Update the plot type
             oFigure.PlotType = '2DActivation';
+
+            %Plot a 2D activation map
+            oFigure.PlotActivation();
         end
         
+        function o2DActivationMenu_Callback(oFigure, src, event);
+            %Update the plot type
+            oFigure.PlotType = '2DActivation';
+            
+            %Plot a 2D activation map
+            oFigure.PlotActivation();
+        end
+        
+        function o3DActivationMenu_Callback(oFigure, src, event);
+            %Update the plot type
+            oFigure.PlotType = '3DActivation';
+            
+            %Plot a 3D activation map
+            oFigure.PlotActivation();
+        end
+               
         function SlideValueListener(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new beat using the
             %SlideControl
             
             %Choose which plot to call.
-            switch (oFigure.PlotType)
-                case '2DActivation'
-                  oFigure.PlotActivation();
+            if ~strcmpi(oFigure.PlotType,'JustElectrodes')
+                oFigure.PlotActivation();
             end
         end
        
@@ -214,9 +270,8 @@ classdef MapElectrodes < SubFigure
             %plot in AnalyseSignals
             
             %Choose which plot to call.
-            switch (oFigure.PlotType)
-                case '2DActivation'
-                  oFigure.PlotActivation();
+            if ~strcmpi(oFigure.PlotType,'JustElectrodes')
+                oFigure.PlotActivation();
             end
         end
      end
@@ -269,15 +324,28 @@ classdef MapElectrodes < SubFigure
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              %Get the beat number from the slide control
              iBeat = oFigure.oParentFigure.oSlideControl.GetSliderIntegerValue('oSlider');
-             scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
+             %Which plot type to use
+             switch (oFigure.PlotType)
+                 case '2DActivation'
+                     scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
+                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     colorbar('peer',oFigure.oGuiHandle.oMapAxes);
+                     colorbar('location','EastOutside');
+                     set(oFigure.oGuiHandle.oMapAxes,'CLim',[0 ceil(oFigure.Activation.MaxActivationTime)]);
+                     %Remove ticks
+                     set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
+                 case '3DActivation'
+                     aTriangulatedMesh = delaunay(oFigure.Activation.x, oFigure.Activation.y);
+                     trisurf(aTriangulatedMesh,oFigure.Activation.x, oFigure.Activation.y,-oFigure.Activation.z(:,iBeat));
+                     zlim(oFigure.oGuiHandle.oMapAxes,[-ceil(oFigure.Activation.MaxActivationTime) 0]);
+                     set(oFigure.oGuiHandle.oMapAxes,'CLim',[-ceil(oFigure.Activation.MaxActivationTime) 0]);
+                     view(oFigure.oGuiHandle.oMapAxes,30,30);
+                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(colormap(jet)));
+                     colorbar('peer',oFigure.oGuiHandle.oMapAxes);
+                     colorbar('location','EastOutside');
+             end
+
              title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation Map for beat %d',iBeat));
-             colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
-             colorbar('peer',oFigure.oGuiHandle.oMapAxes);
-             colorbar('location','EastOutside');
-             %Set range
-             set(oFigure.oGuiHandle.oMapAxes,'CLim',[0 ceil(oFigure.Activation.MaxActivationTime)]);
-             %Remove ticks
-             set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
          end
          
          function PlotPotential(oFigure,varargin)

@@ -16,7 +16,7 @@ classdef BaseFigure < handle
             
             %Get the DAL for this class
             oFigure.oDAL = BaseFigureDAL();
-            gui_Singleton = 1;
+            gui_Singleton = 0;
             gui_State = struct('gui_Name',sGuiFileName, 'gui_Singleton',  gui_Singleton, 'gui_OpeningFcn', OpeningFcn, 'gui_OutputFcn',  @BaseFigure_OutputFcn, 'gui_LayoutFcn',  [] , 'gui_Callback',   []);
             %Make the gui figure, get its handles and store locally
             oOutput = gui_mainfcn(gui_State);

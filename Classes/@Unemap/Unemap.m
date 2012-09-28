@@ -481,7 +481,7 @@ classdef Unemap < BasePotential
             %Turn the coords into a 2 column matrix
             aCoords = [0, 0];
             for j = 1:size(oUnemap.Electrodes,2)
-                %I don't give a fck that this is not an efficient way to
+                %IDGF that this is not an efficient way to
                 %do this.
                 aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
                 if ~oUnemap.Electrodes(j).Accepted
@@ -493,9 +493,20 @@ classdef Unemap < BasePotential
             oMapData.x = aCoords(:,1);
             oMapData.y = aCoords(:,2);
             oMapData.z = aActivationTimes;
+            oMapData.AcceptedActivationTimes = aAcceptedActivations;
             oMapData.MaxActivationTime = dMaxAcceptedTime; 
         end
         
+        function oMapData = CalculateAverageActivationMap(oUnemap,oActivationData)
+            %Calculate average activation times over beats that at the
+            %moment are hardcoded but could be user specified
+            oMapData = struct();
+            oMapData.x = oActivationData.x;
+            oMapData.y = oActivationData.y;
+            oMapData.PreStim.z =  mean(oActivationData.z(:,1:18),2);
+            oMapData.Stim.z =  mean(oActivationData.z(:,19:31),2);
+            oMapData.PostStim.z =  mean(oActivationData.z(:,32:end),2);
+        end
         %% Functions for reconstructing entity
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
