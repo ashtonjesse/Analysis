@@ -61,3 +61,7 @@ oECG.oExperiment;
 oECG.Original;
 oECG.TimeSeries;
 oECG.Processed.Beats;
+
+BaseImage: (base level of inheritance)
+oImage.Data
+oImage.Name

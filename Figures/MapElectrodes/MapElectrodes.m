@@ -171,27 +171,68 @@ classdef MapElectrodes < SubFigure
             %2D
             %The prestim
             oPlotData.z = oAverageData.PreStim.z;
-            AxesControl(oFigure,'2DScatter','2DPreStimAverage',oPlotData);
+            %AxesControl(oFigure,'2DScatter','2DPreStimAverage',oPlotData);
             %During stim singleton
             oPlotData.z = oAverageData.Stim.z;
-            AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
+            %AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
             %Post stim
             oPlotData.z = oAverageData.PostStim.z;
-            AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
+            %AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
+            %Difference maps
+            %Pre minus during 
+            oPlotData.z = oAverageData.PreStim.z - oAverageData.Stim.z;
+            oPlotData.MaxZLim = max(oPlotData(1).z);
+            oPlotData.MaxCLim = max(oPlotData(1).z);
+            oPlotData.MinZLim = min(oPlotData(1).z);
+            oPlotData.MinCLim = min(oPlotData(1).z);
+            AxesControl(oFigure,'2DScatter','2DPreMinusDuringDiff',oPlotData);
+            %Post minus during
+            oPlotData.z = oAverageData.PostStim.z - oAverageData.Stim.z;
+            oPlotData.MaxZLim = max(oPlotData(1).z);
+            oPlotData.MaxCLim = max(oPlotData(1).z);
+            oPlotData.MinZLim = min(oPlotData(1).z);
+            oPlotData.MinCLim = min(oPlotData(1).z);
+            AxesControl(oFigure,'2DScatter','2DPostMinusDuringDiff',oPlotData);
+            %Pre minus Post
+            oPlotData.z = oAverageData.PreStim.z - oAverageData.PostStim.z;
+            oPlotData.MaxZLim = max(oPlotData(1).z);
+            oPlotData.MaxCLim = max(oPlotData(1).z);
+            oPlotData.MinZLim = min(oPlotData(1).z);
+            oPlotData.MinCLim = min(oPlotData(1).z);
+            AxesControl(oFigure,'2DScatter','2DPostMinusPreDiff',oPlotData);
             %3D
-            oPlotData.MaxZLim = 0;
-            oPlotData.MaxCLim = 0;
-            oPlotData.MinZLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
-            oPlotData.MinCLim = oPlotData.MinZLim;
-            %The prestim
-            oPlotData.z = -oAverageData.PreStim.z;
-            AxesControl(oFigure,'3DTriSurf','3DPreStimAverage',oPlotData);
+            oPlotData = struct();
+            oPlotData(1).x = oAverageData.x;
+            oPlotData(1).y = oAverageData.y;
+            oPlotData(1).MaxZLim = 0;
+            oPlotData(1).MaxCLim = 0;
+            oPlotData(1).MinZLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
+            oPlotData(1).MinCLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));;
+            %Prestim
+            oPlotData(1).z = -oAverageData.PreStim.z;
+            %AxesControl(oFigure,'3DTriSurf','3DPreStimAverage',oPlotData);
             %During stim
-            oPlotData.z = -oAverageData.Stim.z;
-            AxesControl(oFigure,'3DTriSurf','3DStimAverage',oPlotData);
-            %Post stim
-            oPlotData.z = -oAverageData.PostStim.z;
-            AxesControl(oFigure,'3DTriSurf','3DPostStimAverage',oPlotData);
+            oPlotData(1).z = -oAverageData.Stim.z;
+            %AxesControl(oFigure,'3DTriSurf','3DStimAverage',oPlotData);            
+            %Poststim
+            oPlotData(1).z = -oAverageData.PostStim.z;
+            %AxesControl(oFigure,'3DTriSurf','3DPostStimAverage',oPlotData);
+            %Double plots
+            oPlotData(2).x = oAverageData.x;
+            oPlotData(2).y = oAverageData.y;
+            %Pre vs During
+            oPlotData(1).z = -oAverageData.PreStim.z;
+            oPlotData(2).z = -oAverageData.Stim.z;
+            AxesControl(oFigure,'3DTriSurf','3DPreVsDuringStimAverage',oPlotData);
+            %Post vs During
+            oPlotData(1).z = -oAverageData.Stim.z;
+            oPlotData(2).z = -oAverageData.PostStim.z;
+            %AxesControl(oFigure,'3DTriSurf','3DPostVsDuringStimAverage',oPlotData);
+            %Pre Vs Post
+            oPlotData(1).z = -oAverageData.PreStim.z;
+            oPlotData(2).z = -oAverageData.PostStim.z;
+            %AxesControl(oFigure,'3DTriSurf','3DPreVsPostStimAverage',oPlotData);
+            
         end
         
         function oDataCursorOnTool_Callback(oFigure, src, event)

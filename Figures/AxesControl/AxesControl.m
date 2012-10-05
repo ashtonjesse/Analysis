@@ -17,7 +17,6 @@ classdef AxesControl < SubFigure
             oFigure.PlotName = sPlotName;
             oFigure.PlotData = oPlotData;
             oFigure.PlotType = sPlotType;
-            
             %Set callbacks
             set(oFigure.oGuiHandle.oFileMenu,  'callback', @(src,event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPrintMenu,  'callback', @(src,event) oPrintMenu_Callback(oFigure, src, event));
@@ -86,15 +85,23 @@ classdef AxesControl < SubFigure
                     set(oFigure.oGuiHandle.oAxes,'XTick',[],'YTick',[]);
                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
                 case '3DTriSurf'
-                    aTriangulatedMesh = delaunay(oFigure.PlotData.x, oFigure.PlotData.y);
-                    trisurf(aTriangulatedMesh,oFigure.PlotData.x, oFigure.PlotData.y, oFigure.PlotData.z);
-                    zlim(oFigure.oGuiHandle.oAxes,[oFigure.PlotData.MinZLim oFigure.PlotData.MaxZLim]);
-                    set(oFigure.oGuiHandle.oAxes,'CLim',[oFigure.PlotData.MinCLim oFigure.PlotData.MaxCLim]);
-                    view(oFigure.oGuiHandle.oAxes,30,30);
+                    for i = 1:size(oFigure.PlotData,2);
+                        aTriangulatedMesh = delaunay(oFigure.PlotData(i).x, oFigure.PlotData(i).y);
+                        trisurf(aTriangulatedMesh,oFigure.PlotData(i).x, oFigure.PlotData(i).y, oFigure.PlotData(i).z);
+                        hold(oFigure.oGuiHandle.oAxes,'on');
+                    end
+                    hold(oFigure.oGuiHandle.oAxes,'off');
+                    zlim(oFigure.oGuiHandle.oAxes,[oFigure.PlotData(1).MinZLim oFigure.PlotData(1).MaxZLim]);
+                    set(oFigure.oGuiHandle.oAxes,'CLim',[oFigure.PlotData(1).MinCLim oFigure.PlotData(1).MaxCLim]);
+                    view(oFigure.oGuiHandle.oAxes,8,9);
+                    camlight;
+                    lighting gouraud;
+                    alpha(0.8);
                     colormap(oFigure.oGuiHandle.oAxes, colormap(colormap(jet)));
                     colorbar('peer',oFigure.oGuiHandle.oAxes);
                     colorbar('location','EastOutside');
                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
+                
             end
             
         end
