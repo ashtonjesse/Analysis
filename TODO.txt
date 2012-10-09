@@ -1,6 +1,9 @@
 TODO
 
 
-* Be able to adjust the window of a beat by selecting from the electrode trace.
-* Normalise activation times for a given beat to earliest activation
-* Be able to remove spatial average of surrounding signals and recalculate activation map
+-Image processing 
+    * Be able to load an image stack, making x and y stacks if not present, and scan through stacks
+	using slide controls
+	* Update a 3D view where the currently selected images are aligned. 
+	* Be able to zoom in to individual axes and rotate 3D view
+	* Be able to draw an ROI on all two of three images and export subset of images
