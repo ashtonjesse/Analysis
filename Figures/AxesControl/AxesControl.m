@@ -76,6 +76,20 @@ classdef AxesControl < SubFigure
         function DisplayPlot(oFigure)
             %Plot the data on the specified plot
             switch (oFigure.PlotType)
+                case '2DContour'
+                    xlin = linspace(min(oFigure.PlotData.x),max(oFigure.PlotData.x),length(oFigure.PlotData.x));
+                    ylin = linspace(min(oFigure.PlotData.y),max(oFigure.PlotData.y),length(oFigure.PlotData.y));
+                    [X, Y] = meshgrid(xlin, ylin);
+                    Z = griddata(oFigure.PlotData.x, oFigure.PlotData.y,oFigure.PlotData.z,X,Y,'cubic');
+                    iSplit = abs(oFigure.PlotData.MaxCLim - oFigure.PlotData.MinCLim)/20;
+                    iSplit = str2num(sprintf('%3.1f',iSplit));
+                    contourf(oFigure.oGuiHandle.oAxes,X,Y,Z,floor(oFigure.PlotData.MinCLim):iSplit:ceil(oFigure.PlotData.MaxCLim));
+%                     colormap(oFigure.oGuiHandle.oAxes, colormap(flipud(colormap(jet))));
+                    oColorBar = cbarf(Z,floor(oFigure.PlotData.MinCLim):iSplit:ceil(oFigure.PlotData.MaxCLim));
+                    oTitle = get(oColorBar, 'title');
+                    set(oTitle,'string','Time (ms)');
+                    set(oFigure.oGuiHandle.oAxes,'XTick',[],'YTick',[]);
+%                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
                 case '2DScatter'
                     scatter(oFigure.oGuiHandle.oAxes, oFigure.PlotData.x, oFigure.PlotData.y, 100, oFigure.PlotData.z, 'filled');
                     colormap(oFigure.oGuiHandle.oAxes, colormap(flipud(colormap(jet))));

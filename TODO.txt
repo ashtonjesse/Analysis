@@ -1,5 +1,7 @@
 TODO
 
+-Signal processing
+	* Be able to read in Phrenic signal data and pressure trace and align (using ECG) to unemap recordings.
 
 -Image processing 
     * Be able to load an image stack, making x and y stacks if not present, and scan through stacks

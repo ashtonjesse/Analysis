@@ -38,6 +38,18 @@ classdef SlideControl < SubFigure
             %one.
              deleteme(oFigure);
         end
+        
+        function SetSliderValue(oFigure,dValue)
+            %Set the slider value
+            
+            %Check if the value has been supplied as a string and if so
+            %convert to a double
+            if oFigure.oDAL.oHelper.StringIsNumeric(dValue)
+                dValue = str2double(dValue);
+            end
+            set(oFigure.oGuiHandle.oSlider,'Value',floor(dValue));
+            set(oFigure.oGuiHandle.oSliderEdit,'String',floor(dValue));
+        end
     end
     
     methods (Access = protected)

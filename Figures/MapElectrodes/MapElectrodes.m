@@ -110,7 +110,7 @@ classdef MapElectrodes < SubFigure
                 set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSliderEdit,'String',i);
                 oFigure.PlotActivation();
                 %Get the full file name
-                sFileName = strcat(oFigure.sPlotType,sprintf('MapBeat%d',i));
+                sFileName = strcat(oFigure.PlotType,sprintf('MapBeat%d',i));
                 sLongFileName=strcat(sPathName,'\',sFileName);
                 oFigure.PrintFigureToFile(sLongFileName);
             end
@@ -185,21 +185,21 @@ classdef MapElectrodes < SubFigure
             oPlotData.MaxCLim = max(oPlotData(1).z);
             oPlotData.MinZLim = min(oPlotData(1).z);
             oPlotData.MinCLim = min(oPlotData(1).z);
-            AxesControl(oFigure,'2DScatter','2DPreMinusDuringDiff',oPlotData);
+            AxesControl(oFigure,'2DContour','2DPreMinusDuringDiff',oPlotData);
             %Post minus during
             oPlotData.z = oAverageData.PostStim.z - oAverageData.Stim.z;
             oPlotData.MaxZLim = max(oPlotData(1).z);
             oPlotData.MaxCLim = max(oPlotData(1).z);
             oPlotData.MinZLim = min(oPlotData(1).z);
             oPlotData.MinCLim = min(oPlotData(1).z);
-            AxesControl(oFigure,'2DScatter','2DPostMinusDuringDiff',oPlotData);
+            AxesControl(oFigure,'2DContour','2DPostMinusDuringDiff',oPlotData);
             %Pre minus Post
             oPlotData.z = oAverageData.PreStim.z - oAverageData.PostStim.z;
             oPlotData.MaxZLim = max(oPlotData(1).z);
             oPlotData.MaxCLim = max(oPlotData(1).z);
             oPlotData.MinZLim = min(oPlotData(1).z);
             oPlotData.MinCLim = min(oPlotData(1).z);
-            AxesControl(oFigure,'2DScatter','2DPostMinusPreDiff',oPlotData);
+            AxesControl(oFigure,'2DContour','2DPostMinusPreDiff',oPlotData);
             %3D
             oPlotData = struct();
             oPlotData(1).x = oAverageData.x;
@@ -223,7 +223,7 @@ classdef MapElectrodes < SubFigure
             %Pre vs During
             oPlotData(1).z = -oAverageData.PreStim.z;
             oPlotData(2).z = -oAverageData.Stim.z;
-            AxesControl(oFigure,'3DTriSurf','3DPreVsDuringStimAverage',oPlotData);
+%             AxesControl(oFigure,'3DTriSurf','3DPreVsDuringStimAverage',oPlotData);
             %Post vs During
             oPlotData(1).z = -oAverageData.Stim.z;
             oPlotData(2).z = -oAverageData.PostStim.z;
@@ -272,7 +272,7 @@ classdef MapElectrodes < SubFigure
             
             %Plot 2D by default
             %Update the plot type
-            oFigure.PlotType = '2DActivation';
+            oFigure.PlotType = '2DContour';
 
             %Plot a 2D activation map
             oFigure.PlotActivation();
@@ -280,7 +280,7 @@ classdef MapElectrodes < SubFigure
         
         function o2DActivationMenu_Callback(oFigure, src, event);
             %Update the plot type
-            oFigure.PlotType = '2DActivation';
+            oFigure.PlotType = '2DContour';
             
             %Plot a 2D activation map
             oFigure.PlotActivation();
@@ -337,7 +337,7 @@ classdef MapElectrodes < SubFigure
                  oLabel = text(oElectrodes(i).Coords(1) - 0.1, oElectrodes(i).Coords(2) + 0.07, ...
                      oElectrodes(i).Name);
                  if ~oElectrodes(i).Accepted
-                     set(oLabel,'color','r');
+                    set(oLabel,'color','r');
                  end
                  set(oLabel,'FontWeight','bold','FontUnits','normalized');
                  set(oLabel,'FontSize',0.015);
@@ -367,6 +367,24 @@ classdef MapElectrodes < SubFigure
              iBeat = oFigure.oParentFigure.oSlideControl.GetSliderIntegerValue('oSlider');
              %Which plot type to use
              switch (oFigure.PlotType)
+                 case '2DContour'
+                     xlin = linspace(min(oFigure.Activation.x),max(oFigure.Activation.x),length(oFigure.Activation.x));
+                     ylin = linspace(min(oFigure.Activation.y),max(oFigure.Activation.y),length(oFigure.Activation.y));
+                     [X, Y] = meshgrid(xlin, ylin);
+                     Z = griddata(oFigure.Activation.x, oFigure.Activation.y,oFigure.Activation.z(:,iBeat),X,Y,'cubic');
+                     contourf(oFigure.oGuiHandle.oMapAxes,X,Y,Z,0:0.25:ceil(oFigure.Activation.MaxActivationTime));
+                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     %check if there is an existing colour bar
+                     %get figure children
+                     oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+                     oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+                     if oHandle < 0
+                         oColorBar = cbarf(Z,0:0.25:ceil(oFigure.Activation.MaxActivationTime));
+                         oTitle = get(oColorBar, 'title');
+                         set(oTitle,'string','Time (ms)');
+                     end
+                     set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
+
                  case '2DActivation'
                      scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
                      colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
@@ -386,7 +404,7 @@ classdef MapElectrodes < SubFigure
                      colorbar('location','EastOutside');
              end
 
-             title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation Map for beat %d',iBeat));
+             title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation map for beat #%d',iBeat));
          end
          
          function PlotPotential(oFigure,varargin)

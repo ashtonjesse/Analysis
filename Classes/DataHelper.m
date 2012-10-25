@@ -162,6 +162,8 @@ classdef DataHelper
             %moment it checks through a list of handles and finds the
             %handle to the object that has the tag requested
             tags = get(oParent,'tag');
+            %Initialise oHandle
+            oHandle = -1;
             for i = 1:length(tags)
                 if strcmpi(char(tags(i)), char(sNeededTag))
                     oHandle = oParent(i);
@@ -179,6 +181,25 @@ classdef DataHelper
             [dMin, iMinIndex] = min(aDiff);
         end
         
+        function out = StringIsNumeric(oDataHelper,oString)
+            % Is string numeric?
+            if ~ischar(oString)
+                %error('str_isnumeric:NonCharacterArray','not a string input');
+                out = 0;
+            end
+            
+            Nd = sum(isstrprop(oString,'digit'));
+            Nc = length(oString);
+            
+            dN = Nc - Nd;
+            
+            switch dN
+                case 0
+                    out = 1;
+                otherwise
+                    out = 0;
+            end
+        end
     end
     
     methods (Static)

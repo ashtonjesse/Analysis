@@ -8,9 +8,6 @@ classdef OrthoView < BaseFigure
         oSlideXControl;
         oSlideYControl;
         oStackVolume;
-        XIndex;
-        YIndex;
-        ZIndex;
         CurrentZoomLimits = struct();
         Dragging;
     end
@@ -263,43 +260,58 @@ classdef OrthoView < BaseFigure
             %Make sure this figure is the current figure
             set(0,'currentfigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             %Display the images
-            imshow(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,'Parent',...
-                oRightLowAxes);
-            imshow(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,'Parent',...
+            image('cdata',oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,'Parent',...
+               oRightLowAxes);
+            image('cdata',oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,'Parent',...
                 oLeftLowAxes);
-            imshow(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,'Parent',...
+            image('cdata',oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,'Parent',...
                 oLeftHighAxes);
             %Hold on and plot a line where the other stack images are located on each
             hold(oRightLowAxes,'on');
             oZLineOnX = line([0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2)], [iZIndex iZIndex]);
-            set(oZLineOnX,'Tag','ZLineOnX','color','g','parent',oRightLowAxes, ...
-                'linewidth',1);
+            set(oZLineOnX,'Tag','oZLineOnX','color','g','parent',oRightLowAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             oYLineOnX = line([iYIndex iYIndex],[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,1)]);
             set(oYLineOnX,'Tag','oYLineOnX','color','g','parent',oRightLowAxes, ...
-                'linewidth',1);
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             hold(oRightLowAxes,'off');
             
             hold(oLeftHighAxes,'on');
             oZLineOnY = line([0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,2)], [iZIndex iZIndex]);
-            set(oZLineOnY,'Tag','ZLineOnY','color','g','parent',oLeftHighAxes, ...
-                'linewidth',1);
+            set(oZLineOnY,'Tag','oZLineOnY','color','g','parent',oLeftHighAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             oXLineOnY = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,1)]);
             set(oXLineOnY,'Tag','oXLineOnY','color','g','parent',oLeftHighAxes, ...
-                'linewidth',1);
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             hold(oLeftHighAxes,'off');
             
             hold(oLeftLowAxes,'on');
             oXLineOnZ = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,1)]);
             set(oXLineOnZ,'Tag','oXLineOnZ','color','g','parent',oLeftLowAxes, ...
-                'linewidth',1);
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             oYLineOnZ = line([0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,2)], [iYIndex iYIndex]);
             set(oYLineOnZ,'Tag','oYLineOnZ','color','g','parent',oLeftLowAxes, ...
-                'linewidth',1);
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             hold(oLeftLowAxes,'off');
-            
-            %Prepare the subplots for next replot
+            %Set the stop drag function
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
+            %Prepare the subplots
+            set(oLeftHighAxes,'layer','top');
+            set(oLeftHighAxes,'linewidth',2,'Box','on','XColor','r','YColor','r','XTick',[],'YTick',[]);
+            set(oLeftHighAxes,'XLim',[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data-2,2)]);
+            set(oLeftHighAxes,'YLim',[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data-2,1)]);
             set(oLeftHighAxes,'Tag', 'LeftHighAxes', 'NextPlot','replacechildren');
+            
+            set(oLeftLowAxes,'layer','top');
+            set(oLeftLowAxes,'linewidth',2,'Box','on','XColor','g','YColor','g','XTick',[],'YTick',[]);
+            set(oLeftLowAxes,'XLim',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data-2,2)]);
+            set(oLeftLowAxes,'YLim',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data-2,1)]);
             set(oLeftLowAxes,'Tag', 'LeftLowAxes', 'NextPlot','replacechildren');
+            
+            set(oRightLowAxes,'layer','top');
+            set(oRightLowAxes,'linewidth',2,'Box','on','XColor','y','YColor','y','XTick',[],'YTick',[]);
+            set(oRightLowAxes,'XLim',[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data-2,2)]);
+            set(oRightLowAxes,'YLim',[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data-2,1)]);
             set(oRightLowAxes,'Tag', 'RightLowAxes', 'NextPlot','replacechildren');
             set(oFigure.oGuiHandle.oPanel,'visible','on');
         end
@@ -319,8 +331,9 @@ classdef OrthoView < BaseFigure
         function StartDrag(oFigure, src, event)
             %The function that fires when a line on a subplot is dragged
             oFigure.Dragging = 1;
-            
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oAxes)));
+            oAxes = get(src,'Parent');
+            sLineTag = get(src,'tag');
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, LineSpecificDragEvent(oAxes,sLineTag)));
         end
         
         function StopDrag(oFigure, src, event)
@@ -330,19 +343,7 @@ classdef OrthoView < BaseFigure
                 %Make sure that the windowbuttonmotionfcn is no longer active
                 set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', '');
                 oFigure.Dragging = 0;
-                %The tag of the current axes is the channel number
-                iChannelNumber = oFigure.SelectedChannel;
-                %Get the handle to these axes from the panel children
-                oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
-                oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('Slope%d',iChannelNumber));
-                %Get the handle to the line on these axes
-                oAxesChildren = get(oAxes,'children');
-                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, sprintf('ActLine%d',iChannelNumber));
-                %Get the xdata of this line and convert it into a timeseries
-                %index
-                dXdata = get(oLine, 'XData');
-                %Update the activation for this electrode and beat number
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateActivationMark(iChannelNumber, oFigure.oSlideControl.GetSliderIntegerValue('oSlider'), dXdata(1));
+                
                 %Refresh the plot
                 oFigure.Replot();
             end
@@ -351,20 +352,23 @@ classdef OrthoView < BaseFigure
         function Drag(oFigure, src, event)
             %The function that fires while a line on a subplot is being
             %dragged
+            
+            %Get the current point information
             oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
-            oAxesTag = oFigure.oDAL.oHelper.GetDoubleFromString(get(event.ParentAxesHandle,'tag'));
-            switch (oAxesTag)
-                case 'LeftHighAxes'
-                    oFigure.XIndex = oFigure.oDAL.oHelper.GetDoubleFromString(get(oSlopePlot,'tag'));
-                case 'LeftLowAxes'
-                    oFigure.ZIndex = oFigure.oDAL.oHelper.GetDoubleFromString(get(oSlopePlot,'tag'));
-                case 'RightLowAxes'
-                    oFigure.YIndex = oFigure.oDAL.oHelper.GetDoubleFromString(get(oSlopePlot,'tag'));
+            %Set the new location
+            switch (event.LineTag)
+                case {'oXLineOnY', 'oXLineOnZ'};
+                    oFigure.oSlideXControl.SetSliderValue(oPoint(1,1));
+                case 'oYLineOnX'
+                    oFigure.oSlideYControl.SetSliderValue(oPoint(1,1));
+                case 'oYLineOnZ'
+                    oFigure.oSlideYControl.SetSliderValue(oPoint(1,2));
+                case {'oZLineOnY','oZLineOnX'};
+                    oFigure.oSlideZControl.SetSliderValue(oPoint(1,2));
             end
-            oAxesChildren = get(event.ParentAxesHandle,'children');
-            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, sprintf('ActLine%d',oAxesTag));
-            set(oLine, 'XData', oPoint(1)*[1 1]);
+            
         end
+
     end
     
 end
