@@ -7,6 +7,7 @@ classdef OrthoView < BaseFigure
         oSlideZControl;
         oSlideXControl;
         oSlideYControl;
+        oROIControl;
         oStackVolume;
         CurrentZoomLimits = struct();
         Dragging;
@@ -20,7 +21,7 @@ classdef OrthoView < BaseFigure
             %Set the call back functions for the controls
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
-            
+                        
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oUnused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oOpenMenu, 'callback', @(src, event) oOpenMenu_Callback(oFigure, src, event));
@@ -29,14 +30,15 @@ classdef OrthoView < BaseFigure
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oUnused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUnused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolsMenu, 'callback', @(src, event) oUnused_Callback(oFigure, src, event));
-            
+            set(oFigure.oGuiHandle.oSubSampleMenu, 'callback', @(src, event) oSubSampleMenu_Callback(oFigure, src, event));
+
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Hide the panel
-            set(oFigure.oGuiHandle.oPanel,'visible','off');
+            %set(oFigure.oGuiHandle.oPanel,'visible','off');
             % --- Executes just before figure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -47,6 +49,7 @@ classdef OrthoView < BaseFigure
                 
                %Set the output attribute
                 handles.output = hObject;
+                
                 %Update the gui handles 
                 guidata(hObject, handles);
             end
@@ -64,6 +67,9 @@ classdef OrthoView < BaseFigure
             end
             if ~isempty(oFigure.oSlideZControl)
                 deletefigure(oFigure.oSlideZControl);
+            end
+            if ~isempty(oFigure.oROIControl)
+                deletefigure(oFigure.oROIControl);
             end
             deleteme@BaseFigure(oFigure);
         end
@@ -182,12 +188,13 @@ classdef OrthoView < BaseFigure
             
             %Check if there are any subplots already
             aPlotObjects = get(oFigure.oGuiHandle.oPanel,'children');
-            if isempty(aPlotObjects)
+            if length(aPlotObjects) <= 1
                 %Create the subplots
                 oFigure.CreateSubPlot();
             end
             %Plot the image
             oFigure.Replot();
+            
         end
         
         function oFigure = oSaveMenu_Callback(oFigure, src, event)
@@ -206,6 +213,59 @@ classdef OrthoView < BaseFigure
             %Save
             oFigure.oGuiHandle.oStack.Save(sLongDataFileName);
             
+        end
+        
+        function oSubSampleMenu_Callback(oFigure, src, event)
+            %Open an ROI selection control
+            oFigure.oROIControl = ROIControl(oFigure,'Select ROI volume for sub sampling');
+            %add event listeners
+            addlistener(oFigure.oROIControl,'SelectROINow',@(src,event) oFigure.SelectROIListener(src, event));
+            addlistener(oFigure.oROIControl,'DoneSelecting',@(src,event) oFigure.FinishedROISelection(src, event));
+        end
+        
+        function SelectROIListener(oFigure, src, event)
+            %An event listener callback for the ROI control
+            %Allow selection of an ROI on the currently selected axes
+            sAxesSelection = char(oFigure.oROIControl.GetPopUpSelectionString('oAxesSelect'));
+            %Get the array of handles to the subplots that are children of
+            %oPanel
+            aSubPlots = get(oFigure.oGuiHandle.oPanel,'children');
+            %Get the handles to the appropriate plots
+            switch (sAxesSelection)
+                case 'x'
+                    oRightLowAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'RightLowAxes');
+                    oROI = imrect(oRightLowAxes);
+                case 'y'
+                    oLeftHighAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'LeftHighAxes');
+                    oROI = imrect(oLeftHighAxes);
+                case 'z'
+                    oLeftLowAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'LeftLowAxes');
+                    oROI = imrect(oLeftLowAxes);
+            end
+            dPosition = wait(oROI);
+            %Convert the ROI to a cell array
+            dPosition = num2cell(dPosition);
+            %Remove the ROI - could change this if needed
+            delete(oROI);
+            %Check if there is already data in the ROI table
+            oData = get(oFigure.oROIControl.oGuiHandle.oROITable,'data');
+            if ~isempty(oData{1,1})
+                %Append the new data to the existing data
+                oNewData = cat(2,sAxesSelection,dPosition);
+                oData = cat(1,oData,oNewData);
+                %Set the selected region as the ROITable data
+                set(oFigure.oROIControl.oGuiHandle.oROITable,'data',oData);
+            else
+                oData = cat(2,sAxesSelection,dPosition);
+                %Set the selected region as the ROITable data
+                set(oFigure.oROIControl.oGuiHandle.oROITable,'data',oData);
+            end
+            
+        end
+        
+        function FinishedROISelection(oFigure, src, event)
+            %Export the ROI as a new stack
+            %Close the ROIControl and clean up the memory
         end
         
         function SlideValueListener(oFigure,src,event)
@@ -231,17 +291,27 @@ classdef OrthoView < BaseFigure
              for i = 1:size(aPlotObjects,1)
                  delete(aPlotObjects(i));
              end
+             
+             %Get the panel dimensions
+             aDimensions = get(oFigure.oGuiHandle.oPanel,'Position');
              %Divide up the space for the subplots
-             xDiv = 1/2; 
-             yDiv = 1/2;
-                         
-             %Create the position vector for the next plot
-             aPosition = [0*yDiv, 0*xDiv, yDiv, xDiv];%[left bottom width height]
-             subplot('Position',aPosition,'parent',oFigure.oGuiHandle.oPanel,'Tag','LeftLowAxes');
-             aPosition = [0*yDiv, 1*xDiv, yDiv, xDiv];%[left bottom width height]
-             subplot('Position',aPosition,'parent',oFigure.oGuiHandle.oPanel,'Tag','LeftHighAxes');
-             aPosition = [1*yDiv, 0*xDiv, yDiv, xDiv];%[left bottom width height]
-             subplot('Position',aPosition,'parent',oFigure.oGuiHandle.oPanel,'Tag','RightLowAxes');
+             xDiv = (aDimensions(3)-aDimensions(1))/2; 
+             yDiv = (aDimensions(4)-aDimensions(2))/2;
+             
+             oLeftHighAxes = subplot(2,2,1,'parent',oFigure.oGuiHandle.oPanel,'Tag','LeftHighAxes');
+             set(oLeftHighAxes,'Units','Pixels');
+             aPosition = [2, yDiv+1, xDiv-2, yDiv-3];%[left bottom width height]
+             set(oLeftHighAxes,'Position',aPosition);                        
+             
+             oLeftLowAxes = subplot(2,2,3,'parent',oFigure.oGuiHandle.oPanel,'Tag','LeftLowAxes');
+             set(oLeftLowAxes,'Units','Pixels');
+             aPosition = [(xDiv - yDiv)/2, 2, yDiv, yDiv-3];%[left bottom width height]
+             set(oLeftLowAxes,'Position',aPosition);
+             
+             oRightLowAxes = subplot(2,2,4,'parent',oFigure.oGuiHandle.oPanel,'Tag','RightLowAxes');
+             set(oRightLowAxes,'Units','Pixels');
+             aPosition = [xDiv, 2, xDiv, yDiv-3];%[left bottom width height]
+             set(oRightLowAxes,'Position',aPosition);
         end
             
         function Replot(oFigure)
@@ -255,44 +325,41 @@ classdef OrthoView < BaseFigure
             oRightLowAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'RightLowAxes');
             %Get the indexes of the currently selected images
             iYIndex = oFigure.oSlideYControl.GetSliderIntegerValue('oSlider');
+            
             iZIndex = oFigure.oSlideZControl.GetSliderIntegerValue('oSlider');
             iXIndex = oFigure.oSlideXControl.GetSliderIntegerValue('oSlider');
             %Make sure this figure is the current figure
             set(0,'currentfigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             %Display the images
-            image('cdata',oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,'Parent',...
+            image('cdata',(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data),'Parent',...
                oRightLowAxes);
-            image('cdata',oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,'Parent',...
+            image('cdata',(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data),'Parent',...
                 oLeftLowAxes);
-            image('cdata',oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,'Parent',...
+            image('cdata',(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data),'Parent',...
                 oLeftHighAxes);
-            %Hold on and plot a line where the other stack images are located on each
-            hold(oRightLowAxes,'on');
-            oZLineOnX = line([0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2)], [iZIndex iZIndex]);
-            set(oZLineOnX,'Tag','oZLineOnX','color','g','parent',oRightLowAxes, ...
+            %plot a line where the other stack images are located on each
+            
+            oZLineOnX = line([0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2);], [iZIndex iZIndex]);
+            set(oZLineOnX,'Tag','oZLineOnX','color','c','parent',oRightLowAxes, ...
                 'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             oYLineOnX = line([iYIndex iYIndex],[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,1)]);
-            set(oYLineOnX,'Tag','oYLineOnX','color','g','parent',oRightLowAxes, ...
+            set(oYLineOnX,'Tag','oYLineOnX','color','r','parent',oRightLowAxes, ...
                 'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            hold(oRightLowAxes,'off');
             
-            hold(oLeftHighAxes,'on');
             oZLineOnY = line([0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,2)], [iZIndex iZIndex]);
-            set(oZLineOnY,'Tag','oZLineOnY','color','g','parent',oLeftHighAxes, ...
+            set(oZLineOnY,'Tag','oZLineOnY','color','c','parent',oLeftHighAxes, ...
                 'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             oXLineOnY = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,1)]);
-            set(oXLineOnY,'Tag','oXLineOnY','color','g','parent',oLeftHighAxes, ...
+            set(oXLineOnY,'Tag','oXLineOnY','color','y','parent',oLeftHighAxes, ...
                 'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            hold(oLeftHighAxes,'off');
             
-            hold(oLeftLowAxes,'on');
             oXLineOnZ = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,1)]);
-            set(oXLineOnZ,'Tag','oXLineOnZ','color','g','parent',oLeftLowAxes, ...
+            set(oXLineOnZ,'Tag','oXLineOnZ','color','y','parent',oLeftLowAxes, ...
                 'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
             oYLineOnZ = line([0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,2)], [iYIndex iYIndex]);
-            set(oYLineOnZ,'Tag','oYLineOnZ','color','g','parent',oLeftLowAxes, ...
+            set(oYLineOnZ,'Tag','oYLineOnZ','color','r','parent',oLeftLowAxes, ...
                 'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            hold(oLeftLowAxes,'off');
+            
             %Set the stop drag function
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
             %Prepare the subplots
@@ -303,7 +370,7 @@ classdef OrthoView < BaseFigure
             set(oLeftHighAxes,'Tag', 'LeftHighAxes', 'NextPlot','replacechildren');
             
             set(oLeftLowAxes,'layer','top');
-            set(oLeftLowAxes,'linewidth',2,'Box','on','XColor','g','YColor','g','XTick',[],'YTick',[]);
+            set(oLeftLowAxes,'linewidth',2,'Box','on','XColor','c','YColor','c','XTick',[],'YTick',[]);
             set(oLeftLowAxes,'XLim',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data-2,2)]);
             set(oLeftLowAxes,'YLim',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data-2,1)]);
             set(oLeftLowAxes,'Tag', 'LeftLowAxes', 'NextPlot','replacechildren');

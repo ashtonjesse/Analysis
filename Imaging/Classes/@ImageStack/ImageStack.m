@@ -4,12 +4,14 @@ classdef ImageStack < BaseEntity
     
     properties
         oImages = BaseImage();
+        Name;
     end
     
     methods
         function oStack = ImageStack()
             %% Constructor
             oStack = oStack@BaseEntity();
+            oStack.oDAL = ImageStackDAL();
         end
     end
     
@@ -35,6 +37,13 @@ classdef ImageStack < BaseEntity
             oData = oStack.oDAL.GetEntityFromFile(sFile);
             %   Reload all the properties 
             oStack.oImages = oData.oEntity.oImages;
+        end
+        
+        function oStack = GetImageStackFromDataFile(oStack, sFile, sName)
+            %   Get an entity by loading a mat file that has NOT been saved
+            %   previously and is just a set of image data
+            
+            oStack = oStack.oDAL.ReadDataFromFile(sFile,sName);
         end
         
         function SaveStackImages(oStack, sPath, sFormat)

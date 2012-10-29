@@ -205,8 +205,18 @@ classdef LoadImage < BaseFigure
         function Replot(oFigure)
             iIndex = oFigure.oSlideControl.GetSliderIntegerValue('oSlider');
             set(0,'currentfigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
-            imshow(oFigure.oGuiHandle.oStack.oImages(iIndex).Data,'Parent',...
-                oFigure.oGuiHandle.oAxes);
+            
+            switch (oFigure.oGuiHandle.oStack.oImages(iIndex).sClass)
+                case 'logical'
+                    image('cdata',oFigure.oGuiHandle.oStack.oImages(iIndex).Data*255,'Parent',...
+                        oFigure.oGuiHandle.oAxes);
+                    colormap(oFigure.oGuiHandle.oAxes, colormap(gray));
+                otherwise
+                    image('cdata',oFigure.oGuiHandle.oStack.oImages(iIndex).Data,'Parent',...
+                        oFigure.oGuiHandle.oAxes);
+            end
+            set(oFigure.oGuiHandle.oAxes,'XLim',[0 size(oFigure.oGuiHandle.oStack.oImages(iIndex).Data,2)]);
+            set(oFigure.oGuiHandle.oAxes,'YLim',[0 size(oFigure.oGuiHandle.oStack.oImages(iIndex).Data,1)]);
             set(oFigure.oGuiHandle.oAxes,'visible','on');
         end
         

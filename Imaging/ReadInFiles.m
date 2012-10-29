@@ -4,11 +4,11 @@ close all;
 clear all;
 
 %Specify paths
-sImagesPath = 'D:\Users\jash042\Documents\PhD\Experiments\Immuno\20120706\Series007Processed\iso007\';
+sImagesPath = 'D:\Users\jash042\Documents\PhD\Experiments\Immuno\20120706\Series009Processed\iso009\';
 % sSavePath = 'H:/Data/Database/20111124';
 sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\Images\Immuno\20120706\';
 sFormat = 'png';
-sName = 'Series007Iso';
+sName = 'Series009Iso';
 %Get the full path names of all the  files in the signal directory
 %aImageFileFull = fGetFileNamesOnly(sImagesPath,'*deconv00021.png');
 aImageFileFull = fGetFileNamesOnly(sImagesPath,strcat('*.',sFormat));

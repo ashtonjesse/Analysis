@@ -13,6 +13,11 @@ classdef BaseImage < BaseEntity
             %% Constructor
             oImage = oImage@BaseEntity();
             oImage.oDAL = ImageDAL();
+            if nargin > 0
+                oImage.Data = varargin{1};
+                oImage.Name = varargin{2};
+                oImage.sClass = class(oImage.Data);
+            end
         end
     end
     
@@ -38,6 +43,11 @@ classdef BaseImage < BaseEntity
             oImage = oImage.oDAL.ReadImageFromFile(sFile, sFormat);
             oImage.Name = sName;
             oImage.sClass = class(oImage.Data);
+        end
+        
+        function ConvertToGrayScale(oImage)
+            %Convert image data to double 
+            oImage.Data = double(im2uint8(oImage.Data));
         end
     end
     
