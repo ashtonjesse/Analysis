@@ -4,6 +4,7 @@ classdef ROIControl < SubFigure
     events
         SelectROINow;
         DoneSelecting;
+        ClearROI;
     end
     
     methods
@@ -66,6 +67,7 @@ classdef ROIControl < SubFigure
             %clear the data on the roi table
             oData = cell(2,5);
             set(oFigure.oGuiHandle.oROITable,'data',oData);
+            notify(oFigure,'ClearROI');
         end
     end
     

@@ -68,9 +68,9 @@ classdef ImageStack < BaseEntity
             switch (sDimension)
                 case 'x'
                     %Create new array of images
-                    oResampledImages = BaseImage(size(oStack.oImages(1).Data,2),1);
+                    oResampledImages = BaseImage();
                     %Initialise image data
-                    oResampledImages(:).Data = zeros(length(oStack.oImages),size(oStack.oImages(1).Data,2));
+                    oResampledImages(:).Data = zeros(length(oStack.oImages),size(oStack.oImages(1).Data,1));
                     % Loop through the images
                     for i = 1:length(oStack.oImages)
                         % Loop through the columns of the image data
@@ -89,7 +89,7 @@ classdef ImageStack < BaseEntity
                     oNewStack.oImages = oResampledImages;
                 case 'y'
                     %Create new array of images
-                    oResampledImages = BaseImage(size(oStack.oImages(1).Data,1),1);
+                    oResampledImages = BaseImage();
                     %Initialise image data
                     oResampledImages(:).Data = zeros(length(oStack.oImages),size(oStack.oImages(1).Data,2));
                     % Loop through the images
@@ -109,6 +109,29 @@ classdef ImageStack < BaseEntity
                     oNewStack = ImageStack();
                     oNewStack.oImages = oResampledImages;
             end
+        end
+        
+        function oNewStack = SubsampleStack(oStack, oDimensions)
+            %Create a sub stack from an existing z stack specified by the
+            %struct oDimensions. This should contain 3 entries, the first
+            %being the range for subsampling of the x, the second 
+            %the y and the third the z.
+            
+            %Create new array of images
+            oSubsampledImages = BaseImage(abs(oDimensions(3).Range(2) - oDimensions(3).Range(1)),1);
+            %loop through the images in the stack
+            for i = 1:(oDimensions(3).Range(2) - oDimensions(3).Range(1));
+                %Select the specified data
+                oSubsampledImages(i).Data = oStack.oImages(i + oDimensions(3).Range(1)).Data( ...
+                    oDimensions(2).Range(1):oDimensions(2).Range(2),oDimensions(1).Range(1):oDimensions(1).Range(2));
+                %Reconvert resampled images in to appropriate image
+                %class
+                oSubsampledImages(i).Data = uint8(oSubsampledImages(i).Data);
+                oSubsampledImages(i).Name = sprintf('%d',i);
+                oSubsampledImages(i).sClass = 'uint8';
+            end
+            oNewStack = ImageStack();
+            oNewStack.oImages = oSubsampledImages;
         end
     end
 end

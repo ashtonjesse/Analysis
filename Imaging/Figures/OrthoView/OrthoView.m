@@ -4,13 +4,16 @@ classdef OrthoView < BaseFigure
 
     properties
         DefaultPath = 'd:\Users\jash042\Documents\PhD\Analysis\Database\Images\Immuno\';
-        oSlideZControl;
+        oSlideZControl; %The SlideControl figure handle for the Z axes 
         oSlideXControl;
         oSlideYControl;
-        oROIControl;
-        oStackVolume;
+        oROIControl; %The ROIControl figure handle
+        oStackVolume; %A three dimensional array containing the whole Z stack
         CurrentZoomLimits = struct();
         Dragging;
+        oZROI = []; %Handle to the Region Of Interest object for the Z axes
+        oXROI = [];
+        oYROI = [];
     end
     
     methods
@@ -221,6 +224,7 @@ classdef OrthoView < BaseFigure
             %add event listeners
             addlistener(oFigure.oROIControl,'SelectROINow',@(src,event) oFigure.SelectROIListener(src, event));
             addlistener(oFigure.oROIControl,'DoneSelecting',@(src,event) oFigure.FinishedROISelection(src, event));
+            addlistener(oFigure.oROIControl,'ClearROI',@(src,event) oFigure.ClearROISelection(src, event));
         end
         
         function SelectROIListener(oFigure, src, event)
@@ -230,23 +234,37 @@ classdef OrthoView < BaseFigure
             %Get the array of handles to the subplots that are children of
             %oPanel
             aSubPlots = get(oFigure.oGuiHandle.oPanel,'children');
-            %Get the handles to the appropriate plots
+            %Get the handles to the appropriate plots, delete any existing
+            %ROI's and create new ones
             switch (sAxesSelection)
                 case 'x'
                     oRightLowAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'RightLowAxes');
-                    oROI = imrect(oRightLowAxes);
+                    if strcmp(class(oFigure.oXROI),'imrect') 
+                        %Can only have 1 ROI at a time
+                        delete(oFigure.oXROI);
+                    end
+                    oFigure.oXROI = imrect(oRightLowAxes);
+                    dPosition = wait(oFigure.oXROI);
                 case 'y'
                     oLeftHighAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'LeftHighAxes');
-                    oROI = imrect(oLeftHighAxes);
+                    if strcmp(class(oFigure.oYROI),'imrect')
+                        %Can only have 1 ROI at a time
+                        delete(oFigure.oYROI);
+                    end
+                    oFigure.oYROI = imrect(oLeftHighAxes);
+                    dPosition = wait(oFigure.oYROI);
                 case 'z'
                     oLeftLowAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'LeftLowAxes');
-                    oROI = imrect(oLeftLowAxes);
+                    if strcmp(class(oFigure.oZROI),'imrect')
+                        %Can only have 1 ROI at a time
+                        delete(oFigure.oZROI);
+                    end
+                    oFigure.oZROI = imrect(oLeftLowAxes);
+                    dPosition = wait(oFigure.oZROI);
             end
-            dPosition = wait(oROI);
+            
             %Convert the ROI to a cell array
             dPosition = num2cell(dPosition);
-            %Remove the ROI - could change this if needed
-            delete(oROI);
             %Check if there is already data in the ROI table
             oData = get(oFigure.oROIControl.oGuiHandle.oROITable,'data');
             if ~isempty(oData{1,1})
@@ -264,8 +282,94 @@ classdef OrthoView < BaseFigure
         end
         
         function FinishedROISelection(oFigure, src, event)
-            %Export the ROI as a new stack
+            %Convert the ROI into dimensions for the subsample
+            
+            %Initialise the struct to hold the info
+            oDimensions = struct();
+            %Get the ROI info from the ROIControl
+            oROIData = get(oFigure.oROIControl.oGuiHandle.oROITable,'data');
+            sSpecifiedAxes = strcat(char(oROIData(1,1)),char(oROIData(2,1)));
+            oROIData = round(cell2mat(oROIData(:,2:end)));
+            switch (sSpecifiedAxes)
+                case 'xy'
+                    %horizontal (x)
+                    oDimensions(1).Range = [oROIData(2,1), oROIData(2,1) + oROIData(2,3)];
+                    %vertical (y)
+                    oDimensions(2).Range = [oROIData(1,1), oROIData(1,1) + oROIData(1,3)];
+                    %depth (z)
+                    oDimensions(3).Range = [oROIData(1,2), oROIData(1,2) + oROIData(1,4)];
+                    %Specify filename for saving
+                    sFileName = strcat(sprintf('%d',oROIData(2,1)),'_',sprintf('%d',oROIData(2,3)),'_', ...
+                        sprintf('%d',oROIData(1,1)),'_',sprintf('%d',oROIData(1,3)),'_', ...
+                        sprintf('%d',oROIData(1,2)),'_',sprintf('%d',oROIData(1,4)));
+                case 'yx'
+                    %horizontal (x)
+                    oDimensions(1).Range = [oROIData(1,1), oROIData(1,1) + oROIData(1,3)];
+                    %vertical (y)
+                    oDimensions(2).Range = [oROIData(2,1), oROIData(2,1) + oROIData(2,3)];
+                    %depth (z)
+                    oDimensions(3).Range = [oROIData(2,2), oROIData(2,2) + oROIData(2,4)];
+                    %Specify filename for saving
+                    sFileName = strcat(sprintf('%d',oROIData(1,1)),'_',sprintf('%d',oROIData(1,3)),'_', ...
+                        sprintf('%d',oROIData(2,1)),'_',sprintf('%d',oROIData(2,3)),'_', ...
+                        sprintf('%d',oROIData(2,2)),'_',sprintf('%d',oROIData(2,4)));
+                case {'zy','zx'}
+                    %horizontal (x)
+                    oDimensions(1).Range = [oROIData(1,1), oROIData(1,1) + oROIData(1,3)];
+                    %vertical (y)
+                    oDimensions(2).Range = [oROIData(1,2), oROIData(1,2) + oROIData(1,4)];
+                    %depth (z)
+                    oDimensions(3).Range = [oROIData(2,2), oROIData(2,2) + oROIData(2,4)];
+                    %Specify filename for saving
+                    sFileName = strcat(sprintf('%d',oROIData(1,1)),'_',sprintf('%d',oROIData(1,3)),'_', ...
+                        sprintf('%d',oROIData(1,2)),'_',sprintf('%d',oROIData(1,4)),'_', ...
+                        sprintf('%d',oROIData(2,2)),'_',sprintf('%d',oROIData(2,4)));
+                case {'yz','xz'}
+                    %horizontal (x)
+                    oDimensions(1).Range = [oROIData(2,1), oROIData(2,1) + oROIData(2,3)];
+                    %vertical (y)
+                    oDimensions(2).Range = [oROIData(2,2), oROIData(2,2) + oROIData(2,4)];
+                    %depth (z)
+                    oDimensions(3).Range = [oROIData(1,2), oROIData(1,2) + oROIData(1,4)];
+                    %Specify filename for saving
+                    sFileName = strcat(sprintf('%d',oROIData(2,1)),'_',sprintf('%d',oROIData(2,3)),'_', ...
+                        sprintf('%d',oROIData(2,2)),'_',sprintf('%d',oROIData(2,4)),'_', ...
+                        sprintf('%d',oROIData(1,2)),'_',sprintf('%d',oROIData(1,4)));
+            end
+            %Create the ROI as a new stack
+            oSubSampledStack = oFigure.oGuiHandle.oZStack.SubsampleStack(oDimensions);
+            %Call built-in file dialog to select filename
+            sDataPathName = uigetdir(oFigure.DefaultPath,'Select a location for the file');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataPathName))
+                return
+            end
+            %Get the full file name
+            sLongDataFileName=strcat(sDataPathName,'\',oFigure.oGuiHandle.oZStack.Name,sFileName);
+            %Save stack
+            oSubSampledStack.Save(sLongDataFileName);
             %Close the ROIControl and clean up the memory
+            oFigure.oROIControl.deletefigure();
+            oFigure.oROIControl = [];
+            oFigure.oZROI = [];
+            oFigure.oXROI = [];
+            oFigure.oYROI = [];
+        end
+        
+        function ClearROISelection(oFigure, src, event)
+            %Clear any ROI boxes left on the images
+            if strcmp(class(oFigure.oXROI),'imrect')
+                delete(oFigure.oXROI);
+                oFigure.oXROI = [];
+            end
+            if strcmp(class(oFigure.oYROI),'imrect')
+                delete(oFigure.oYROI);
+                oFigure.oYROI = [];
+            end
+            if strcmp(class(oFigure.oZROI),'imrect')
+                delete(oFigure.oZROI);
+                oFigure.oZROI = [];
+            end
         end
         
         function SlideValueListener(oFigure,src,event)
