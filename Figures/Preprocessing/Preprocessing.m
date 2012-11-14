@@ -19,9 +19,11 @@ classdef Preprocessing < SubFigure
             oFigure = oFigure@SubFigure(oParent,'Preprocessing',@Preprocessing_OpeningFcn);
                         
             aSliderTexts = [oFigure.oGuiHandle.oSliderText1,oFigure.oGuiHandle.oSliderText2];
+            dSliderStep = [1/(oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels-1), ...
+                (1/(oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels-1))*10];
             sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Channel'}, {'Min', 1, 'Max', ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels, 'Value', 1, ...
-                'Callback', @(src, event) oSlider_Callback(oFigure, src, event)},{},{},'%0.0f',...
+                'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',dSliderStep},{},{},'%0.0f',...
                 oFigure.oGuiHandle.oSliderPanel, oFigure.oGuiHandle.oSlider,oFigure.oGuiHandle.oSliderEdit,aSliderTexts);
             
             %Set the callback functions to the menu items 
@@ -31,6 +33,9 @@ classdef Preprocessing < SubFigure
             set(oFigure.oGuiHandle.oApplyAllMenu, 'callback', @(src, event) oApplyAllMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateMenu, 'callback', @(src, event) oTruncateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
+            
+            %Set callback functions for controls
+            set(oFigure.oGuiHandle.oCheckBoxReject, 'callback', @(src, event) oCheckBoxReject_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -61,6 +66,8 @@ classdef Preprocessing < SubFigure
                 set(handles.oCheckBoxBeats, 'string', 'Plot beats');
                 set(handles.oCheckBoxBeats, 'TooltipString', 'Plot beats');
                 set(handles.oCheckBoxOriginal, 'string', 'Plot Original');
+                set(handles.oCheckBoxReject, 'string', 'Accepted');
+                set(handles.oCheckBoxReject, 'TooltipString', 'Uncheck to reject channel');
                 
                 %Set the output attribute
                 handles.output = hObject;
@@ -139,6 +146,23 @@ classdef Preprocessing < SubFigure
         function pmWindowSize_Callback(oFigure, src, event)
 
         end
+        % --------------------------------------------------------------------
+        function oCheckBoxReject_Callback(oFigure, src, event)
+            %Get the button state
+            ButtonState = get(oFigure.oGuiHandle.oCheckBoxReject,'Value');
+            %Get the channel index
+            iChannel = oFigure.GetSliderIntegerValue('oSlider');
+            if ButtonState == get(oFigure.oGuiHandle.oCheckBoxReject,'Max')
+                % Toggle button is pressed
+                oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(iChannel);
+            elseif ButtonState == get(oFigure.oGuiHandle.oCheckBoxReject,'Min')
+                % Toggle button is not pressed
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(iChannel);
+            end
+            %Replot
+            oFigure.PlotOriginal(iChannel);
+            oFigure.PlotProcessed(iChannel);
+        end
         %% Menu Callbacks
         % -----------------------------------------------------------------
         function oFileMenu_Callback(oFigure, src, event)
@@ -214,12 +238,22 @@ classdef Preprocessing < SubFigure
     
     %% Private methods
     methods (Access = private)
+        function CheckChannelStatus(oFigure,iChannel)
+            %Get selected channel and set checkbox value
+            set(oFigure.oGuiHandle.oCheckBoxReject,'value',oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted);
+        end
+        
         function PlotOriginal(oFigure, iChannel)
             oAxes = oFigure.oGuiHandle.oTopAxes;
             cla(oAxes);
             sTitle = sprintf('Original Signal for Channel %d',iChannel);
-            plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
+            if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
+                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
+            else
+                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'r');
+            end
             axis(oAxes, 'auto');
             title(oAxes, sTitle);
             if ~isempty(oFigure.CurrentZoomLimits)
@@ -227,6 +261,7 @@ classdef Preprocessing < SubFigure
                     set(oAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
                     set(oAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
             end
+            oFigure.CheckChannelStatus(iChannel);
         end
         
         function TruncateData(oFigure, src, event)

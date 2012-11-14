@@ -7,7 +7,7 @@ classdef StartFigure < BaseFigure
 % to the child figure so a Warning is posted to the command window automatically   
 
     properties
-        DefaultPath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20111124\';
+        DefaultPath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\';
     end
     
     methods
@@ -42,9 +42,9 @@ classdef StartFigure < BaseFigure
                 % varargin   command line arguments to BaselineCorrection (see VARARGIN)
                 
                %Set the output attribute
-                handles.output = hObject;
-                %Update the gui handles 
-                guidata(hObject, handles);
+               handles.output = hObject;
+               %Update the gui handles
+               guidata(hObject, handles);
             end
         end
     end
@@ -132,7 +132,7 @@ classdef StartFigure < BaseFigure
         function oFigure = bPreprocessing_Callback(oFigure, src, event)
             %Open the Preprocessing figure passing this figure as the
             %parent
-            WaveletAnalysis(oFigure);
+            Preprocessing(oFigure);
         end
         
         function oFigure = bDetectBeats_Callback(oFigure, src, event)

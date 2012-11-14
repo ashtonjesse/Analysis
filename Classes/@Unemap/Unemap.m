@@ -64,6 +64,8 @@ classdef Unemap < BasePotential
         end
                 
         %% Methods relating to Electrode potential raw and processed data
+        
+        
         function AcceptChannel(oUnemap,iElectrodeNumber)
             oUnemap.Electrodes(iElectrodeNumber).Accepted = 1;
         end
@@ -82,13 +84,26 @@ classdef Unemap < BasePotential
             end
         end
         
-        function GetSlope(oUnemap,iElectrodeNumber)
-            if strcmp(oUnemap.Electrodes(iElectrodeNumber).Status,'Potential');
-                error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data before removing interbeat variation');
-            else
+        function GetSlope(oUnemap,varargin)
+            if nargin > 1
+                %An electrode number has been specified so use this
+                iElectrodeNumber = varargin{1};
+                if strcmp(oUnemap.Electrodes(iElectrodeNumber).Status,'Potential');
+                    error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
+                end
                 %Perform on processed data
                 oUnemap.Electrodes(iElectrodeNumber).Processed.Slope = ...
                     oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,20,5);
+            else
+                %No electrode number has been specified so loop through
+                %all
+                if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+                    error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
+                end
+                for i = 1:size(oUnemap.Electrodes,2)
+                    oUnemap.Electrodes(i).Processed.Slope = ...
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,20,5);
+                end
             end
         end
         
@@ -238,9 +253,7 @@ classdef Unemap < BasePotential
             %Calculate slope and curvature
             oUnemap.GetSlope(iChannel);
             oUnemap.GetCurvature(iChannel);
-            %Each channel is accepted by default
-            oUnemap.AcceptChannel(iChannel);
-            
+           
         end
         
         function ClearProcessedData(oUnemap, iChannel)
@@ -406,7 +419,7 @@ classdef Unemap < BasePotential
                 if size(varargin,2) == 1
                     %only a method has been specified so mark activation
                     %times for all beats
-                    sMethod = varargin{1}(1);
+                    sMethod = varargin{1};
                     %Choose the method to apply
                     switch (sMethod)
                         case 'SteepestSlope'
@@ -467,7 +480,9 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+            dValues = [1 16];
+            for k = 1:2%size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+                i = dValues(k);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));

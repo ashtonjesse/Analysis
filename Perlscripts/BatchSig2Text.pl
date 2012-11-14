@@ -5,8 +5,8 @@
 $sPath = $ARGV[0];
 $sOutputPath = $ARGV[1];
 
-#ConvertFiles();
-#CommentOutHeader();
+ConvertFiles();
+CommentOutHeader();
 
 sub ConvertFiles{
 	#Get file names

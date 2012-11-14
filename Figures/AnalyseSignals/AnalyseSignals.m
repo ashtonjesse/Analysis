@@ -41,6 +41,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oActivationMenu, 'callback', @(src, event) oActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oGetSlopeMenu, 'callback', @(src, event) oGetSlopeMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAdjustBeatMenu, 'callback', @(src, event) oAdjustBeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
@@ -253,6 +254,10 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
+        function oGetSlopeMenu_Callback(oFigure, src, event)
+           oFigure.oParentFigure.oGuiHandle.oUnemap.GetSlope();
+        end
+        
         function oAdjustBeatMenu_Callback(oFigure, src, event)
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
@@ -396,7 +401,7 @@ classdef AnalyseSignals < SubFigure
                          set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSlopePlot, ...
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
-                         oActivationLabel = text(TimeMin + 0.03, SlopeYMax + 0.2, ...
+                         oActivationLabel = text(TimeMin, SlopeYMax, ...
                              num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
                          set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','points');
                          set(oActivationLabel,'FontSize',10);
