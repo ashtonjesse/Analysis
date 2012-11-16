@@ -8,6 +8,7 @@ classdef MapElectrodes < SubFigure
         cmin;
         cmax;
         PlotType; %A string specifying the currently displayed plot
+        PlotPosition; %An array that can be used to store the position of the oMapAxes 
     end
     
     events
@@ -32,6 +33,7 @@ classdef MapElectrodes < SubFigure
             %set(oFigure.oGuiHandle.oAverageMenu, 'callback', @(src, event) oAverageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oReplotMenu, 'callback', @(src, event) oReplotMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveActivationMenu, 'callback', @(src, event) oSaveActivationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenAverageMenu, 'callback', @(src, event) oGenAverageMenu_Callback(oFigure, src, event));
             
@@ -40,8 +42,12 @@ classdef MapElectrodes < SubFigure
             addlistener(oFigure.oParentFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             addlistener(oFigure.oParentFigure,'BeatSelected',@(src,event) oFigure.BeatSelectionListener(src, event));
             
-            oFigure.PlotElectrodes();
+            %Set constants and plot 
+            oFigure.PlotPosition = get(oFigure.oGuiHandle.oMapAxes,'Position');
             oFigure.PlotType = 'JustElectrodes';
+            %Set the axis limits as equal
+            axis(oFigure.oGuiHandle.oMapAxes,'equal');
+            oFigure.PlotElectrodes();
             %Set default selection
             oFigure.SelectedChannels = 1:(Xdim*Ydim);
             % --- Executes just before BaselineCorrection is made visible.
@@ -119,10 +125,25 @@ classdef MapElectrodes < SubFigure
         % -----------------------------------------------------------------
         function oReplotMenu_Callback(oFigure, src, event)
             cla(oFigure.oGuiHandle.oMapAxes);
-            colorbar('peer',oFigure.oGuiHandle.oMapAxes,'off');
+            oFigure.PlotType = 'JustElectrodes';
             oTitle = get(oFigure.oGuiHandle.oMapAxes,'Title');
             set(oTitle,'String','');
             oFigure.PlotElectrodes();
+        end
+        
+        % -----------------------------------------------------------------
+        function oOverlayMenu_Callback(oFigure, src, event)
+            %Overlay a plot of the electrode points on the existing plot
+            switch (oFigure.PlotType)
+                case 'JustElectrodes'
+                    %Clear the axes and replot the electrodes
+                    cla(oFigure.oGuiHandle.oMapAxes);
+                    oFigure.PlotElectrodes();
+                otherwise
+                    %Just overlay the electrodes
+                    oFigure.PlotElectrodes();
+            end
+            
         end
         
         % -----------------------------------------------------------------
@@ -247,25 +268,7 @@ classdef MapElectrodes < SubFigure
         end
         
         %% Callbacks
-        
-%         function oGenPotentialMenu_Callback(oFigure, src, event)
-%             %Generate potential maps for current beat
-%             [oFigure.Potentials, oFigure.cmin, oFigure.cmax] = ...
-%                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.InterpolatePotentialData(oFigure.oParentFigure.SelectedBeat,0.05,'linear');
-%             %Set up slider
-%             if strcmp(get(oFigure.oGuiHandle.oSliderPanel,'visible'),'off');
-%                 set(oFigure.oGuiHandle.oSliderPanel,'visible','on');
-%             else
-%                 set(oFigure.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-%                     size(oFigure.Potentials,2), 'Value', 1,'SliderStep',[1/size(oFigure.Potentials,2)  0.02]);
-%                 set(oFigure.oGuiHandle.oSliderTxtLeft,'string',1);
-%                 set(oFigure.oGuiHandle.oSliderTxtRight,'string',size(oFigure.Potentials,2));
-%             end
-%             %Plot the potential field with color bar max and min set
-%             oFigure.PlotPotential(oFigure.cmin,oFigure.cmax);
-%             
-%         end
-        
+       
         function oGenActivationMenu_Callback(oFigure, src, event);
             %Generate activation map for the current beat
             oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
@@ -334,26 +337,46 @@ classdef MapElectrodes < SubFigure
              for i = 1:NumChannels;
                  %Plot the electrode point
                  hold(oFigure.oGuiHandle.oMapAxes,'on');
-                 plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.');
-                 %Label the point with the channel name
-                 oLabel = text(oElectrodes(i).Coords(1) - 0.1, oElectrodes(i).Coords(2) + 0.07, ...
-                     oElectrodes(i).Name);
-                 if ~oElectrodes(i).Accepted
-                    set(oLabel,'color','r');
+                 if strcmpi(oFigure.PlotType,'JustElectrodes')
+                     %Just plotting the electrodes so add a text label
+                     plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
+                         'MarkerSize',12);
+                     %Label the point with the channel name
+                     oLabel = text(oElectrodes(i).Coords(1) - 0.1, oElectrodes(i).Coords(2) + 0.07, ...
+                         oElectrodes(i).Name);
+                     set(oLabel,'FontWeight','bold','FontUnits','normalized');
+                     set(oLabel,'FontSize',0.015);
+                     set(oLabel,'parent',oFigure.oGuiHandle.oMapAxes);
+                     if ~oElectrodes(i).Accepted
+                         %Just the label is red if the electrode is
+                         %rejected
+                         set(oLabel,'color','r');
+                     end
+                 else
+                     %Plotting the electrodes on top of something else
+                     if ~oElectrodes(i).Accepted
+                         %plot the point as red
+                         plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'r.', ...
+                             'MarkerSize', 12);
+                     else
+                         %else just plot the default color
+                         plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'.', ...
+                             'MarkerSize', 12);
+                     end
                  end
-                 set(oLabel,'FontWeight','bold','FontUnits','normalized');
-                 set(oLabel,'FontSize',0.015);
-                 set(oLabel,'parent',oFigure.oGuiHandle.oMapAxes);
              end
-             %check if there is an existing colour bar and delete it
-             %get figure children
-             oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
-             oColorBar = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
-             if oColorBar > 0
-                 delete(oColorBar);
+             
+             if strcmpi(oFigure.PlotType,'JustElectrodes')
+                 %Don't need a colorbar if the plot is just of electrodes
+                 %check if there is an existing colour bar and delete it
+                 %get figure children
+                 oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+                 oColorBar = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+                 if oColorBar > 0
+                     delete(oColorBar);
+                     set(oFigure.oGuiHandle.oMapAxes,'Position',oFigure.PlotPosition);
+                 end
              end
-             %Make sure the axes limits are equal
-             axis(oFigure.oGuiHandle.oMapAxes,'equal');
              close(oWaitbar);
              hold(oFigure.oGuiHandle.oMapAxes,'off');
          end
@@ -399,7 +422,8 @@ classdef MapElectrodes < SubFigure
                      if oHandle < 0
                          oColorBar = cbarf(Z,0:0.25:ceil(oFigure.Activation.MaxActivationTime));
                          oTitle = get(oColorBar, 'title');
-                         set(oTitle,'string','Time (ms)','position',[0 -0.1]);
+                         set(oTitle,'units','pixels');
+                         set(oTitle,'string','Time (ms)','position',[15 580]);
                      end
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      %set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
@@ -422,33 +446,7 @@ classdef MapElectrodes < SubFigure
                      colorbar('peer',oFigure.oGuiHandle.oMapAxes);
                      colorbar('location','EastOutside');
              end
-             %Make sure the axes limits are equal
-             axis(oFigure.oGuiHandle.oMapAxes,'equal');
              title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation map for beat #%d',iBeat));
          end
-         
-%          function PlotPotential(oFigure,varargin)
-%              %Plots a map of interpolated potential field
-%              
-%              %Get the current time step
-%              iTimeStep = get(oFigure.oGuiHandle.oSlider,'Value'); 
-%              if ~isinteger(iTimeStep)
-%                  %Round down to nearest integer if a double is supplied
-%                  iTimeStep = round(iTimeStep(1));
-%              end
-%              contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potentials(iTimeStep).Xi,oFigure.Potentials(iTimeStep).Yi,oFigure.Potentials(iTimeStep).Field);
-%              oFigure.PlotElectrodes()
-% 
-%              title(oFigure.oGuiHandle.oMapAxes,strcat(sprintf('Potential Map at Time %0.4f',oFigure.Potentials(iTimeStep).Time),' ms'));
-%              %Set the axis on the subplot
-%              axis(oFigure.oGuiHandle.oMapAxes,[min(min(oFigure.Potentials(iTimeStep).Xi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Xi)) + 0.5, ...
-%                  min(min(oFigure.Potentials(iTimeStep).Yi)) - 0.5, max(max(oFigure.Potentials(iTimeStep).Yi) + 0.5)]);
-%              colormap(oFigure.oGuiHandle.oMapAxes,jet);
-%              if ~isempty(varargin)
-%                  set(oFigure.oGuiHandle.oMapAxes,'CLim',[varargin{1,1} varargin{1,2}]);
-%              end
-%              colorbar('peer',oFigure.oGuiHandle.oMapAxes);
-%              colorbar('location','EastOutside');
-%          end
      end
 end

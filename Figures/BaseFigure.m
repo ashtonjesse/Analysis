@@ -91,9 +91,22 @@ classdef BaseFigure < handle
             end
         end
         
-        function nValue = GetEditInputDouble(oFigure,sEditTag)
+        function nValue = GetEditInputDouble(oFigure,varargin)
             %   Get the value entered by the user into the edit box
-            aString = get(oFigure.oGuiHandle.(sEditTag),'String');
+            
+            %check inputs
+            if nargin == 2
+                sEditTag = char(varargin{1});
+                aString = get(oFigure.oGuiHandle.(sEditTag),'String');
+            elseif nargin == 3
+                oParent = varargin{1};
+                oChildren = get(oParent,'children');
+                sEditTag = varargin{2};
+                oEdit = oFigure.oDAL.oHelper.GetHandle(oChildren,sEditTag);
+                aString = get(oEdit,'String');
+            else
+                error('BaseFigure:GetEditInputDouble:VerifyInputs.','Wrong number of inputs entered.');
+            end
             if ~isempty(aString) && ~isempty(str2num(aString))
                 nValue = str2double(aString);
             else

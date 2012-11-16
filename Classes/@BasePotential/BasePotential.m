@@ -38,16 +38,31 @@ classdef BasePotential < BaseEntity
             end
         end
         
-        function OutData = SplineSmoothData(oBasePotential, aInData, iOrder)
+        function OutData = SplineSmoothData(oBasePotential, aInData, varargin)
             %       *SplineSmoothData - Apply a spline approximation of a specified order.
             %           For this the second input should be iOrder, the
             %           order of the spline to apply.
             OutData = zeros(size(aInData,1),size(aInData,2));
-            %Loop through all the columns
-            for k = 1:size(aInData,2);
-                %Apply a spline approximation to smooth the data
-                OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
+            %Do some checks
+            if length(varargin{1}) > 1 
+                iOrder = cell2mat(varargin{1}(1));
+                sType = char(varargin{1}(2));
+                %Loop through all the columns
+                for k = 1:size(aInData,2);
+                    %Apply a spline approximation to smooth the data
+                    OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500,sType);
+                end
+            elseif length(varargin{1}) > 1
+                iOrder = cell2mat(varargin{1}(1));
+                %Loop through all the columns
+                for k = 1:size(aInData,2);
+                    %Apply a spline approximation to smooth the data
+                    OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500);
+                end
+            else
+                error('BasePotential.SplineSmoothData.VerifyInput:Incorrect', 'Wrong number of inputs.')
             end
+            
         end
         
         function OutData = FilterData(oBasePotential, aInData, sFilterType, varargin)
@@ -65,6 +80,7 @@ classdef BasePotential < BaseEntity
                     %Check if this filter should be applied to processed or
                     %original data
                     OutData = filter(oFilter,aInData);
+                   
                 case 'SovitzkyGolay'
                     iOrder = cell2mat(varargin{1}(1));
                     iWindowSize = cell2mat(varargin{1}(2));

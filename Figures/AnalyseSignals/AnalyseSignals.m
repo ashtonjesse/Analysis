@@ -10,7 +10,9 @@ classdef AnalyseSignals < SubFigure
         NumberofChannels;
         LineColours=['r','b','g'];
         oMapElectrodesFigure;
+        oEditControl;
         Dragging;
+        Annotate;
     end
         
     events
@@ -39,11 +41,14 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.bRejectChannel, 'callback', @(src, event)  bAcceptChannel_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oActivationMenu, 'callback', @(src, event) oActivationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGetSlopeMenu, 'callback', @(src, event) oGetSlopeMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oAnnotationMenu, 'callback', @(src, event) oAnnotationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAdjustBeatMenu, 'callback', @(src, event) oAdjustBeatMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oEnvelopeMenu, 'callback', @(src, event) oEnvelopeMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
@@ -63,6 +68,8 @@ classdef AnalyseSignals < SubFigure
             
             %Draw plots
             oFigure.CreateSubPlot();
+            %Set annotation on
+            oFigure.Annotate = 1;
             %Fill plots
             oFigure.Replot();
             oFigure.PlotECG();
@@ -206,6 +213,19 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
+        function SubtractEnvelope(oFigure,src,event)
+            %Carries out an envelope subtraction neighbourhood action
+            
+            %Get the rows and cols
+            iRows = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_1');
+            iCols = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_2');
+            %Set up inputs
+            aInOptions = struct();
+            aInOptions.Procedure = 'EnvelopeSubtraction';
+            aInOptions.KernelBounds = [iRows iCols];
+            oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
+        end
+        
         function bUpdateBeat_Callback(oFigure, src, event)
             %Update the currently selected beat 
             
@@ -229,6 +249,7 @@ classdef AnalyseSignals < SubFigure
             %Reset the gui
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
@@ -256,12 +277,30 @@ classdef AnalyseSignals < SubFigure
         
         function oGetSlopeMenu_Callback(oFigure, src, event)
            oFigure.oParentFigure.oGuiHandle.oUnemap.GetSlope();
+           oFigure.Replot();
         end
         
         function oAdjustBeatMenu_Callback(oFigure, src, event)
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'on');
+        end
+        
+        function oAnnotationMenu_Callback(oFigure, src, event)
+            %Change the annotation flag 
+            if oFigure.Annotate
+                oFigure.Annotate = 0;
+            else
+                oFigure.Annotate = 1;
+            end
+            %Replot
+            oFigure.Replot();
+        end
+        
+        function oEnvelopeMenu_Callback(oFigure, src, event)
+            %Open an edit control
+            oFigure.oEditControl = EditControl(oFigure,'Enter the number of rows and columns to have in the kernel.',2);
+            addlistener(oFigure.oEditControl,'ValuesEntered',@(src,event) oFigure.SubtractEnvelope(src, event));
         end
      end
      
@@ -401,11 +440,13 @@ classdef AnalyseSignals < SubFigure
                          set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSlopePlot, ...
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
-                         oActivationLabel = text(TimeMin, SlopeYMax, ...
-                             num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
-                         set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','points');
-                         set(oActivationLabel,'FontSize',10);
-                         set(oActivationLabel,'parent',oSlopePlot);
+                         if oFigure.Annotate
+                             oActivationLabel = text(TimeMin, SlopeYMax, ...
+                                 num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
+                             set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','points');
+                             set(oActivationLabel,'FontSize',10);
+                             set(oActivationLabel,'parent',oSlopePlot);
+                         end
                      end
                      hold(oSlopePlot,'off');
                  else
@@ -419,16 +460,19 @@ classdef AnalyseSignals < SubFigure
                  %Set the axis on the subplot
                  axis(oSignalPlot,[TimeMin, TimeMax, SignalYMin - 0.5, SignalYMax + 1]);
                  axis(oSlopePlot,[TimeMin, TimeMax, SlopeYMin - 0.5, SlopeYMax + 1]);
-                 %Create a label that shows the channel name
-                 oLabel = text(TimeMin,SlopeYMax+0.2,char(oElectrode.Name));
-                 if iChannelIndex == oFigure.SelectedChannel;
-                     set(oLabel,'color','b','FontWeight','bold','FontUnits','points');
-                     set(oLabel,'FontSize',12);%0.2
-                 else
-                     set(oLabel,'FontUnits','points');
-                     set(oLabel,'FontSize',10);%0.15
+                 %Annotate?
+                 if oFigure.Annotate
+                     %Create a label that shows the channel name
+                     oLabel = text(TimeMin,SlopeYMax+0.2,char(oElectrode.Name));
+                     if iChannelIndex == oFigure.SelectedChannel;
+                         set(oLabel,'color','b','FontWeight','bold','FontUnits','points');
+                         set(oLabel,'FontSize',12);%0.2
+                     else
+                         set(oLabel,'FontUnits','points');
+                         set(oLabel,'FontSize',10);%0.15
+                     end
+                     set(oLabel,'parent',oSlopePlot);
                  end
-                 set(oLabel,'parent',oSlopePlot);
              end
              
          end

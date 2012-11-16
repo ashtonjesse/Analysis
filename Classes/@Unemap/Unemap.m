@@ -39,8 +39,8 @@ classdef Unemap < BasePotential
             [aOutData, aBaselinePolynomial] = RemoveMedianAndFitPolynomial@BasePotential(oUnemap, aInData, iOrder);
         end
         
-        function aOutData = SplineSmoothData(oUnemap, aInData, iOrder)
-            aOutData = SplineSmoothData@BasePotential(oUnemap, aInData, iOrder);
+        function aOutData = SplineSmoothData(oUnemap, aInData, varargin)
+            aOutData = SplineSmoothData@BasePotential(oUnemap, aInData, varargin);
         end
         
         function aOutData = FilterData(oUnemap, aInData, sFilterType, varargin)
@@ -64,8 +64,6 @@ classdef Unemap < BasePotential
         end
                 
         %% Methods relating to Electrode potential raw and processed data
-        
-        
         function AcceptChannel(oUnemap,iElectrodeNumber)
             oUnemap.Electrodes(iElectrodeNumber).Accepted = 1;
         end
@@ -102,7 +100,7 @@ classdef Unemap < BasePotential
                 end
                 for i = 1:size(oUnemap.Electrodes,2)
                     oUnemap.Electrodes(i).Processed.Slope = ...
-                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,20,5);
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,5,3);
                 end
             end
         end
@@ -348,17 +346,18 @@ classdef Unemap < BasePotential
         function ApplyNeighbourhoodAverage(oUnemap, aInOptions)
             %This function takes a struct as an input specifying an
             %averaging function to apply and bounds of a kernel over which to apply
-            %the function. In this way it performs a subtraction of some
-            %neighbourhood average from each signal to remove common
-            %components
+            %the function. 
             
             %Get the average method from aInputs struct
             sAverageMethod = aInOptions.Procedure;
+            %Mean: Calculate the mean signal within the kernel and
+            %subtract from the central signal
+            %EnvelopeSubtraction: Take the average of the derivatives of smoothed
+            %electrograms in the kernel and subtract from the
+            %derivative of the central signal
+            
             %Get the template region
             dKernelBounds = aInOptions.KernelBounds;
-            %Get the timeseries data for all electrodes
-            aArrayTimeSeries = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
-            aProcessedTimeSeries = zeros(size(aArrayTimeSeries,1),size(aArrayTimeSeries,2));
             
             %Get the shape of the array information in the form that is
             %suitable for DataHelper.ColToArray
@@ -366,29 +365,57 @@ classdef Unemap < BasePotential
             iColumns = oUnemap.oExperiment.Plot.Electrodes.yDim;
             oWaitbar = waitbar(0,'Please wait...');
             iLength = length(oUnemap.TimeSeries);
+            
+            %Get the data for all electrodes
             switch (sAverageMethod)
                 case 'Mean'
-                    for i = 1:iLength
-                        %update the waitbar
-                        waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Timepoint %d',i));
-                        %Get the data for this time point
-                        aTimePoint = aArrayTimeSeries(i,:);
-                        %dMean = mean(aTimePoint);
-                        %Reshape the vector into an array
-                        aReshapedArray = DataHelper.ColToArray(aTimePoint,iRows,iColumns);
-                        aSubtractedMean = colfilt(aReshapedArray,dKernelBounds,'sliding',@SubtractMean);
+                    aArrayData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+                case 'EnvelopeSubtraction'
+                    %Calculate smoothed electrograms
+                    aSlopeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Slope');
+                    aArrayData = oUnemap.SplineSmoothData(aSlopeData,5,'robust');
+                    
+            end
+            %The array that will hold the resulting data following
+            %processing
+            aProcessedData = zeros(size(aArrayData,1),size(aArrayData,2));
+            for i = 1:iLength
+                %update the waitbar
+                waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Timepoint %d',i));
+                %Get the data for this time point
+                aTimePoint = aArrayData(i,:);
+                %dMean = mean(aTimePoint);
+                %Reshape the vector into an array
+                aReshapedArray = DataHelper.ColToArray(aTimePoint,iRows,iColumns);
+                %Perform the average subtraction
+                switch (sAverageMethod)
+                    case 'Mean'
+                        aSubtractedAverage = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateMean);
                         %Return the array to the correct shape and save in
                         %processed array
-                        aProcessedTimeSeries(i,:) = DataHelper.ArrayToCol(aSubtractedMean);
-                    end
-                    %Save the result
-                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aProcessedTimeSeries);
+                        aProcessedData(i,:) = DataHelper.ArrayToCol(aSubtractedAverage);
+                    case 'EnvelopeSubtraction'
+                        aMean = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateMean);
+                        aEnvelope = DataHelper.ArrayToCol(aMean);
+                        %Return the array to the correct shape and save in
+                        %processed array
+                        aProcessedData(i,:) = aSlopeData(i,:) - aEnvelope.';
+                end
+                
+            end
+            %Save the result
+            switch (sAverageMethod)
+                case 'Mean'
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aProcessedData);
+                case 'EnvelopeSubtraction'
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','EnvelopeSubtracted',aProcessedData);
             end
             %close the waitbar
             close(oWaitbar);
             
+            %-------------------------------------------------------------
             %subfunction that does the mean subtraction
-            function aOut = SubtractMean(aIn)
+            function aOut = CalculateMean(aIn)
                 %Loop through columns and 
                 %find mean of non-zero elements
                 [Xdim Ydim] = size(aIn);
@@ -406,7 +433,7 @@ classdef Unemap < BasePotential
                     %aOut(1,j) = aIn(iMidPoint,j) - dMean;
                 end
             end
-            
+
         end
         
         %% Methods relating to Electrode Activation data
@@ -480,9 +507,7 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            dValues = [1 16];
-            for k = 1:2%size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-                i = dValues(k);
+            for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));

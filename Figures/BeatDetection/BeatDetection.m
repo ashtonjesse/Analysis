@@ -25,7 +25,8 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oDetectMenu, 'callback', @(src, event) oDetectMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oInterbeatMenu, 'callback', @(src, event) oInterbeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
-            
+             set(oFigure.oGuiHandle.oBeatSelectionMenu, 'callback', @(src, event) oBeatSelectionMenu_Callback(oFigure, src, event));
+             
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
             set(oFigure.oGuiHandle.oBottomAxes,'Visible','off');
             zoom on;
@@ -144,6 +145,28 @@ classdef BeatDetection < SubFigure
             oFigure.PlotVRMS('Smoothed');
             
         end
+        % --------------------------------------------------------------------
+        function oBeatSelectionMenu_Callback(oFigure, src, event)
+            %Manually select beats
+            
+            %Must have processed data
+            if isempty(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed)
+                error('BeatDetection.oBeatSelectionMenu.VerifyData', 'You need to smooth the RMS data before selecting beats.')
+            end
+            
+            %Get the currently selected electrode
+            oSelectDataFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed,...
+                {{'oInstructionText','string','Manually select data for each beat by holding shift'} ; ...
+                {'oBottomText','visible','off'} ; ...
+                {'oBottomPopUp','visible','off'} ; ...
+                {'oButton','string','Done'} ; ...
+                {'oAxes','title','Smoothed RMS Data'}});
+            %Add a listener so that the figure knows when a user has
+            %selected the data to truncate            
+            addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.BeatsSelected(src, event));
+        end
+        
         
         function oCurvatureMenu_Callback(oFigure, src, event)
             
@@ -169,9 +192,7 @@ classdef BeatDetection < SubFigure
             oFigure.PlotCurvature();
             
         end
-        
-
-            
+                   
         function ThresholdCurvature(oFigure, src, event)
             % Calculate the standard deviation of the selected data
             dStandardDeviation = std(event.YData);
@@ -200,7 +221,28 @@ classdef BeatDetection < SubFigure
     end
     
     methods (Access = private)
-      
+        function BeatsSelected(oFigure, src, event)
+            %Get the locations of the selected data and create a Peaks
+            %array for passing to GetArrayBeats with a filler row of random
+            %numbers
+            aLocations = find(event.Indexes);
+            aPeaks = [rand(1,length(aLocations)) ; aLocations];
+            
+            %Get the data associated with the thresholded beats for Unemap
+            %and ECG
+            oFigure.oParentFigure.oGuiHandle.oUnemap.GetArrayBeats(aPeaks);
+            
+            aOutData = oFigure.oParentFigure.oGuiHandle.oECG.GetBeats(...
+                oFigure.oParentFigure.oGuiHandle.oECG.Original, aPeaks);
+            
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = cell2mat(aOutData(1));
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes = cell2mat(aOutData(2));
+            %Mark activation for future analysis
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope');
+            %Plot the detected beats on the ECG
+            oFigure.PlotECG('DetectBeats');
+        end
+        
         function PlotVRMS(oFigure,sSelection)
             % Plot VRMS. sSelection should be a field of the RMS struct,
             % either 'Values' or 'Smoothed'

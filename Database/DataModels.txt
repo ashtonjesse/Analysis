@@ -20,6 +20,7 @@ Electrodes(i).Coords
 Electrodes(i).Activation(j{Method}).Indexes
 Electrodes(i).Activation(j).Method
 Electrodes(i).Processed.Slope
+Electrodes(i).Processed.EnvelopeSubtracted
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
 Electrodes(i).Processed.BaselinePolyOrder

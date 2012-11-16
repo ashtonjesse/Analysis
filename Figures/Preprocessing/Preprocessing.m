@@ -182,18 +182,22 @@ classdef Preprocessing < SubFigure
             else
                 sInstructions = 'Select a range of data to truncate. This truncation will only be applied to the potential data (not any processed data)';
             end
+            %Get the currently selected electrode
+            iChannel = oFigure.GetSliderIntegerValue('oSlider');
             oSelectDataFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Potential.Data,...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,...
                 {{'oInstructionText','string',sInstructions} ; ...
                 {'oBottomText','visible','off'} ; ...
                 {'oBottomPopUp','visible','off'} ; ...
                 {'oButton','string','Done'} ; ...
-                {'oAxes','title','Channel 1 Potential Data'}});
+                {'oAxes','title',sprintf('Channel %s Potential Data',iChannel)}});
             %Add a listener so that the figure knows when a user has
             %selected the data to truncate            
             addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.TruncateData(src, event));
         end
-                
+        
+
+        
         % --------------------------------------------------------------------
         function oApplyChannelMenu_Callback(oFigure, src, event)
             %Apply processing steps to the currently selected channel
@@ -274,7 +278,7 @@ classdef Preprocessing < SubFigure
             oFigure.oParentFigure.oGuiHandle.oUnemap.TruncateArrayData(bIndexes);
             oFigure.oParentFigure.oGuiHandle.oECG.TruncateData(bIndexes);
         end
-        
+      
         function PlotProcessed(oFigure, iChannel)
             oAxes = oFigure.oGuiHandle.oMiddleAxes;
             cla(oAxes);
@@ -361,6 +365,7 @@ classdef Preprocessing < SubFigure
                     iWindowSize = oFigure.GetEditInputDouble('edtWindowSize');
                     aInOptions(i).Procedure = 'FilterData';
                     aInOptions(i).Inputs = {'SovitzkyGolay',iOrder,iWindowSize};
+                    
                 end
             end
         end
