@@ -52,7 +52,7 @@ classdef BasePotential < BaseEntity
                     %Apply a spline approximation to smooth the data
                     OutData(:,k) = fSplineSmooth(aInData(:,k),iOrder,'MaxIter',500,sType);
                 end
-            elseif length(varargin{1}) > 1
+            elseif length(varargin{1}) > 0
                 iOrder = cell2mat(varargin{1}(1));
                 %Loop through all the columns
                 for k = 1:size(aInData,2);

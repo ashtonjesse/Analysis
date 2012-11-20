@@ -370,15 +370,31 @@ classdef Unemap < BasePotential
             switch (sAverageMethod)
                 case 'Mean'
                     aArrayData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
-                case 'EnvelopeSubtraction'
+                case 'GradientEnvelopeSubtraction'
                     %Calculate smoothed electrograms
-                    aSlopeData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Slope');
-                    aArrayData = oUnemap.SplineSmoothData(aSlopeData,5,'robust');
-                    
+                    aSelectedData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data','FillRejectedColumns');
+                    aSelectedData = oUnemap.SplineSmoothData(aSelectedData,3);
+                    %Get the slope data for all channels
+                    aSlopeData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Slope','FillRejectedColumns');
+                    %Initialise array to hold derivatives of smoothed
+                    %electrograms
+                    aArrayData = zeros(size(aSelectedData,1),size(aSelectedData,2));
+                    for i = 1:size(aSelectedData,2)
+                        aArrayData(:,i) = oUnemap.CalculateSlope(aSelectedData(:,i),5,3);
+                    end
+                    %Initialise array to hold calculated envelopes
+                    aEnvelopeData = zeros(size(aArrayData,1),size(aArrayData,2));
+                case 'SignalEnvelopeSubtraction'
+                    %Calculate smoothed electrograms
+                    aSelectedData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data','FillRejectedColumns');
+                    aArrayData = oUnemap.SplineSmoothData(aSelectedData,3);
+                    %Initialise array to hold calculated envelopes
+                    aEnvelopeData = zeros(size(aArrayData,1),size(aArrayData,2));
             end
             %The array that will hold the resulting data following
             %processing
             aProcessedData = zeros(size(aArrayData,1),size(aArrayData,2));
+            
             for i = 1:iLength
                 %update the waitbar
                 waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Timepoint %d',i));
@@ -394,12 +410,25 @@ classdef Unemap < BasePotential
                         %Return the array to the correct shape and save in
                         %processed array
                         aProcessedData(i,:) = DataHelper.ArrayToCol(aSubtractedAverage);
-                    case 'EnvelopeSubtraction'
-                        aMean = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateMean);
-                        aEnvelope = DataHelper.ArrayToCol(aMean);
+                    case 'GradientEnvelopeSubtraction'
+                        %Get the mean slope in a neighbourhood
+                        aMeanSlope = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateMean);
+                        aCalculatedEnvelope = DataHelper.ArrayToCol(aMeanSlope);
                         %Return the array to the correct shape and save in
-                        %processed array
-                        aProcessedData(i,:) = aSlopeData(i,:) - aEnvelope.';
+                        %processed array and envelope array
+                        aEnvelopeData(i,:)  = aCalculatedEnvelope.';
+                        aProcessedData(i,:) = aSlopeData(i,:) - aEnvelopeData(i,:);
+                    case 'SignalEnvelopeSubtraction'
+                        %Get the mean signal in a neighbourhood. 
+                        aMeanSignal = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateMean);
+                        aCalculatedEnvelope = DataHelper.ArrayToCol(aMeanSignal);
+                        %Return the array to the correct shape and save in
+                        %processed array and envelope array
+                        aEnvelopeData(i,:)  = aCalculatedEnvelope.';
+                        %Take the difference
+                        aProcessedData(i,:) = aSelectedData(i,:) - aEnvelopeData(i,:);
+                    case 'CentralDifference'
+                        
                 end
                 
             end
@@ -407,8 +436,16 @@ classdef Unemap < BasePotential
             switch (sAverageMethod)
                 case 'Mean'
                     oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data',aProcessedData);
-                case 'EnvelopeSubtraction'
+                case 'GradientEnvelopeSubtraction'
                     oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','EnvelopeSubtracted',aProcessedData);
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Envelope',aEnvelopeData);
+                case 'SignalEnvelopeSubtraction'
+                    %calculate slope of difference
+                    for i = 1:size(aSelectedData,2)
+                        aArrayData(:,i) = oUnemap.CalculateSlope(aProcessedData(:,i),5,3);
+                    end
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','EnvelopeSubtracted',aArrayData);
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Envelope',aEnvelopeData);
             end
             %close the waitbar
             close(oWaitbar);
@@ -421,19 +458,28 @@ classdef Unemap < BasePotential
                 [Xdim Ydim] = size(aIn);
                 aOut = zeros(1, Ydim);
                 iMidPoint = ceil(Xdim/2);
-                for j = 1:Ydim;
-                    %Subtract all the nonzero elements from the centre
-                    %element
-                    dDiff = aIn(iMidPoint,j) - aIn(aIn(:,j)~=0,j);
-                    %Count the number of nonzero elements
-                    iCount = length(dDiff);
-                    %Take the average of these differences (removing the
-                    %count of the 0 for the middle element)
-                    aOut(1,j) = sum(dDiff)/(iCount - 1);
-                    %aOut(1,j) = aIn(iMidPoint,j) - dMean;
-                end
-            end
+                %Only do this if the central point is an accepted channel
+                    for j = 1:Ydim;
+                        if abs(aIn(iMidPoint,j)) > 0
+                            %Subtract all the nonzero elements from the centre
+                            %element
+                            %dDiff = aIn(iMidPoint,j) - aIn(aIn(:,j)~=0,j);
+                            %Count the number of nonzero elements
+                            %iCount = length(dDiff);
+                            %Take the average of these differences (removing the
+                            %count of the 0 for the middle element)...
+                            %slim possibility that this could result in div
+                            %by 0 - will deal with this if and when it
+                            %arises. 
+                            %aOut(1,j) = sum(dDiff)/(iCount - 1);
+                            %Get the mean of the nonzero elements
+                            aAbsVals = abs(aIn(:,j));
+                            aCheckVals = aIn(aAbsVals > (1*10^-6),j);
+                            aOut(1,j) = mean(aCheckVals);
 
+                        end
+                    end
+            end
         end
         
         %% Methods relating to Electrode Activation data

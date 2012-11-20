@@ -423,7 +423,7 @@ classdef MapElectrodes < SubFigure
                          oColorBar = cbarf(Z,0:0.25:ceil(oFigure.Activation.MaxActivationTime));
                          oTitle = get(oColorBar, 'title');
                          set(oTitle,'units','pixels');
-                         set(oTitle,'string','Time (ms)','position',[15 580]);
+                         set(oTitle,'string','Time (ms)','position',[15 620]);
                      end
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      %set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);

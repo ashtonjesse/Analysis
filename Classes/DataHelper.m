@@ -94,8 +94,19 @@ classdef DataHelper
                     %Get the size of the struct and index all of the
                     %elements
                     [a b] = size(aStruct);
-                    aFirstLevel =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{1:b}}));
-                    aSecondLevel = aFirstLevel.(sSecondField);
+                    %try to access the specified fields
+                    try 
+                        aFirstLevel =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{1:b}}));
+                    catch ex
+                        aData = [];
+                        return
+                    end
+                    try
+                        aSecondLevel = aFirstLevel.(sSecondField);
+                    catch ex
+                        aData = [];
+                        return
+                    end
                     %Get the size of the second level array and index all
                     %of the elements
                     [i j] = size(aSecondLevel);

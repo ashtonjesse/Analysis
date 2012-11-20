@@ -17,10 +17,11 @@ Electrodes(i).Name
 Electrodes(i).Status
 Electrodes(i).Potential.Data
 Electrodes(i).Coords
-Electrodes(i).Activation(j{Method}).Indexes
+Electrodes(i).Activation(j{Method or Event}).Indexes
 Electrodes(i).Activation(j).Method
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.EnvelopeSubtracted
+Electrodes(i).Processed.Envelope
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
 Electrodes(i).Processed.BaselinePolyOrder
