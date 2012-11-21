@@ -390,6 +390,7 @@ classdef Unemap < BasePotential
                     aArrayData = oUnemap.SplineSmoothData(aSelectedData,3);
                     %Initialise array to hold calculated envelopes
                     aEnvelopeData = zeros(size(aArrayData,1),size(aArrayData,2));
+                
             end
             %The array that will hold the resulting data following
             %processing

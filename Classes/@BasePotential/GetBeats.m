@@ -18,10 +18,10 @@ aBeats = NaN(1,q);
 aBeatIndices = zeros(1,2);
 %Loop through the peaks
 for j = 2:n;
-    %If the next peak is greater than 100 more than the current
+    %If the next peak is greater than 150 more than the current
     %peak then the next group of peaks must be reached so save
     %the first and last peaks of the last group in aBeats.
-    if aPeaks(2,j) < (iCurrentPeak + 100)
+    if aPeaks(2,j) < (iCurrentPeak + 150)
         iLastPeak = aPeaks(2,j);
     else
         %must have found the end of a beat
