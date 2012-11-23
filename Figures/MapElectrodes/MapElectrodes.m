@@ -104,22 +104,26 @@ classdef MapElectrodes < SubFigure
         function oSaveActivationMenu_Callback(oFigure, src, event)
             %Get the save file path
             %Call built-in file dialog to select filename
-            sPathName = uigetdir('','Specify a directory to save to');
+            [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
             %Make sure the dialogs return char objects
-            if ~ischar(sPathName)
+            if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
+            
+            %Get the full file name and save it to string attribute
+            sLongDataFileName=strcat(sPathName,sFilename);
             %Loop through the beats and save the axes image
             iNumBeats =  get(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'max');
-            for i = 1:iNumBeats;
-                set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'Value',i);
-                set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSliderEdit,'String',i);
-                oFigure.PlotActivation();
-                %Get the full file name
-                sFileName = strcat(oFigure.PlotType,sprintf('MapBeat%d',i));
-                sLongFileName=strcat(sPathName,'\',sFileName);
-                oFigure.PrintFigureToFile(sLongFileName);
-            end
+            %for i = 1:iNumBeats;
+            i = 1;
+            set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'Value',i);
+            set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSliderEdit,'String',i);
+            oFigure.PlotActivation();
+            %Get the full file name
+%             sFileName = strcat(oFigure.PlotType,sprintf('MapBeat%d',i));
+%             sLongFileName=strcat(sPathName,'\',sFileName);
+            oFigure.PrintFigureToFile(sLongDataFileName);
+            %end
         end
         
         % -----------------------------------------------------------------

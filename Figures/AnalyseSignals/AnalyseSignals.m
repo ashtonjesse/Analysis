@@ -52,6 +52,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oEnvelopeMenu, 'callback', @(src, event) oEnvelopeMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRejectAllMenu, 'callback', @(src, event) oRejectAllChannels_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAcceptAllMenu, 'callback', @(src, event) oAcceptAllChannels_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oCentralDifferenceMenu, 'callback', @(src, event) oCentralDifferenceMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
@@ -70,7 +71,7 @@ classdef AnalyseSignals < SubFigure
             addlistener(oFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             
             %set zoom callback
-            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
+%             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             %Draw plots
             oFigure.CreateSubPlot();
             %Set annotation on
@@ -130,16 +131,16 @@ classdef AnalyseSignals < SubFigure
         end
         
         % --------------------------------------------------------------------
-        function PostZoom_Callback(oFigure, src, event)
-            %Synchronize the zoom of electrode and ECG axes
-            
-            %Get the current axes and selected limit
-            oCurrentAxes = event.Axes;
-            oXLim = get(oCurrentAxes,'XLim');
-            oYLim = get(oCurrentAxes,'YLim');
-            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
-            oFigure.ApplyZoomLimits();
-        end
+%         function PostZoom_Callback(oFigure, src, event)
+%             %Synchronize the zoom of electrode and ECG axes
+%             
+%             %Get the current axes and selected limit
+%             oCurrentAxes = event.Axes;
+%             oXLim = get(oCurrentAxes,'XLim');
+%             oYLim = get(oCurrentAxes,'YLim');
+%             oFigure.CurrentZoomLimits = [oXLim ; oYLim];
+%             oFigure.ApplyZoomLimits();
+%         end
         
         function ApplyZoomLimits(oFigure)
             %Apply to axes
@@ -270,13 +271,13 @@ classdef AnalyseSignals < SubFigure
         function bUpdateBeat_Callback(oFigure, src, event)
             %Update the currently selected beat 
             
-            % Find the brushline object in the figure
-            hBrushLine = findall(oFigure.oGuiHandle.(oFigure.sFigureTag),'tag','Brushing');
+            % Find any brushline objects associated with the ElectrodeAxes
+            hBrushLines = findall(oFigure.oGuiHandle.oElectrodeAxes,'tag','Brushing');
             % Get the Xdata and Ydata attitributes of this
-            brushedData = get(hBrushLine, {'Xdata','Ydata'});
+            brushedData = get(hBrushLines, {'Xdata','Ydata'});
             % The data that has not been selected is labelled as NaN so get
             % rid of this
-            brushedIdx = ~isnan([brushedData{3,1}]);
+            brushedIdx = ~isnan([brushedData{1,1}]);
             [row, colIndices] = find(brushedIdx);
             if ~isempty(colIndices)
                 aBeatIndexes = [colIndices(1) colIndices(end)];
@@ -312,7 +313,7 @@ classdef AnalyseSignals < SubFigure
         
         % --------------------------------------------------------------------
         function oActivationMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
@@ -342,6 +343,14 @@ classdef AnalyseSignals < SubFigure
             %Open an edit control
             oFigure.oEditControl = EditControl(oFigure,'Enter the number of rows and columns to have in the kernel.',2);
             addlistener(oFigure.oEditControl,'ValuesEntered',@(src,event) oFigure.SubtractEnvelope(src, event));
+        end
+        
+        function oCentralDifferenceMenu_Callback(oFigure, src, event)
+            %Set up inputs
+            aInOptions = struct();
+            aInOptions.Procedure = 'CentralDifference';
+            aInOptions.KernelBounds = [3 3];
+            oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
      end
      
@@ -433,12 +442,18 @@ classdef AnalyseSignals < SubFigure
              oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1);
              aData = MultiLevelSubsRef(oFigure.oDAL.oHelper,aSelectedElectrodes,'Processed','Data');
              aSlope = MultiLevelSubsRef(oFigure.oDAL.oHelper,aSelectedElectrodes,'Processed','Slope');
-             aEnvelope = MultiLevelSubsRef(oFigure.oDAL.oHelper,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'Processed','Envelope');
-             aEnvelopeSubtracted = MultiLevelSubsRef(oFigure.oDAL.oHelper,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'Processed','EnvelopeSubtracted');
+             aEnvelope = MultiLevelSubsRef(oFigure.oDAL.oHelper,aSelectedElectrodes,'Processed','CentralDifference');
+             %aEnvelopeSubtracted = MultiLevelSubsRef(oFigure.oDAL.oHelper,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'Processed','EnvelopeSubtracted');
+             
              aData = aData(oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2),:);
              aSlope = aSlope(oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2),:);
+             if ~isempty(aEnvelope)
+                 aEnvelope = abs(aEnvelope(oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2),:));
+                 aEnvelopeLimits = [min(min(aEnvelope)), max(max(aEnvelope))];
+             end
              aTime =  oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
                  oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2));
@@ -448,21 +463,20 @@ classdef AnalyseSignals < SubFigure
              SlopeYMax = max(max(aSlope));
              SlopeYMin = min(min(aSlope));
              TimeMin = min(aTime);
-             
              %Check if an electrode number was supplied
              if isempty(varargin)
                  %If not, plot all electrodes for this beat
                  for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
                      iChannelIndex = oFigure.oMapElectrodesFigure.SelectedChannels(i);
-                     oFigure.PlotElectrode(aSubPlots,iChannelIndex,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeSubtracted);
+                     oFigure.PlotElectrode(aSubPlots,iChannelIndex,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeLimits);
                  end
              elseif nargin == 2
                  %If so, just plot the selected electrode and reset annotation on previously
                  %selected electrode
                  iChannelIndex = varargin{1}{1}(1);
-                 oFigure.PlotElectrode(aSubPlots,iChannelIndex,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeSubtracted);
+                 oFigure.PlotElectrode(aSubPlots,iChannelIndex,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeLimits);
                  if max(ismember(oFigure.oMapElectrodesFigure.SelectedChannels,oFigure.PreviousChannel))
-                     oFigure.PlotElectrode(aSubPlots,oFigure.PreviousChannel,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeSubtracted);
+                     oFigure.PlotElectrode(aSubPlots,oFigure.PreviousChannel,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeLimits);
                  end
              end
          end
@@ -482,7 +496,9 @@ classdef AnalyseSignals < SubFigure
              aTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
                  oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2));
-             
+             aEnvelope = abs(oElectrode.Processed.CentralDifference(...
+                 oElectrode.Processed.BeatIndexes(iBeat,1):...
+                 oElectrode.Processed.BeatIndexes(iBeat,2)));
              %Get these values so that we can place text in the
              %right place
              TimeMax = max(aTime);
@@ -521,12 +537,12 @@ classdef AnalyseSignals < SubFigure
                  
                  if ~isempty(aEnvelope)
                      %Plot the envelope data
-                     line(aTime,aEnvelope(oElectrode.Processed.BeatIndexes(iBeat,1):oElectrode.Processed.BeatIndexes(iBeat,2),iChannelIndex),'color','b','parent',oEnvelopePlot);
+                     line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
                  end
-                 if ~isempty(aEnvelopeSubtracted)
-                     %Plot the envelope subtracted data
-                     line(aTime,aEnvelopeSubtracted(oElectrode.Processed.BeatIndexes(iBeat,1):oElectrode.Processed.BeatIndexes(iBeat,2),iChannelIndex),'color','g','parent',oSubtractedPlot);
-                 end
+%                  if ~isempty(aEnvelopeSubtracted)
+%                      %Plot the envelope subtracted data
+%                      line(aTime,aEnvelopeSubtracted(oElectrode.Processed.BeatIndexes(iBeat,1):oElectrode.Processed.BeatIndexes(iBeat,2),iChannelIndex),'color','g','parent',oSubtractedPlot);
+%                  end
                  
                  %Plot the slope data
                  line(aTime,aSlope,'color','r','parent',oSlopePlot);
@@ -561,7 +577,7 @@ classdef AnalyseSignals < SubFigure
              set(oSlopePlot, 'buttondownfcn', @(src, event)  oSlopePlot_Callback(oFigure, src, event));
              %Set the axis on the subplot
              axis(oSignalPlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
-             axis(oEnvelopePlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
+             axis(oEnvelopePlot,[TimeMin, TimeMax, 1.1*aEnvelopeSubtracted(1), 1.1*aEnvelopeSubtracted(2)]);
              axis(oSubtractedPlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
              axis(oSlopePlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
              

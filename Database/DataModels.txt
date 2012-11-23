@@ -22,6 +22,7 @@ Electrodes(i).Activation(j).Method
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.EnvelopeSubtracted
 Electrodes(i).Processed.Envelope
+Electrodes(i).Processed.CentralDifference
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
 Electrodes(i).Processed.BaselinePolyOrder

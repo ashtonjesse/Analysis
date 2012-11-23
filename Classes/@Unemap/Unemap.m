@@ -390,7 +390,16 @@ classdef Unemap < BasePotential
                     aArrayData = oUnemap.SplineSmoothData(aSelectedData,3);
                     %Initialise array to hold calculated envelopes
                     aEnvelopeData = zeros(size(aArrayData,1),size(aArrayData,2));
-                
+                case 'CentralDifference'
+                    %Get the data for the selected channels
+                    aArrayData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data','FillRejectedColumns');
+                    %Get location data
+                    aXData = zeros(size(aArrayData,2),1);
+                    aYData = zeros(size(aArrayData,2),1);
+                    for i = 1:length(oUnemap.Electrodes)
+                        aXData(i,1) = oUnemap.Electrodes(i).Coords(1);
+                        aYData(i,1) = oUnemap.Electrodes(i).Coords(2);
+                    end
             end
             %The array that will hold the resulting data following
             %processing
@@ -429,7 +438,18 @@ classdef Unemap < BasePotential
                         %Take the difference
                         aProcessedData(i,:) = aSelectedData(i,:) - aEnvelopeData(i,:);
                     case 'CentralDifference'
-                        
+                        %Perform a central difference on a 3x3
+                        %neighbourhood
+                        %Take a transpose because the colfilt moves down
+                        %then across and I want it to do the opposite.
+                        aReshapedArray = aReshapedArray.'; 
+                        aCentralDifference = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateCentralDifference);
+                        %Undo transpose
+                        aCentralDifference = aCentralDifference.';
+                        aColumnArray = DataHelper.ArrayToCol(aCentralDifference);
+                        %Return the array to the correct shape and save in
+                        %processed array and envelope array
+                        aProcessedData(i,:)  = aColumnArray.';
                 end
                 
             end
@@ -447,6 +467,8 @@ classdef Unemap < BasePotential
                     end
                     oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','EnvelopeSubtracted',aArrayData);
                     oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Envelope',aEnvelopeData);
+                case 'CentralDifference'
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','CentralDifference',aProcessedData);
             end
             %close the waitbar
             close(oWaitbar);
@@ -460,26 +482,69 @@ classdef Unemap < BasePotential
                 aOut = zeros(1, Ydim);
                 iMidPoint = ceil(Xdim/2);
                 %Only do this if the central point is an accepted channel
-                    for j = 1:Ydim;
-                        if abs(aIn(iMidPoint,j)) > 0
-                            %Subtract all the nonzero elements from the centre
-                            %element
-                            %dDiff = aIn(iMidPoint,j) - aIn(aIn(:,j)~=0,j);
-                            %Count the number of nonzero elements
-                            %iCount = length(dDiff);
-                            %Take the average of these differences (removing the
-                            %count of the 0 for the middle element)...
-                            %slim possibility that this could result in div
-                            %by 0 - will deal with this if and when it
-                            %arises. 
-                            %aOut(1,j) = sum(dDiff)/(iCount - 1);
-                            %Get the mean of the nonzero elements
-                            aAbsVals = abs(aIn(:,j));
-                            aCheckVals = aIn(aAbsVals > (1*10^-6),j);
-                            aOut(1,j) = mean(aCheckVals);
-
-                        end
+                for j = 1:Ydim;
+                    if abs(aIn(iMidPoint,j)) > 0
+                        %Subtract all the nonzero elements from the centre
+                        %element
+                        %dDiff = aIn(iMidPoint,j) - aIn(aIn(:,j)~=0,j);
+                        %Count the number of nonzero elements
+                        %iCount = length(dDiff);
+                        %Take the average of these differences (removing the
+                        %count of the 0 for the middle element)...
+                        %slim possibility that this could result in div
+                        %by 0 - will deal with this if and when it
+                        %arises.
+                        %aOut(1,j) = sum(dDiff)/(iCount - 1);
+                        %Get the mean of the nonzero elements
+                        aAbsVals = abs(aIn(:,j));
+                        aCheckVals = aIn(aAbsVals > (1*10^-6),j);
+                        aOut(1,j) = mean(aCheckVals);
                     end
+                end
+            end
+            
+            %-------------------------------------------------------------
+            %subfunction that does the central difference calculation
+            function aOut = CalculateCentralDifference(aIn)
+                %get dimensions of array
+                [Xdim Ydim] = size(aIn);
+                %Initialise the output array
+                aOut = zeros(1, Ydim);
+                %set corner elements to zero as they play no part
+                %in the central difference
+%                 aIn(1,:) = 0;
+%                 aIn(3,:) = 0;
+%                 aIn(7,:) = 0;
+%                 aIn(9,:) = 0;
+                %Loop through columns 
+                for j = 1:Ydim;
+                    %if central element is 0 then a complete dxdy
+                    %difference cannot be constructed so set output to 0
+                    if abs(aIn(5,j)) > 0
+                        %find non-zero elements
+                        aNonZeroIndices = find(aIn(:,j));
+                        %Check if there are any accepted electrodes in this kernel
+                        if isempty(aNonZeroIndices)
+                            aOut(1,j) = 0;
+                        else
+                            if length(aNonZeroIndices) < 9
+                                %Not enough elements to construct complete dxdy
+                                %difference
+                                aOut(1,j) = 0;
+                            else
+                                %Central difference in x and y
+                                iIndex = j - iColumns;
+                                y1 = aYData(iIndex+iColumns,1) - aYData(iIndex,1);
+                                y2 = aYData(iIndex,1) - aYData(iIndex-iColumns,1);
+                                x1 = aXData(iIndex+1,1) - aXData(iIndex,1);
+                                x2 = aXData(iIndex,1) - aXData(iIndex-1,1);
+                                aOut(1,j) = (aIn(9,j)/(4*y1*x1)) - (aIn(3,j)/(4*y2*x1)) - (aIn(7,j)/(4*y1*x2)) + (aIn(1,j)/(4*y2*x2));
+                            end
+                        end
+                    else
+                        aOut(1,j) = 0;
+                    end
+                end
             end
         end
         
@@ -525,6 +590,13 @@ classdef Unemap < BasePotential
                                     oUnemap.Electrodes(i).Processed.Slope, ...
                                     oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:));
                                 oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
+                            end
+                        case 'CentralDifference'
+                            for i = 1:size(oUnemap.Electrodes,2);
+                                oUnemap.Electrodes(i).Activation(1).Indexes(iBeat) =  fSteepestSlope(oUnemap.TimeSeries, ...
+                                    abs(oUnemap.Electrodes(i).Processed.CentralDifference), ...
+                                    oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:));
+                                oUnemap.Electrodes(i).Activation(1).Method = 'CentralDifference';
                             end
                     end
                 end
