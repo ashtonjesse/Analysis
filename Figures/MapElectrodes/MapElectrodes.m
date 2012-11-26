@@ -279,7 +279,7 @@ classdef MapElectrodes < SubFigure
             
             %Plot 2D by default
             %Update the plot type
-            oFigure.PlotType = '2DContour';
+            oFigure.PlotType = '2DActivation';
 
             %Plot a 2D activation map
             oFigure.PlotActivation();
@@ -287,7 +287,7 @@ classdef MapElectrodes < SubFigure
         
         function o2DActivationMenu_Callback(oFigure, src, event);
             %Update the plot type
-            oFigure.PlotType = '2DContour';
+            oFigure.PlotType = '2DActivation';
             
             %Plot a 2D activation map
             oFigure.PlotActivation();
@@ -432,14 +432,23 @@ classdef MapElectrodes < SubFigure
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      %set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
 
-                 case '2DActivation'
+                 case '2DActivation' 
+                     oXLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
+                     oYLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
                      scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
+                     
                      colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
-                     colorbar('peer',oFigure.oGuiHandle.oMapAxes);
-                     colorbar('location','EastOutside');
-                     set(oFigure.oGuiHandle.oMapAxes,'CLim',[0 ceil(oFigure.Activation.MaxActivationTime)]);
+                     oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+                     oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+                     if oHandle < 0
+                         oHandle = cbarf(oFigure.Activation.z(:,iBeat),ceil(0:oFigure.Activation.MaxActivationTime/20):ceil(oFigure.Activation.MaxActivationTime));
+                         oTitle = get(oHandle, 'title');
+                         set(oTitle,'units','pixels');
+                         set(oTitle,'string','Time (ms)','position',[15 620]);
+                     end
+                     
                      %Remove ticks
-                     set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
+                     set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
                  case '3DActivation'
                      aTriangulatedMesh = delaunay(oFigure.Activation.x, oFigure.Activation.y);
                      trisurf(aTriangulatedMesh,oFigure.Activation.x, oFigure.Activation.y,-oFigure.Activation.z(:,iBeat));

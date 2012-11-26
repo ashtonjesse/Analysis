@@ -77,9 +77,13 @@ classdef StartFigure < BaseFigure
             set(oFigure.oGuiHandle.ePath,'String',sLongDataFileName);
             
             %Load the selected file
+            set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+            set(gcf,'pointer','watch');
+            drawnow;
             oUnemap = GetUnemapFromMATFile(Unemap,sLongDataFileName);
             %load the Entity into gui handles
             oFigure.oGuiHandle.oUnemap =  oUnemap;
+            set(gcf,'pointer','arrow');
             
             %Call built-in file dialog to select filename
             [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity',oFigure.DefaultPath);
@@ -90,12 +94,14 @@ classdef StartFigure < BaseFigure
             
             %Get the full file name and save it to string attribute
             sLongDataFileName=strcat(sDataPathName,sDataFileName);
-                        
             %Load the selected file
+            set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+            set(gcf,'pointer','watch');
+            drawnow;
             oECG = GetECGFromMATFile(ECG,sLongDataFileName);
             %Save the Entity to gui handles of the parent figure
             oFigure.oGuiHandle.oECG =  oECG;
-            
+            set(gcf,'pointer','arrow');
         end
         
         function oFigure = oSavePotentialMenu_Callback(oFigure, src, event)

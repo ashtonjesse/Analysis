@@ -400,6 +400,18 @@ classdef Unemap < BasePotential
                         aXData(i,1) = oUnemap.Electrodes(i).Coords(1);
                         aYData(i,1) = oUnemap.Electrodes(i).Coords(2);
                     end
+                    %Arrange as in array
+                    aXArray = DataHelper.ColToArray(aXData,iRows,iColumns);
+                    aYArray = DataHelper.ColToArray(aYData,iRows,iColumns);
+                    %Reshape column vector to match colfilt
+                    iIndex = 1;
+                    for m = 1:size(aXArray,1)
+                        for n = 1:size(aXArray,2)
+                            aXData(iIndex,1) = aXArray(m,n);
+                            aYData(iIndex,1) = aYArray(m,n);
+                            iIndex = iIndex + 1;
+                        end
+                    end
             end
             %The array that will hold the resulting data following
             %processing
@@ -512,37 +524,77 @@ classdef Unemap < BasePotential
                 aOut = zeros(1, Ydim);
                 %set corner elements to zero as they play no part
                 %in the central difference
-%                 aIn(1,:) = 0;
-%                 aIn(3,:) = 0;
-%                 aIn(7,:) = 0;
-%                 aIn(9,:) = 0;
-                %Loop through columns 
-                for j = 1:Ydim;
-                    %if central element is 0 then a complete dxdy
-                    %difference cannot be constructed so set output to 0
-                    if abs(aIn(5,j)) > 0
-                        %find non-zero elements
-                        aNonZeroIndices = find(aIn(:,j));
-                        %Check if there are any accepted electrodes in this kernel
-                        if isempty(aNonZeroIndices)
-                            aOut(1,j) = 0;
-                        else
-                            if length(aNonZeroIndices) < 9
-                                %Not enough elements to construct complete dxdy
-                                %difference
-                                aOut(1,j) = 0;
-                            else
-                                %Central difference in x and y
-                                iIndex = j - iColumns;
-                                y1 = aYData(iIndex+iColumns,1) - aYData(iIndex,1);
-                                y2 = aYData(iIndex,1) - aYData(iIndex-iColumns,1);
-                                x1 = aXData(iIndex+1,1) - aXData(iIndex,1);
-                                x2 = aXData(iIndex,1) - aXData(iIndex-1,1);
-                                aOut(1,j) = (aIn(9,j)/(4*y1*x1)) - (aIn(3,j)/(4*y2*x1)) - (aIn(7,j)/(4*y1*x2)) + (aIn(1,j)/(4*y2*x2));
-                            end
-                        end
+                aIn(1,:) = 0;
+                aIn(3,:) = 0;
+                aIn(7,:) = 0;
+                aIn(9,:) = 0;
+                %Check the middle elements and set all corresponding outs
+                %to 0
+                aNonZeroMiddles = abs(aIn(5,:)) > 0;
+                aOut(1,~aNonZeroMiddles) = 0;
+                aNonZeroIndices = find(aNonZeroMiddles);
+                aNonZeroTotals = sum(abs(aIn(:,aNonZeroIndices))) > 0;
+                %Loop through remaining columns
+                aNonZeroIndices = aNonZeroIndices(aNonZeroTotals);
+                %Initialise variables
+                iThisIndex = 0;
+                aKernelData = zeros(size(aIn,1),1);
+                for j = 1:length(aNonZeroIndices);
+                    %get the data for this iteration
+                    iThisIndex = aNonZeroIndices(j);
+                    aKernelData = aIn(:,iThisIndex);
+                    aNonZeroKernelIndices = abs(aKernelData) > 0;
+                    if length(aKernelData(aNonZeroKernelIndices)) <= 2
+                        %Not enough elements to construct complete dxdy
+                        %difference
+                        aOut(1,iThisIndex) = 0;
                     else
-                        aOut(1,j) = 0;
+                        aNonMiddleIndices = find(aNonZeroKernelIndices);
+                        %remove the middle member
+                        aNonMiddleIndices = aNonMiddleIndices(aNonMiddleIndices > 5 | aNonMiddleIndices < 5);
+                        if sum(aNonMiddleIndices) == 10
+                            %Case where just three indices in x or
+                            %y (not both) are present so cannot
+                            %construct full central difference
+                            aOut(1,iThisIndex) = 0;
+                        else
+                            %Get length values
+                            iStep = 2*iColumns;
+                            if length(aNonMiddleIndices) > 3
+                                %All 5 elements are present so do full
+                                %central difference
+                                y1 = aYData(iThisIndex+iStep,1) - aYData(iThisIndex,1);
+                                y2 = aYData(iThisIndex,1) - aYData(iThisIndex - iStep,1);
+                                x1 = aXData(iThisIndex+1,1) - aXData(iThisIndex,1);
+                                x2 = aXData(iThisIndex,1) - aXData(iThisIndex-1,1);
+                                dy = aKernelData(8)/(2*y1) - aKernelData(2)/(2*y2);
+                                dx = aKernelData(6)/(2*x1) - aKernelData(4)/(2*x2);
+                            else
+                                %Determine what difference to perform
+                                dy = 0;
+                                if aKernelData(8) == 0
+                                    %then aKernelData(2) must be non zero
+                                    %so perform a backward difference in y
+                                    dy = (aKernelData(5) - aKernelData(2))/(aYData(iThisIndex,1) - aYData(iThisIndex - iStep,1));
+                                else
+                                    %then aKernelData(8) must be non zero
+                                    %so perform a forward difference in y
+                                     dy = (aKernelData(8) - aKernelData(5))/(aYData(iThisIndex + iStep,1) - aYData(iThisIndex,1));
+                                end
+                                dx = 0;
+                                if aKernelData(6) == 0
+                                    %then aKernelData(4) must be non zero
+                                    %so perform a backward difference in x
+                                    dx = (aKernelData(5) - aKernelData(4))/(aXData(iThisIndex,1) - aXData(iThisIndex - 1,1));
+                                else
+                                    %then aKernelData(6) must be non zero
+                                    %so perform a forward difference in x
+                                    dx = (aKernelData(6) - aKernelData(5))/(aXData(iThisIndex + 1,1) - aXData(iThisIndex,1));
+                                end
+                            end
+                            %Calculate magnitude
+                            aOut(1,iThisIndex) = sqrt(dy^2 + dx^2);
+                        end
                     end
                 end
             end
@@ -573,7 +625,7 @@ classdef Unemap < BasePotential
                                 oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
                             end
                     end
-                elseif size(varargin,2) == 2
+                elseif size(varargin,2) >= 2
                     %Both a method and a beat number have been specified so
                     %only mark activation times for this beat
                     sMethod = varargin{1};
@@ -592,11 +644,14 @@ classdef Unemap < BasePotential
                                 oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
                             end
                         case 'CentralDifference'
+                            dThreshold = varargin{3}(1);
                             for i = 1:size(oUnemap.Electrodes,2);
-                                oUnemap.Electrodes(i).Activation(1).Indexes(iBeat) =  fSteepestSlope(oUnemap.TimeSeries, ...
+                                iMaxIndex = fSteepestSlope(oUnemap.TimeSeries, ...
                                     abs(oUnemap.Electrodes(i).Processed.CentralDifference), ...
                                     oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:));
+                                oUnemap.Electrodes(i).Activation(1).Indexes(iBeat) =  iMaxIndex;
                                 oUnemap.Electrodes(i).Activation(1).Method = 'CentralDifference';
+                                
                             end
                     end
                 end
@@ -626,7 +681,9 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+            Vals = [1 19 20];
+            for j = 1:length(Vals)                %size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+                i = Vals(j);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));

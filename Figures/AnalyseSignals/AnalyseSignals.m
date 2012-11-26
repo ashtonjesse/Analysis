@@ -12,6 +12,7 @@ classdef AnalyseSignals < SubFigure
         SubPlotXdim;
         SubPlotYdim;
         NumberofChannels;
+        ActivationPeakThreshold;
         Dragging;
         Annotate;
     end
@@ -45,7 +46,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
-            set(oFigure.oGuiHandle.oActivationMenu, 'callback', @(src, event) oActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSteepestSlopeMenu, 'callback', @(src, event) oSteepestSlopeMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGetSlopeMenu, 'callback', @(src, event) oGetSlopeMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAnnotationMenu, 'callback', @(src, event) oAnnotationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAdjustBeatMenu, 'callback', @(src, event) oAdjustBeatMenu_Callback(oFigure, src, event));
@@ -53,6 +54,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oRejectAllMenu, 'callback', @(src, event) oRejectAllChannels_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAcceptAllMenu, 'callback', @(src, event) oAcceptAllChannels_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCentralDifferenceMenu, 'callback', @(src, event) oCentralDifferenceMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oMaxSpatialMenu, 'callback', @(src, event) oMaxSpatialMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
@@ -71,7 +73,7 @@ classdef AnalyseSignals < SubFigure
             addlistener(oFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             
             %set zoom callback
-%             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             %Draw plots
             oFigure.CreateSubPlot();
             %Set annotation on
@@ -130,17 +132,17 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oZoom,'enable','off'); 
         end
         
-        % --------------------------------------------------------------------
-%         function PostZoom_Callback(oFigure, src, event)
-%             %Synchronize the zoom of electrode and ECG axes
-%             
-%             %Get the current axes and selected limit
-%             oCurrentAxes = event.Axes;
-%             oXLim = get(oCurrentAxes,'XLim');
-%             oYLim = get(oCurrentAxes,'YLim');
-%             oFigure.CurrentZoomLimits = [oXLim ; oYLim];
-%             oFigure.ApplyZoomLimits();
-%         end
+        %--------------------------------------------------------------------
+        function PostZoom_Callback(oFigure, src, event)
+            %Synchronize the zoom of electrode and ECG axes
+            
+            %Get the current axes and selected limit
+            oCurrentAxes = event.Axes;
+            oXLim = get(oCurrentAxes,'XLim');
+            oYLim = get(oCurrentAxes,'YLim');
+            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
+            oFigure.ApplyZoomLimits();
+        end
         
         function ApplyZoomLimits(oFigure)
             %Apply to axes
@@ -291,7 +293,7 @@ classdef AnalyseSignals < SubFigure
             %Reset the gui
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+%             oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
@@ -312,8 +314,14 @@ classdef AnalyseSignals < SubFigure
         end
         
         % --------------------------------------------------------------------
-        function oActivationMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+        function oSteepestSlopeMenu_Callback(oFigure, src, event)
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.Replot();
+        end
+        
+        % --------------------------------------------------------------------
+        function oMaxSpatialMenu_Callback(oFigure, src, event)
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'),oFigure.ActivationPeakThreshold);
             oFigure.Replot();
         end
         
@@ -449,9 +457,11 @@ classdef AnalyseSignals < SubFigure
                  oElectrode.Processed.BeatIndexes(iBeat,2),:);
              aSlope = aSlope(oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2),:);
+             aEnvelopeLimits = [];
              if ~isempty(aEnvelope)
                  aEnvelope = abs(aEnvelope(oElectrode.Processed.BeatIndexes(iBeat,1):...
                      oElectrode.Processed.BeatIndexes(iBeat,2),:));
+                 oFigure.ActivationPeakThreshold = max(max(aEnvelope)) * 0.1;
                  aEnvelopeLimits = [min(min(aEnvelope)), max(max(aEnvelope))];
              end
              aTime =  oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
@@ -496,9 +506,12 @@ classdef AnalyseSignals < SubFigure
              aTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
                  oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2));
-             aEnvelope = abs(oElectrode.Processed.CentralDifference(...
-                 oElectrode.Processed.BeatIndexes(iBeat,1):...
-                 oElectrode.Processed.BeatIndexes(iBeat,2)));
+             if ~isempty(aEnvelope)
+                 aEnvelope = abs(oElectrode.Processed.CentralDifference(...
+                     oElectrode.Processed.BeatIndexes(iBeat,1):...
+                     oElectrode.Processed.BeatIndexes(iBeat,2)));
+             end
+             
              %Get these values so that we can place text in the
              %right place
              TimeMax = max(aTime);
@@ -538,6 +551,7 @@ classdef AnalyseSignals < SubFigure
                  if ~isempty(aEnvelope)
                      %Plot the envelope data
                      line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
+                     axis(oEnvelopePlot,[TimeMin, TimeMax, 1.1*aEnvelopeSubtracted(1), 1.1*aEnvelopeSubtracted(2)]);
                  end
 %                  if ~isempty(aEnvelopeSubtracted)
 %                      %Plot the envelope subtracted data
@@ -577,7 +591,6 @@ classdef AnalyseSignals < SubFigure
              set(oSlopePlot, 'buttondownfcn', @(src, event)  oSlopePlot_Callback(oFigure, src, event));
              %Set the axis on the subplot
              axis(oSignalPlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
-             axis(oEnvelopePlot,[TimeMin, TimeMax, 1.1*aEnvelopeSubtracted(1), 1.1*aEnvelopeSubtracted(2)]);
              axis(oSubtractedPlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
              axis(oSlopePlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
              
