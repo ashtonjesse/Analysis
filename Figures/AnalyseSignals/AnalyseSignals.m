@@ -321,7 +321,7 @@ classdef AnalyseSignals < SubFigure
         
         % --------------------------------------------------------------------
         function oMaxSpatialMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'),oFigure.ActivationPeakThreshold);
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
@@ -567,7 +567,7 @@ classdef AnalyseSignals < SubFigure
                      dMidPoint = aSlope(oElectrode.Activation(1).Indexes(iBeat));
                      oLine = line([aTime(oElectrode.Activation(1).Indexes(iBeat)) ...
                          aTime(oElectrode.Activation(1).Indexes(iBeat))], ...
-                         [dMidPoint + (dHeight/2)*0.2, dMidPoint - (dHeight/2)*0.2]);
+                         [dMidPoint + (dHeight/2)*0.8, dMidPoint - (dHeight/2)*0.8]);
                      set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSlopePlot, ...
                          'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));

@@ -567,33 +567,40 @@ classdef Unemap < BasePotential
                                 y2 = aYData(iThisIndex,1) - aYData(iThisIndex - iStep,1);
                                 x1 = aXData(iThisIndex+1,1) - aXData(iThisIndex,1);
                                 x2 = aXData(iThisIndex,1) - aXData(iThisIndex-1,1);
-                                dy = aKernelData(8)/(2*y1) - aKernelData(2)/(2*y2);
-                                dx = aKernelData(6)/(2*x1) - aKernelData(4)/(2*x2);
+                                %dy = aKernelData(8)/(2*y1) - aKernelData(2)/(2*y2);
+                                %dx = aKernelData(6)/(2*x1) - aKernelData(4)/(2*x2);
+                                dy = -0.25*aKernelData(8) + 0.5*aKernelData(5) - 0.25*aKernelData(2);
+                                dx = -0.25*aKernelData(6) + 0.5*aKernelData(5) - 0.25*aKernelData(4);
                             else
                                 %Determine what difference to perform
                                 dy = 0;
                                 if aKernelData(8) == 0
                                     %then aKernelData(2) must be non zero
                                     %so perform a backward difference in y
-                                    dy = (aKernelData(5) - aKernelData(2))/(aYData(iThisIndex,1) - aYData(iThisIndex - iStep,1));
+                                    %dy = (aKernelData(5) - aKernelData(2))/(aYData(iThisIndex,1) - aYData(iThisIndex - iStep,1));
+                                    dy = 0.5*aKernelData(5) - 0.5*aKernelData(2);
                                 else
                                     %then aKernelData(8) must be non zero
                                     %so perform a forward difference in y
-                                     dy = (aKernelData(8) - aKernelData(5))/(aYData(iThisIndex + iStep,1) - aYData(iThisIndex,1));
+                                     %dy = (aKernelData(8) - aKernelData(5))/(aYData(iThisIndex + iStep,1) - aYData(iThisIndex,1));
+                                     dy = 0.5*aKernelData(8) - 0.5*aKernelData(5);
                                 end
                                 dx = 0;
                                 if aKernelData(6) == 0
                                     %then aKernelData(4) must be non zero
                                     %so perform a backward difference in x
-                                    dx = (aKernelData(5) - aKernelData(4))/(aXData(iThisIndex,1) - aXData(iThisIndex - 1,1));
+                                    %dx = (aKernelData(5) - aKernelData(4))/(aXData(iThisIndex,1) - aXData(iThisIndex - 1,1));
+                                    dx = 0.5*aKernelData(5) - 0.5*aKernelData(4);
                                 else
                                     %then aKernelData(6) must be non zero
                                     %so perform a forward difference in x
-                                    dx = (aKernelData(6) - aKernelData(5))/(aXData(iThisIndex + 1,1) - aXData(iThisIndex,1));
+                                    %dx = (aKernelData(6) - aKernelData(5))/(aXData(iThisIndex + 1,1) - aXData(iThisIndex,1));
+                                    dx = 0.5*aKernelData(6) - 0.5*aKernelData(5);
                                 end
                             end
                             %Calculate magnitude
                             aOut(1,iThisIndex) = sqrt(dy^2 + dx^2);
+                            %aOut(1,iThisIndex) = dx;
                         end
                     end
                 end
@@ -624,6 +631,13 @@ classdef Unemap < BasePotential
                                     oUnemap.Electrodes(i).Processed.BeatIndexes);
                                 oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
                             end
+                        case 'CentralDifference'
+                            for i = 1:size(oUnemap.Electrodes,2);
+                                oUnemap.Electrodes(i).Activation(1).Indexes = fSteepestSlope(oUnemap.TimeSeries, ...
+                                    abs(oUnemap.Electrodes(i).Processed.CentralDifference), ...
+                                    oUnemap.Electrodes(i).Processed.BeatIndexes);
+                                oUnemap.Electrodes(i).Activation(1).Method = 'CentralDifference';
+                            end
                     end
                 elseif size(varargin,2) >= 2
                     %Both a method and a beat number have been specified so
@@ -644,12 +658,11 @@ classdef Unemap < BasePotential
                                 oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
                             end
                         case 'CentralDifference'
-                            dThreshold = varargin{3}(1);
+
                             for i = 1:size(oUnemap.Electrodes,2);
-                                iMaxIndex = fSteepestSlope(oUnemap.TimeSeries, ...
+                                oUnemap.Electrodes(i).Activation(1).Indexes(iBeat) = fSteepestSlope(oUnemap.TimeSeries, ...
                                     abs(oUnemap.Electrodes(i).Processed.CentralDifference), ...
                                     oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:));
-                                oUnemap.Electrodes(i).Activation(1).Indexes(iBeat) =  iMaxIndex;
                                 oUnemap.Electrodes(i).Activation(1).Method = 'CentralDifference';
                                 
                             end
@@ -681,9 +694,9 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            Vals = [1 19 20];
-            for j = 1:length(Vals)                %size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-                i = Vals(j);
+            
+            for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+                
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));

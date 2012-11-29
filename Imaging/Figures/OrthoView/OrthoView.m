@@ -404,7 +404,7 @@ classdef OrthoView < BaseFigure
              
              oLeftHighAxes = subplot(2,2,1,'parent',oFigure.oGuiHandle.oPanel,'Tag','LeftHighAxes');
              set(oLeftHighAxes,'Units','Pixels');
-             aPosition = [2, yDiv+1, xDiv-2, yDiv-3];%[left bottom width height]
+             aPosition = [2, yDiv+4, xDiv-4, yDiv-3];%[left bottom width height]
              set(oLeftHighAxes,'Position',aPosition);                        
              
              oLeftLowAxes = subplot(2,2,3,'parent',oFigure.oGuiHandle.oPanel,'Tag','LeftLowAxes');
@@ -414,7 +414,7 @@ classdef OrthoView < BaseFigure
              
              oRightLowAxes = subplot(2,2,4,'parent',oFigure.oGuiHandle.oPanel,'Tag','RightLowAxes');
              set(oRightLowAxes,'Units','Pixels');
-             aPosition = [xDiv, 2, xDiv, yDiv-3];%[left bottom width height]
+             aPosition = [xDiv + 2, 2, xDiv-4, yDiv-3];%[left bottom width height]
              set(oRightLowAxes,'Position',aPosition);
         end
             
@@ -429,61 +429,121 @@ classdef OrthoView < BaseFigure
             oRightLowAxes = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'RightLowAxes');
             %Get the indexes of the currently selected images
             iYIndex = oFigure.oSlideYControl.GetSliderIntegerValue('oSlider');
-            
             iZIndex = oFigure.oSlideZControl.GetSliderIntegerValue('oSlider');
             iXIndex = oFigure.oSlideXControl.GetSliderIntegerValue('oSlider');
+            
             %Make sure this figure is the current figure
             set(0,'currentfigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+
+            %Delete any image information currently on the axes
+            aImages = findall(oLeftHighAxes,'type','image');
+            delete(aImages);
+            aImages = findall(oLeftLowAxes,'type','image');
+            delete(aImages);
+            aImages = findall(oRightLowAxes,'type','image');
+            delete(aImages);
+            
+            %plot a line where the other stack images are located on each
+            %check if a line already exists
+            oZLineOnX = findall(aSubPlots,'tag','oZLineOnX');
+            if isempty(oZLineOnX)
+                %if not then create one
+                oZLineOnX = line([0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2)], [iZIndex iZIndex]);
+            else
+                %if so just update the location
+                set(oZLineOnX,'XData',[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2)]);
+                set(oZLineOnX,'YData',[iZIndex iZIndex]);
+            end
+            %reset the buttondownfcn because this is overwritten
+            set(oZLineOnX,'Tag','oZLineOnX','color','c','parent',oRightLowAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            
+            oYLineOnX = findall(aSubPlots,'tag','oYLineOnX');
+            if isempty(oYLineOnX)
+                oYLineOnX = line([iYIndex iYIndex],[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,1)]);
+            else
+                set(oYLineOnX,'XData',[iYIndex iYIndex]);
+                set(oYLineOnX,'YData',[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,1)]);
+            end
+            set(oYLineOnX,'Tag','oYLineOnX','color','r','parent',oRightLowAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            
+            oZLineOnY = findall(aSubPlots,'tag','oZLineOnY');
+            if isempty(oZLineOnY)
+                oZLineOnY = line([0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,2)], [iZIndex iZIndex]);
+            else
+                set(oZLineOnY,'XData',[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,2)]);
+                set(oZLineOnY,'YData',[iZIndex iZIndex]);
+            end
+            set(oZLineOnY,'Tag','oZLineOnY','color','c','parent',oLeftHighAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            
+            oXLineOnY = findall(aSubPlots,'tag','oXLineOnY');
+            if isempty(oXLineOnY)
+                oXLineOnY = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,1)]);
+            else
+                set(oXLineOnY,'XData',[iXIndex iXIndex]);
+                set(oXLineOnY,'YData',[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,1)]);
+            end
+            set(oXLineOnY,'Tag','oXLineOnY','color','y','parent',oLeftHighAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            
+            oXLineOnZ = findall(aSubPlots,'tag','oXLineOnZ');
+            if isempty(oXLineOnZ)
+                oXLineOnZ = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,1)]);
+            else
+                set(oXLineOnZ,'XData',[iXIndex iXIndex]); 
+                set(oXLineOnZ,'YData',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,1)]);
+            end
+            set(oXLineOnZ,'Tag','oXLineOnZ','color','y','parent',oLeftLowAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            
+            oYLineOnZ = findall(aSubPlots,'tag','oYLineOnZ');
+            if isempty(oYLineOnZ)
+                oYLineOnZ = line([0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,2)], [iYIndex iYIndex]);
+            else
+                set(oYLineOnZ,'XData',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,2)]);
+                set(oYLineOnZ,'YData',[iYIndex iYIndex]);
+            end
+            set(oYLineOnZ,'Tag','oYLineOnZ','color','r','parent',oLeftLowAxes, ...
+                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            
+             %Prepare the subplots
+            set(oLeftHighAxes,'linewidth',2,'Box','on','XColor','r','YColor','r','XTick',[],'YTick',[]);
+            set(oLeftHighAxes,'XLim',[1 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,2)]);
+            set(oLeftHighAxes,'YLim',[1 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,1)]);
+            set(oLeftHighAxes,'Tag', 'LeftHighAxes');
+            
+            set(oLeftLowAxes,'linewidth',2,'Box','on','XColor','c','YColor','c','XTick',[],'YTick',[]);
+            set(oLeftLowAxes,'XLim',[1 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,2)]);
+            set(oLeftLowAxes,'YLim',[1 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,1)]);
+            set(oLeftLowAxes,'Tag', 'LeftLowAxes');
+            
+            set(oRightLowAxes,'linewidth',2,'Box','on','XColor','y','YColor','y','XTick',[],'YTick',[]);
+            set(oRightLowAxes,'XLim',[1 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2)]);
+            set(oRightLowAxes,'YLim',[1 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,1)]);
+            set(oRightLowAxes,'Tag', 'RightLowAxes');
+            
             %Display the images
             image('cdata',(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data),'Parent',...
-               oRightLowAxes);
+                oRightLowAxes);
             image('cdata',(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data),'Parent',...
                 oLeftLowAxes);
             image('cdata',(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data),'Parent',...
                 oLeftHighAxes);
-            %plot a line where the other stack images are located on each
             
-            oZLineOnX = line([0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,2);], [iZIndex iZIndex]);
-            set(oZLineOnX,'Tag','oZLineOnX','color','c','parent',oRightLowAxes, ...
-                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            oYLineOnX = line([iYIndex iYIndex],[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data,1)]);
-            set(oYLineOnX,'Tag','oYLineOnX','color','r','parent',oRightLowAxes, ...
-                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+            %Reorder the children - assuming the image is always in
+            %position 1
+            aChildren = get(oLeftHighAxes,'children');
+            uistack(aChildren(1),'bottom');
+            aChildren = get(oLeftLowAxes,'children');
+            uistack(aChildren(1),'bottom');
+            aChildren = get(oRightLowAxes,'children');
+            uistack(aChildren(1),'bottom');
             
-            oZLineOnY = line([0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,2)], [iZIndex iZIndex]);
-            set(oZLineOnY,'Tag','oZLineOnY','color','c','parent',oLeftHighAxes, ...
-                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            oXLineOnY = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data,1)]);
-            set(oXLineOnY,'Tag','oXLineOnY','color','y','parent',oLeftHighAxes, ...
-                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            
-            oXLineOnZ = line([iXIndex iXIndex],[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,1)]);
-            set(oXLineOnZ,'Tag','oXLineOnZ','color','y','parent',oLeftLowAxes, ...
-                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            oYLineOnZ = line([0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data,2)], [iYIndex iYIndex]);
-            set(oYLineOnZ,'Tag','oYLineOnZ','color','r','parent',oLeftLowAxes, ...
-                'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-            
-            %Set the stop drag function
+            %Finish up by setting the stop drag function and the panel to
+            %visible
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
-            %Prepare the subplots
-            set(oLeftHighAxes,'layer','top');
-            set(oLeftHighAxes,'linewidth',2,'Box','on','XColor','r','YColor','r','XTick',[],'YTick',[]);
-            set(oLeftHighAxes,'XLim',[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data-2,2)]);
-            set(oLeftHighAxes,'YLim',[0 size(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data-2,1)]);
-            set(oLeftHighAxes,'Tag', 'LeftHighAxes', 'NextPlot','replacechildren');
-            
-            set(oLeftLowAxes,'layer','top');
-            set(oLeftLowAxes,'linewidth',2,'Box','on','XColor','c','YColor','c','XTick',[],'YTick',[]);
-            set(oLeftLowAxes,'XLim',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data-2,2)]);
-            set(oLeftLowAxes,'YLim',[0 size(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data-2,1)]);
-            set(oLeftLowAxes,'Tag', 'LeftLowAxes', 'NextPlot','replacechildren');
-            
-            set(oRightLowAxes,'layer','top');
-            set(oRightLowAxes,'linewidth',2,'Box','on','XColor','y','YColor','y','XTick',[],'YTick',[]);
-            set(oRightLowAxes,'XLim',[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data-2,2)]);
-            set(oRightLowAxes,'YLim',[0 size(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data-2,1)]);
-            set(oRightLowAxes,'Tag', 'RightLowAxes', 'NextPlot','replacechildren');
             set(oFigure.oGuiHandle.oPanel,'visible','on');
         end
         

@@ -26,16 +26,13 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
-            %set(oFigure.oGuiHandle.oGenPotentialMenu, 'callback', @(src, event) oGenPotentialMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oGenActivationMenu, 'callback', @(src, event) oGenActivationMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.o2DActivationMenu, 'callback', @(src, event) o2DActivationMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.o3DActivationMenu, 'callback', @(src, event) o3DActivationMenu_Callback(oFigure, src, event));
-            %set(oFigure.oGuiHandle.oAverageMenu, 'callback', @(src, event) oAverageMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oGenScatterMenu, 'callback', @(src, event) oGenScatterMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oGenContourMenu, 'callback', @(src, event) oGenContourMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oReplotMenu, 'callback', @(src, event) oReplotMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveActivationMenu, 'callback', @(src, event) oSaveActivationMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oGenAverageMenu, 'callback', @(src, event) oGenAverageMenu_Callback(oFigure, src, event));
+            
             
             %Add a listener so that the figure knows when a user has
             %made a beat selection
@@ -182,84 +179,84 @@ classdef MapElectrodes < SubFigure
             aInOptions.KernelBounds = [iRows iCols];
             oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
-        
-        function oGenAverageMenu_Callback(oFigure, src, event)
-            %Prepare average activation maps for beats preceeding, during
-            %and after stimulation period
-            oAverageData = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
-            %Produce average maps
-            oPlotData = struct();
-            oPlotData.x = oAverageData.x;
-            oPlotData.y = oAverageData.y;
-            oPlotData.MinCLim = 0;
-            oPlotData.MaxCLim = ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
-            %2D
-            %The prestim
-            oPlotData.z = oAverageData.PreStim.z;
-            %AxesControl(oFigure,'2DScatter','2DPreStimAverage',oPlotData);
-            %During stim singleton
-            oPlotData.z = oAverageData.Stim.z;
-            %AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
-            %Post stim
-            oPlotData.z = oAverageData.PostStim.z;
-            %AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
-            %Difference maps
-            %Pre minus during 
-            oPlotData.z = oAverageData.PreStim.z - oAverageData.Stim.z;
-            oPlotData.MaxZLim = max(oPlotData(1).z);
-            oPlotData.MaxCLim = max(oPlotData(1).z);
-            oPlotData.MinZLim = min(oPlotData(1).z);
-            oPlotData.MinCLim = min(oPlotData(1).z);
-            AxesControl(oFigure,'2DContour','2DPreMinusDuringDiff',oPlotData);
-            %Post minus during
-            oPlotData.z = oAverageData.PostStim.z - oAverageData.Stim.z;
-            oPlotData.MaxZLim = max(oPlotData(1).z);
-            oPlotData.MaxCLim = max(oPlotData(1).z);
-            oPlotData.MinZLim = min(oPlotData(1).z);
-            oPlotData.MinCLim = min(oPlotData(1).z);
-            AxesControl(oFigure,'2DContour','2DPostMinusDuringDiff',oPlotData);
-            %Pre minus Post
-            oPlotData.z = oAverageData.PreStim.z - oAverageData.PostStim.z;
-            oPlotData.MaxZLim = max(oPlotData(1).z);
-            oPlotData.MaxCLim = max(oPlotData(1).z);
-            oPlotData.MinZLim = min(oPlotData(1).z);
-            oPlotData.MinCLim = min(oPlotData(1).z);
-            AxesControl(oFigure,'2DContour','2DPostMinusPreDiff',oPlotData);
-            %3D
-            oPlotData = struct();
-            oPlotData(1).x = oAverageData.x;
-            oPlotData(1).y = oAverageData.y;
-            oPlotData(1).MaxZLim = 0;
-            oPlotData(1).MaxCLim = 0;
-            oPlotData(1).MinZLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
-            oPlotData(1).MinCLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));;
-            %Prestim
-            oPlotData(1).z = -oAverageData.PreStim.z;
-            %AxesControl(oFigure,'3DTriSurf','3DPreStimAverage',oPlotData);
-            %During stim
-            oPlotData(1).z = -oAverageData.Stim.z;
-            %AxesControl(oFigure,'3DTriSurf','3DStimAverage',oPlotData);            
-            %Poststim
-            oPlotData(1).z = -oAverageData.PostStim.z;
-            %AxesControl(oFigure,'3DTriSurf','3DPostStimAverage',oPlotData);
-            %Double plots
-            oPlotData(2).x = oAverageData.x;
-            oPlotData(2).y = oAverageData.y;
-            %Pre vs During
-            oPlotData(1).z = -oAverageData.PreStim.z;
-            oPlotData(2).z = -oAverageData.Stim.z;
-%             AxesControl(oFigure,'3DTriSurf','3DPreVsDuringStimAverage',oPlotData);
-            %Post vs During
-            oPlotData(1).z = -oAverageData.Stim.z;
-            oPlotData(2).z = -oAverageData.PostStim.z;
-            %AxesControl(oFigure,'3DTriSurf','3DPostVsDuringStimAverage',oPlotData);
-            %Pre Vs Post
-            oPlotData(1).z = -oAverageData.PreStim.z;
-            oPlotData(2).z = -oAverageData.PostStim.z;
-            %AxesControl(oFigure,'3DTriSurf','3DPreVsPostStimAverage',oPlotData);
-            
-        end
-        
+%         
+%         function oGenAverageMenu_Callback(oFigure, src, event)
+%             %Prepare average activation maps for beats preceeding, during
+%             %and after stimulation period
+%             oAverageData = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
+%             %Produce average maps
+%             oPlotData = struct();
+%             oPlotData.x = oAverageData.x;
+%             oPlotData.y = oAverageData.y;
+%             oPlotData.MinCLim = 0;
+%             oPlotData.MaxCLim = ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
+%             %2D
+%             %The prestim
+%             oPlotData.z = oAverageData.PreStim.z;
+%             %AxesControl(oFigure,'2DScatter','2DPreStimAverage',oPlotData);
+%             %During stim singleton
+%             oPlotData.z = oAverageData.Stim.z;
+%             %AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
+%             %Post stim
+%             oPlotData.z = oAverageData.PostStim.z;
+%             %AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
+%             %Difference maps
+%             %Pre minus during 
+%             oPlotData.z = oAverageData.PreStim.z - oAverageData.Stim.z;
+%             oPlotData.MaxZLim = max(oPlotData(1).z);
+%             oPlotData.MaxCLim = max(oPlotData(1).z);
+%             oPlotData.MinZLim = min(oPlotData(1).z);
+%             oPlotData.MinCLim = min(oPlotData(1).z);
+%             AxesControl(oFigure,'2DContour','2DPreMinusDuringDiff',oPlotData);
+%             %Post minus during
+%             oPlotData.z = oAverageData.PostStim.z - oAverageData.Stim.z;
+%             oPlotData.MaxZLim = max(oPlotData(1).z);
+%             oPlotData.MaxCLim = max(oPlotData(1).z);
+%             oPlotData.MinZLim = min(oPlotData(1).z);
+%             oPlotData.MinCLim = min(oPlotData(1).z);
+%             AxesControl(oFigure,'2DContour','2DPostMinusDuringDiff',oPlotData);
+%             %Pre minus Post
+%             oPlotData.z = oAverageData.PreStim.z - oAverageData.PostStim.z;
+%             oPlotData.MaxZLim = max(oPlotData(1).z);
+%             oPlotData.MaxCLim = max(oPlotData(1).z);
+%             oPlotData.MinZLim = min(oPlotData(1).z);
+%             oPlotData.MinCLim = min(oPlotData(1).z);
+%             AxesControl(oFigure,'2DContour','2DPostMinusPreDiff',oPlotData);
+%             %3D
+%             oPlotData = struct();
+%             oPlotData(1).x = oAverageData.x;
+%             oPlotData(1).y = oAverageData.y;
+%             oPlotData(1).MaxZLim = 0;
+%             oPlotData(1).MaxCLim = 0;
+%             oPlotData(1).MinZLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
+%             oPlotData(1).MinCLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));;
+%             %Prestim
+%             oPlotData(1).z = -oAverageData.PreStim.z;
+%             %AxesControl(oFigure,'3DTriSurf','3DPreStimAverage',oPlotData);
+%             %During stim
+%             oPlotData(1).z = -oAverageData.Stim.z;
+%             %AxesControl(oFigure,'3DTriSurf','3DStimAverage',oPlotData);            
+%             %Poststim
+%             oPlotData(1).z = -oAverageData.PostStim.z;
+%             %AxesControl(oFigure,'3DTriSurf','3DPostStimAverage',oPlotData);
+%             %Double plots
+%             oPlotData(2).x = oAverageData.x;
+%             oPlotData(2).y = oAverageData.y;
+%             %Pre vs During
+%             oPlotData(1).z = -oAverageData.PreStim.z;
+%             oPlotData(2).z = -oAverageData.Stim.z;
+% %             AxesControl(oFigure,'3DTriSurf','3DPreVsDuringStimAverage',oPlotData);
+%             %Post vs During
+%             oPlotData(1).z = -oAverageData.Stim.z;
+%             oPlotData(2).z = -oAverageData.PostStim.z;
+%             %AxesControl(oFigure,'3DTriSurf','3DPostVsDuringStimAverage',oPlotData);
+%             %Pre Vs Post
+%             oPlotData(1).z = -oAverageData.PreStim.z;
+%             oPlotData(2).z = -oAverageData.PostStim.z;
+%             %AxesControl(oFigure,'3DTriSurf','3DPreVsPostStimAverage',oPlotData);
+%             
+%         end
+%         
         function oDataCursorOnTool_Callback(oFigure, src, event)
             %Turn brushing on so that the user can select a range of data
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
@@ -273,7 +270,7 @@ classdef MapElectrodes < SubFigure
         
         %% Callbacks
        
-        function oGenActivationMenu_Callback(oFigure, src, event);
+        function oGenScatterMenu_Callback(oFigure, src, event);
             %Generate activation map for the current beat
             oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
             
@@ -285,22 +282,18 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotActivation();
         end
         
-        function o2DActivationMenu_Callback(oFigure, src, event);
-            %Update the plot type
-            oFigure.PlotType = '2DActivation';
+        function oGenContourMenu_Callback(oFigure, src, event);
+            %Generate activation map for the current beat
+            oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
             
+            %Plot 2D by default
+            %Update the plot type
+            oFigure.PlotType = '2DContour';
+
             %Plot a 2D activation map
             oFigure.PlotActivation();
         end
         
-        function o3DActivationMenu_Callback(oFigure, src, event);
-            %Update the plot type
-            oFigure.PlotType = '3DActivation';
-            
-            %Plot a 3D activation map
-            oFigure.PlotActivation();
-        end
-               
         function SlideValueListener(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new beat using the
