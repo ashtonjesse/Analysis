@@ -46,14 +46,16 @@ classdef ImageStack < BaseEntity
             oStack = oStack.oDAL.ReadDataFromFile(sFile,sName);
         end
         
-        function oStack = GetZStackFromVolume(oStack, oImageVolume)
+        function oStack = GetZStackFromVolume(oStack, oImageVolume, sName)
             %Create a new stack entity from a volume of image data using
             %the third dimension
             
+            oStack.Name = sName;
             %Loop through third dimension
             for i = 1:size(oImageVolume,3);
                 oStack.oImages(i).Data = oImageVolume(:,:,i);
-                oStack.oImages(i).sClass = class(oImageVolume(:,:,i));
+                oStack.oImages(i).Name = sprintf('Z%d',i);
+                oStack.oImages(i).Class =
             end
         end
         
@@ -75,7 +77,7 @@ classdef ImageStack < BaseEntity
             end
         end
         
-        function oNewStack = ResampleStack(oStack, sDimension, sInClass)
+        function oNewStack = ResampleStack(oStack, sDimension)
             %Resample the stack images in the dimension specified
             switch (sDimension)
                 case 'x'
@@ -93,18 +95,8 @@ classdef ImageStack < BaseEntity
                             oResampledImages(j).Name = sprintf('%d',j);
                             %Reconvert resampled images in to appropriate image
                             %class
-                            switch (sInClass)
-                                case 'uint8'
-                                    oResampledImages(j).Data = uint8(oResampledImages(j).Data);
-                                    oResampledImages(j).sClass = 'uint8';
-                                case 'double'
-                                    oResampledImages(j).Data = double(oResampledImages(j).Data);
-                                    oResampledImages(j).sClass = 'double';
-                                case 'single'
-                                    oResampledImages(j).Data = single(oResampledImages(j).Data);
-                                    oResampledImages(j).sClass = 'single';
-                            end
-                            
+                            oResampledImages(j).Data = uint8(oResampledImages(j).Data);
+                            oResampledImages(j).sClass = 'uint8';
                         end
                     end
                     oNewStack = ImageStack();
@@ -124,17 +116,8 @@ classdef ImageStack < BaseEntity
                             oResampledImages(j).Name = sprintf('%d',j);
                             %Reconvert resampled images in to appropriate image
                             %class
-                            switch (sInClass)
-                                case 'uint8'
-                                    oResampledImages(j).Data = uint8(oResampledImages(j).Data);
-                                    oResampledImages(j).sClass = 'uint8';
-                                case 'double'
-                                    oResampledImages(j).Data = double(oResampledImages(j).Data);
-                                    oResampledImages(j).sClass = 'double';
-                                case 'single'
-                                    oResampledImages(j).Data = single(oResampledImages(j).Data);
-                                    oResampledImages(j).sClass = 'single';
-                            end
+                            oResampledImages(j).Data = uint8(oResampledImages(j).Data);
+                            oResampledImages(j).sClass = 'uint8';
                         end
                     end
                     oNewStack = ImageStack();

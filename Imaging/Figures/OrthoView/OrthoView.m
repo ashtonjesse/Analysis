@@ -34,6 +34,7 @@ classdef OrthoView < BaseFigure
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUnused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolsMenu, 'callback', @(src, event) oUnused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSubSampleMenu, 'callback', @(src, event) oSubSampleMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oFrangiFilterMenu, 'callback', @(src, event) oFrangiFilterMenu_Callback(oFigure, src, event));
 
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -225,6 +226,47 @@ classdef OrthoView < BaseFigure
             addlistener(oFigure.oROIControl,'SelectROINow',@(src,event) oFigure.SelectROIListener(src, event));
             addlistener(oFigure.oROIControl,'DoneSelecting',@(src,event) oFigure.FinishedROISelection(src, event));
             addlistener(oFigure.oROIControl,'ClearROI',@(src,event) oFigure.ClearROISelection(src, event));
+        end
+        
+        function oFrangiFilterMenu_Callback(oFigure, src, event)
+            %Get the inputs for a call to frangi filter
+            oEditControl = EditControl(oFigure,'Enter values for the small scale min, max and stepsize, large scale min, max and stepsize, and alpha and beta constants.', 8);                
+            addlistener(oEditControl,'ValuesEntered',@(src,event) oFigure.FrangiFilterListener(src, event));
+        end
+        
+        function FrangiFilterListener(oFigure, src, event)
+            %Apply a frangi filter to the image volume to pick out features
+            %of interest.
+            oImageVolume = oFigure.oStackVolume;
+            aInputs = [];
+            aInputs.BlackWhite = false;
+            aInputs.FrangiScaleRange = [event.Values(1) event.Values(2)];
+            aInputs.FrangiScaleRatio = event.Values(3);
+            aInputs.FrangiAlpha = event.Values(7);
+            aInputs.FrangiBeta = event.Values(8);
+            aInputs.FrangiC = max(oImageVolume(:))/4;
+            
+            % Use single or double for calculations
+            if(~isa(oImageVolume,'double'))
+                oImageVolume = single(oImageVolume); 
+            end 
+            
+            %Filter the volume using the small scales
+            [oProcessedImageVolume, aOutScales] = fFrangiFilter(oImageVolume, aInputs);
+
+            %Apply Threshold
+            oProcessedImageVolume = fBOSauvolaThreshold3D(oProcessedImageVolume,3,3,1,128); 
+            
+            %clear stack information
+            oFigure.oGuiHandle.oZStack = [];
+            oFigure.oGuiHandle.oXStack = [];
+            oFigure.oGuiHandle.oYStack = [];
+            %Split the processed stack in to separate dimensions
+            [oFigure.oGuiHandle.oZStack, oFigure.oGuiHandle.oXStack, oFigure.oGuiHandle.oYStack] = ...
+                fSplitStackVolume(oProcessedImageVolume);
+            
+            %Replot
+            oFigure.Replot();
         end
         
         function SelectROIListener(oFigure, src, event)
@@ -525,11 +567,11 @@ classdef OrthoView < BaseFigure
             set(oRightLowAxes,'Tag', 'RightLowAxes');
             
             %Display the images
-            image('cdata',(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data),'Parent',...
+            imagesc('cdata',(oFigure.oGuiHandle.oXStack.oImages(iXIndex).Data),'Parent',...
                 oRightLowAxes);
-            image('cdata',(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data),'Parent',...
+            imagesc('cdata',(oFigure.oGuiHandle.oZStack.oImages(iZIndex).Data),'Parent',...
                 oLeftLowAxes);
-            image('cdata',(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data),'Parent',...
+            imagesc('cdata',(oFigure.oGuiHandle.oYStack.oImages(iYIndex).Data),'Parent',...
                 oLeftHighAxes);
             
             %Reorder the children - assuming the image is always in

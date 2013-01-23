@@ -1,0 +1,7 @@
+function [oZStack, oXStack, oYStack] = fSplitStackVolume(oStackVolume)
+%Split an image volume into stacks in each dimension
+
+%Create a new z stack
+oZStack = ImageStack();
+
+end

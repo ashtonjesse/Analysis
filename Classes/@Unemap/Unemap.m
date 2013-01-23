@@ -91,7 +91,7 @@ classdef Unemap < BasePotential
                 end
                 %Perform on processed data
                 oUnemap.Electrodes(iElectrodeNumber).Processed.Slope = ...
-                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,20,5);
+                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,50,3);
             else
                 %No electrode number has been specified so loop through
                 %all
@@ -100,7 +100,7 @@ classdef Unemap < BasePotential
                 end
                 for i = 1:size(oUnemap.Electrodes,2)
                     oUnemap.Electrodes(i).Processed.Slope = ...
-                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,5,3);
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,40,3);
                 end
             end
         end
@@ -696,7 +696,7 @@ classdef Unemap < BasePotential
             dMaxAcceptedTime = 0;
             
             for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-                
+                %i = dVals(k);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));

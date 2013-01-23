@@ -32,6 +32,7 @@ classdef EditControl < SubFigure
                         dPosition = [dPosition(1)+dPosition(3)+10, dPosition(2), dPosition(3), dPosition(4)];
                     else
                         oEdit = uicontrol(handles.oPanel,'Style','edit','position',dPosition,'tag',sprintf('oEdit_%d',i));
+                        dPosition = [dPosition(1)+dPosition(3)+10, dPosition(2), dPosition(3), dPosition(4)];
                     end
                 end
                 %Set the instructions
@@ -65,8 +66,17 @@ classdef EditControl < SubFigure
     methods (Access = private)
         %% Private UI control callbacks
         function btnDone_Callback(oFigure, src, event)
+            %Get the edit handles
+            oChildren = get(oFigure.oGuiHandle.oPanel,'children');
+            %initialise array
+            aValues = zeros(length(oChildren),1);
+            %get the edit values
+            for i = length(oChildren):-1:1
+                sValue = get(oChildren(length(oChildren)-i+1),'string');
+                aValues(i) = str2double(sValue);
+            end
             %Notify listeners and pass the selected value
-            notify(oFigure,'ValuesEntered');
+            notify(oFigure,'ValuesEntered',EditValuesEnteredEvent(aValues));
         end
     end
     

@@ -112,10 +112,7 @@ classdef MapElectrodes < SubFigure
             %Loop through the beats and save the axes image
             iNumBeats =  get(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'max');
             %for i = 1:iNumBeats;
-            i = 1;
-            set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'Value',i);
-            set(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSliderEdit,'String',i);
-            oFigure.PlotActivation();
+            
             %Get the full file name
 %             sFileName = strcat(oFigure.PlotType,sprintf('MapBeat%d',i));
 %             sLongFileName=strcat(sPathName,'\',sFileName);

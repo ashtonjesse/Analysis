@@ -293,7 +293,7 @@ classdef AnalyseSignals < SubFigure
             %Reset the gui
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-%             oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
@@ -315,7 +315,7 @@ classdef AnalyseSignals < SubFigure
         
         % --------------------------------------------------------------------
         function oSteepestSlopeMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope');%,oFigure.oSlideControl.GetSliderIntegerValue('oSlider')
             oFigure.Replot();
         end
         
