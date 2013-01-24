@@ -46,16 +46,19 @@ oExperiment.Unemap.NumberOfPlugs
 oExperiment.Unemap.ChannelsPerPlug
 oExperiment.Unemap.ECGChannel
 oExperiment.Unemap.PhrenicChannel
-oExperiment.PerfusionPressureAmp.Gain
-oExperiment.PerfusionPressureAmp.HighFilter
-oExperiment.PerfusionPressureAmp.LowFilter
-oExperiment.PerfusionPressureAmp.LineFilter
-oExperiment.PhrenicAmp.InGain
-oExperiment.PhrenicAmp.OutGain
-oExperiment.ECGAmp.AcCouplingFrequency
-oExperiment.ECGAmp.HighFilter
-oExperiment.ECGAmp.LowFilter
-oExperiment.ECGAmp.LineFilter
+oExperiment.PerfusionPressure.Amp.Gain
+oExperiment.PerfusionPressure.Amp.HighFilter
+oExperiment.PerfusionPressure.Amp.LowFilter
+oExperiment.PerfusionPressure.Amp.LineFilter
+oExperiment.PerfusionPressure.SamplingRate
+oExperiment.PerfusionPressure.StorageColumn
+oExperiment.PerfusionPressure.RefSignalColumn
+oExperiment.Phrenic.Amp.InGain
+oExperiment.Phrenic.Amp.OutGain
+oExperiment.ECG.Amp.AcCouplingFrequency
+oExperiment.ECG.Amp.HighFilter
+oExperiment.ECG.Amp.LowFilter
+oExperiment.ECG.Amp.LineFilter
 oExperiment.Plot.Electrodes.xDim
 oExperiment.Plot.Electrodes.yDim
 
@@ -68,3 +71,9 @@ oECG.Processed.Beats;
 BaseImage: (base level of inheritance)
 oImage.Data
 oImage.Name
+
+Pressure:
+oPressure.oExperiment;
+oPressure.Original;
+oPressure.TimeSeries;
+oPressure.RefSignal;

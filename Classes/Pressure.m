@@ -1,19 +1,20 @@
-classdef Pressure < BasePotential
-    %   Pressure is a subclass of type BasePotential that is associated
+classdef Pressure < BaseSignal
+    %   Pressure is a subclass of type BaseSignal that is associated
     %   with a Pressure recording from an Experiment.
-    %   Pressure inherits all properties and methods from BasePotential.
+    %   Pressure inherits all properties and methods from BaseSignal.
     
     properties
         oExperiment;
         Original;
         TimeSeries;
+        RefSignal;
         Processed;
     end
     
     methods
         function oPressure = Pressure()
             %% Constructor
-            oPressure = oPressure@BasePotential();
+            oPressure = oPressure@BaseSignal();
         end
     end
     
@@ -28,10 +29,6 @@ classdef Pressure < BasePotential
         %% Public methods
         function Save(oPressure,sPath)
             SaveEntity(oPressure,sPath);
-        end
-        %% Inherited methods
-        function aOutData = ProcessData(oBasePotential, aInData, varargin)
-            aOutData = ProcessData@BasePotential(oBasePotential, aInData, varargin);
         end
         %% Class specific methods
         function TruncateData(oPressure, bIndexesToKeep)
@@ -58,7 +55,7 @@ classdef Pressure < BasePotential
             oPressure.Processed = oData.oEntity.Processed;
         end
         
-        function oPressure = GetPressureFromTXTFile(oPressure,sFile)
+        function [oPressure] = GetPressureFromTXTFile(oPressure,sFile)
             %   Get an entity by loading data from a txt file - only done the
             %   first time you are creating a Pressure entity
             
@@ -79,9 +76,9 @@ classdef Pressure < BasePotential
             %   Load the data from the txt file
             aFileContents = oPressure.oDAL.LoadFromFile(sFile);
             %   Set the Original and TimeSeries Structured arrays
-            oPressure.Original = aFileContents(:,oPressure.oExperiment.Unemap.NumberOfChannels + ...
-                oPressure.oExperiment.Unemap.ECGChannel + 1);
-            oPressure.TimeSeries = [1:1:size(oPressure.Original,1)]*(1/oPressure.oExperiment.Unemap.ADConversion.SamplingRate);
+            oPressure.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
+            oPressure.TimeSeries = aFileContents(:,1);
+            oPressure.RefSignal = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
         end       
         
     end
