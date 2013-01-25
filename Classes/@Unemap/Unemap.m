@@ -59,10 +59,6 @@ classdef Unemap < BasePotential
             aGradient = CalculateSlope@BasePotential(oUnemap, aInData, iNumberofPoints,iModelOrder);
         end
         
-        function aOutData = GetBeats(oUnemap, aInData, aPeaks)
-            aOutData = GetBeats@BasePotential(oUnemap, aInData, aPeaks);
-        end
-                
         %% Methods relating to Electrode potential raw and processed data
         function AcceptChannel(oUnemap,iElectrodeNumber)
             oUnemap.Electrodes(iElectrodeNumber).Accepted = 1;
@@ -70,6 +66,17 @@ classdef Unemap < BasePotential
         
         function RejectChannel(oUnemap,iElectrodeNumber)
             oUnemap.Electrodes(iElectrodeNumber).Accepted = 0;
+        end
+        
+        function oElectrode = GetElectrodeByName(oUnemap,sChannelName)
+            %Return the electrode that matches the input name
+            %This is a hacky way to do it but IDGF
+            oElectrode = [];
+            for i = 1:length(oUnemap.Electrodes)
+                if strcmp(oUnemap.Electrodes(i).Name,sChannelName)
+                    oElectrode = oUnemap.Electrodes(i);
+                end
+            end
         end
         
         function GetCurvature(oUnemap,iElectrodeNumber)
@@ -148,7 +155,7 @@ classdef Unemap < BasePotential
                 %array
                 aInData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
             end
-            aOutData = oUnemap.GetBeats(aInData,aPeaks);
+            [aOutData dMaxPeaks] = oUnemap.GetBeats(aInData,aPeaks);
             %Split again into the Electrodes
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',cell2mat(aOutData(1)));
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
@@ -604,6 +611,25 @@ classdef Unemap < BasePotential
                         end
                     end
                 end
+            end
+        end
+        
+        function aRateData = GetHeartRateData(oUnemap,dPeaks)
+            %Take the peaks supplied and create an array of
+            %discrete heart rates
+            aTimes = oUnemap.TimeSeries(dPeaks);
+            %Put peaks in pairs
+            dPeaks = dPeaks';
+            dPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
+            %Get the times in sets of intervals
+            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)]; 
+            aIntervals = aNewTimes(2,:) - aNewTimes(1,:);
+            %Put rates into bpm
+            aRates = 60 ./ aIntervals;
+            aRateData = NaN(1,length(oUnemap.TimeSeries));
+            %Loop through the peaks and insert into aRateTrace
+            for i = 1:size(dPeaks,2)
+                aRateData(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
             end
         end
         

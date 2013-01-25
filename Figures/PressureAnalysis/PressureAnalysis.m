@@ -21,6 +21,7 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) Unused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPlotVRMS, 'callback', @(src, event) oPlotVRMS_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oExportMenu, 'callback', @(src, event) oExportMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTimeAlignMenu, 'callback', @(src, event) oTimeAlignMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oHeartRateMenu, 'callback', @(src, event) oHeartRateMenu_Callback(oFigure, src, event));
             
@@ -80,6 +81,23 @@ classdef PressureAnalysis < SubFigure
         function oFigure = Close_fcn(oFigure, src, event)
             deleteme(oFigure);
         end    
+        
+                % -----------------------------------------------------------------
+        function oExportMenu_Callback(oFigure, src, event)
+            %Get the save file path
+            %Call built-in file dialog to select filename
+            [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
+            %Make sure the dialogs return char objects
+            if (~ischar(sFilename) && ~ischar(sPathName))
+                return
+            end
+            
+            %Get the full file name and save it to string attribute
+            sLongDataFileName=strcat(sPathName,sFilename);
+           
+            oFigure.PrintFigureToFile(sLongDataFileName);
+           
+        end
         
         function oFigure = oSaveMenu_Callback(oFigure, src, event)
             % Save the current entities
@@ -161,7 +179,17 @@ classdef PressureAnalysis < SubFigure
         end
         
         function oHeartRateMenu_Callback(oFigure, src, event)
-
+            [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetBeats(...
+                oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
+            aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.GetHeartRateData(dMaxPeaks);
+            oFigure.CreateSubPlot(4);
+            oFigure.PlotPressure(oFigure.aPlots(1));
+            oFigure.PlotRefSignal(oFigure.aPlots(2));
+            oFigure.PlotVRMS(oFigure.aPlots(4));
+            plot(oFigure.aPlots(3),oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,aRateData,'k');
+            set(oFigure.aPlots(3),'XTick',[]);
+            ylabel(oFigure.aPlots(3),'Heart rate (bpm)');
         end
         
         function CreateSubPlot(oFigure,iPlotCount)
@@ -177,37 +205,55 @@ classdef PressureAnalysis < SubFigure
              end
              
              %Divide up the space for the subplots
-             yDiv = 1/(iPlotCount); 
+             yDiv = 1/(iPlotCount+0.4); 
              oFigure.aPlots = zeros(iPlotCount,1);
+             
              %Loop through the plot count
              for i = 1:iPlotCount;
                  %Create subplot
-                 aPosition = [0.1, 0.2 + (yDiv*(i-1)-0.1), 0.8, yDiv-0.1];%[left bottom width height]
+                 aPosition = [0.1, (i-1)*yDiv + 0.08, 0.8, yDiv-0.02];%[left bottom width height]
                  oPlot = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oPanel, 'Tag', sprintf('Plot%d',i));
+                 
                  %Save the subplots to the array
                  oFigure.aPlots(i) = oPlot;
              end
-             
+            
              
         end
         
         function PlotPressure(oFigure,oAxesHandle)
             %Plot the pressure trace.
             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),...
-                oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
-            
+                oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,'k');
+            xlabel(oAxesHandle,'Time (s)');
+            ylabel(oAxesHandle,'Pressure (mmHg)');
+            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
+            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
+            ylim(oAxesHandle,[ymin-abs(ymin/10) ymax+ymax/10]);
         end
         
         function PlotRefSignal(oFigure,oAxesHandle)
             %Plot the ref signal trace.
             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),...
-                oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+                oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),'k');
+%             axis(oAxesHandle,'tight');
+            set(oAxesHandle,'XTick',[]);
+            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+            ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
+            ylabel(oAxesHandle,'ECG');
         end
         
         function PlotVRMS(oFigure,oAxesHandle)
             %Plot the unemap VRMS data
-            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed);
-
+            %Get channel to plot
+            oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName('15-09');
+            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oElectrode.Processed.Data,'k');
+            set(oAxesHandle,'XTick',[]);
+            ymax = max(oElectrode.Processed.Data);
+            ymin = min(oElectrode.Processed.Data);
+            ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
+            
         end
         
         function TimeAlign(oFigure, src, event)
