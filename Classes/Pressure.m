@@ -9,6 +9,7 @@ classdef Pressure < BaseSignal
         TimeSeries;
         RefSignal;
         Processed;
+        Status = 'Original';
     end
     
     methods
@@ -32,14 +33,24 @@ classdef Pressure < BaseSignal
         end
         %% Class specific methods
         function TruncateData(oPressure, bIndexesToKeep)
-            %This performs a truncation on the Pressure data 
+            %This performs a truncation on the current pressure data 
             
             %Truncate the time series
-            oPressure.TimeSeries = oPressure.TimeSeries(bIndexesToKeep);
+            oPressure.TimeSeries.(oPressure.Status) = oPressure.TimeSeries.(oPressure.Status)(bIndexesToKeep);
             
-            %Truncate the original potential data
-            oPressure.Original = oPressure.Original(bIndexesToKeep);
-                                
+            %Truncate the original  data
+            oPressure.(oPressure.Status).Data = oPressure.(oPressure.Status).Data(bIndexesToKeep);
+            oPressure.RefSignal.(oPressure.Status) = oPressure.RefSignal.(oPressure.Status)(bIndexesToKeep);
+        end
+        
+        function ResampleOriginalData(oPressure, dNewFrequency)
+            %Resamples the original pressure data at the new frequency
+             oPressure.Processed.Data = resample(oPressure.Original.Data, dNewFrequency, ...
+                oPressure.oExperiment.PerfusionPressure.SamplingRate);
+            oPressure.RefSignal.Processed = resample(oPressure.RefSignal.Original, dNewFrequency, ...
+                oPressure.oExperiment.PerfusionPressure.SamplingRate);
+            oPressure.TimeSeries.Processed = [1:1:size(oPressure.Processed.Data,1)] * (1/dNewFrequency);
+            oPressure.Status = 'Processed';
         end
         
         function oPressure = GetPressureFromMATFile(oPressure, sFile)
@@ -53,6 +64,8 @@ classdef Pressure < BaseSignal
             oPressure.Original = oData.oEntity.Original;
             oPressure.TimeSeries = oData.oEntity.TimeSeries;
             oPressure.Processed = oData.oEntity.Processed;
+            oPressure.RefSignal = oData.oEntity.RefSignal;
+            oPressure.Status =  oData.oEntity.Status;
         end
         
         function [oPressure] = GetPressureFromTXTFile(oPressure,sFile)
@@ -76,9 +89,9 @@ classdef Pressure < BaseSignal
             %   Load the data from the txt file
             aFileContents = oPressure.oDAL.LoadFromFile(sFile);
             %   Set the Original and TimeSeries Structured arrays
-            oPressure.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
-            oPressure.TimeSeries = aFileContents(:,1);
-            oPressure.RefSignal = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
+            oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
+            oPressure.TimeSeries.Original = aFileContents(:,1);
+            oPressure.RefSignal.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
         end       
         
     end

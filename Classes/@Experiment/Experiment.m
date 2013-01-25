@@ -6,9 +6,9 @@ classdef Experiment < BaseEntity
         Date;
         Material;
         Unemap;
-        PerfusionPressureAmp;
-        PhrenicAmp;
-        ECGAmp;
+        PerfusionPressure;
+        Phrenic;
+        ECG;
         Plot;
     end
         
@@ -22,9 +22,9 @@ classdef Experiment < BaseEntity
                     oExperiment.Date = oExperimentStruct.Date;
                     oExperiment.Material = oExperimentStruct.Material;
                     oExperiment.Unemap = oExperimentStruct.Unemap;
-                    oExperiment.PerfusionPressureAmp = oExperimentStruct.PerfusionPressureAmp;
-                    oExperiment.PhrenicAmp = oExperimentStruct.PhrenicAmp;
-                    oExperiment.ECGAmp = oExperimentStruct.ECGAmp;
+                    oExperiment.PerfusionPressure = oExperimentStruct.PerfusionPressure;
+                    oExperiment.Phrenic = oExperimentStruct.Phrenic;
+                    oExperiment.ECG = oExperimentStruct.ECG;
                     oExperiment.Plot = oExperimentStruct.Plot;
                 end
             end
@@ -35,7 +35,7 @@ classdef Experiment < BaseEntity
             %   Create a Experiment entity from a metadata file
 
             %   Get the entity via the DAL
-            oExperiment = oExperiment.oDAL.CreateEntityFromFile(sFile);
+            oExperiment = oExperiment.oDAL.CreateEntityFromFile(oExperiment,sFile);
         end
     end
     

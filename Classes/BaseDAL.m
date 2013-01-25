@@ -29,13 +29,13 @@ classdef BaseDAL
             oData = load(sFile);
         end
         
-        function oEntity = CreateEntityFromFile(oBaseDAL,sFile)
+        function oEntity = CreateEntityFromFile(oBaseDAL,oEntity,sFile)
             %   Create an entity from a file. Note all fields to be parsed from
             %   the file should be separated by a full stop and the value
             %   should be preceeded by an equals  sign
             
             %   Create the new entity by using a DataHelper method
-            oEntity = ParseFileIntoEntity(oBaseDAL.oHelper, sFile);
+            oEntity = ParseFileIntoEntity(oBaseDAL.oHelper, oEntity, sFile);
         end
         
         function SaveThisEntity(oBaseDAL,oEntity,sPath)

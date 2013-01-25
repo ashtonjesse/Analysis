@@ -740,12 +740,26 @@ classdef Unemap < BasePotential
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)
             %   Get an entity by loading a mat file that has been saved
             %   previously
+          
+            %   Load the mat file into the workspace
+            oData = oUnemap.oDAL.GetEntityFromFile(sFile);
+            %   Reload all the properties
+            oUnemap.TimeSeries = oData.oEntity.TimeSeries;
+            oUnemap.oExperiment = Experiment(oData.oEntity.oExperiment);
+            oUnemap.Electrodes = oData.oEntity.Electrodes;
+            oUnemap.RMS = oData.oEntity.RMS;
+            
+        end
+        
+        function oUnemap = GetUnemapAndUpdateExperiment(oUnemap,sFile,oNewExperiment)
+            %   Get an entity by loading a mat file that has been saved
+            %   previously and replace the Experiment entity
             
             %   Load the mat file into the workspace
             oData = oUnemap.oDAL.GetEntityFromFile(sFile);
-            %   Reload all the properties 
+            %   Reload all the properties
             oUnemap.TimeSeries = oData.oEntity.TimeSeries;
-            oUnemap.oExperiment = Experiment(oData.oEntity.oExperiment);
+            oUnemap.oExperiment = oNewExperiment;
             oUnemap.Electrodes = oData.oEntity.Electrodes;
             oUnemap.RMS = oData.oEntity.RMS;
         end

@@ -115,7 +115,8 @@ classdef AxesControl < SubFigure
                     colorbar('peer',oFigure.oGuiHandle.oAxes);
                     colorbar('location','EastOutside');
                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
-                
+                case 'LineGraph'
+                    
             end
             
         end

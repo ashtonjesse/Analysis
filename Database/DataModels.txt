@@ -10,6 +10,9 @@ oUnemap.RMS.WindowSize
 oUnemap.RMS.Curvature.Values
 oUnemap.RMS.Curvature.Peaks
 oUnemap.RMS.Curvature.Threshold
+oUnemap.RMS.HeartRate.Peaks
+oUnemap.RMS.HeartRate.Threshold
+
 
 Electrodes: (not wrapped by a class)
 Electrodes(i).Accepted
@@ -73,7 +76,11 @@ oImage.Data
 oImage.Name
 
 Pressure:
-oPressure.oExperiment;
-oPressure.Original;
-oPressure.TimeSeries;
-oPressure.RefSignal;
+oPressure.oExperiment
+oPressure.Status
+oPressure.Original.Data
+oPressure.Processed.Data
+oPressure.TimeSeries.Original
+oPressure.TimeSeries.Processed
+oPressure.RefSignal.Original
+oPressure.RefSignal.Processed

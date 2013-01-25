@@ -10,12 +10,11 @@ classdef DataHelper
             
         end
         
-        function oEntity = ParseFileIntoEntity(oDataHelper,sPath)
+        function oEntity = ParseFileIntoEntity(oDataHelper,oEntity,sPath)
 %         Parses the file specified by sPath and creates an entity that
 %         contains all fields specified in the file
 
-%             Intitialise the entity
-            oEntity = [];
+
 %             Open the file and put into fid handle
             fid = fopen(sPath);
 %             Get the first line

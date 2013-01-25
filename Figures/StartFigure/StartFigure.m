@@ -34,6 +34,8 @@ classdef StartFigure < BaseFigure
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
+            %Initialise a space for a pressure entity
+            oFigure.oGuiHandle.oPressure = [];
             % --- Executes just before BaselineCorrection is made visible.
             function StartFigure_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.

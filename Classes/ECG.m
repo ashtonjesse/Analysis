@@ -58,6 +58,19 @@ classdef ECG < BasePotential
             oECG.Processed = oData.oEntity.Processed;
         end
         
+        function oECG = GetECGAndUpdateExperiment(oECG, sFile, oNewExperiment)
+            %   Get an entity by loading a mat file that has been saved
+            %   previously and update the experiment entity
+            
+            %   Load the mat file into the workspace
+            oData = oECG.oDAL.GetEntityFromFile(sFile);
+            %   Reload all the properties 
+            oECG.oExperiment = oNewExperiment;
+            oECG.Original = oData.oEntity.Original;
+            oECG.TimeSeries = oData.oEntity.TimeSeries;
+            oECG.Processed = oData.oEntity.Processed;
+        end
+        
         function oECG = GetECGFromTXTFile(oECG,sFile)
             %   Get an entity by loading data from a txt file - only done the
             %   first time you are creating an ECG entity
