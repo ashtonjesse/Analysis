@@ -28,6 +28,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenScatterMenu, 'callback', @(src, event) oGenScatterMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGenContourMenu, 'callback', @(src, event) oGenContourMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oGenAverageMenu, 'callback', @(src, event) oGenAverageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oReplotMenu, 'callback', @(src, event) oReplotMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
@@ -176,28 +177,32 @@ classdef MapElectrodes < SubFigure
             aInOptions.KernelBounds = [iRows iCols];
             oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
-%         
-%         function oGenAverageMenu_Callback(oFigure, src, event)
-%             %Prepare average activation maps for beats preceeding, during
-%             %and after stimulation period
-%             oAverageData = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
-%             %Produce average maps
-%             oPlotData = struct();
-%             oPlotData.x = oAverageData.x;
-%             oPlotData.y = oAverageData.y;
-%             oPlotData.MinCLim = 0;
-%             oPlotData.MaxCLim = ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
-%             %2D
-%             %The prestim
-%             oPlotData.z = oAverageData.PreStim.z;
-%             %AxesControl(oFigure,'2DScatter','2DPreStimAverage',oPlotData);
+        
+        function oGenAverageMenu_Callback(oFigure, src, event)
+            %Prepare average activation maps for beats preceeding, during
+            %and after stimulation period
+            oAverageData = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
+            %Produce average maps
+            oPlotData = struct();
+            oPlotData.x = oAverageData.x;
+            oPlotData.y = oAverageData.y;
+            oPlotData.MinCLim = 0;
+            oPlotData.MaxCLim = ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
+            %2D
+            %The prestim
+            oPlotData.z = oAverageData.Stim.z - oAverageData.PostStim.z;
+            oPlotData.MaxCLim = max(oPlotData.z);
+            oPlotData.MinCLim = min(oPlotData.z);
+            oPlotData.XLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
+            oPlotData.YLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
+            AxesControl(oFigure,'2DScatter','2DDuringMinusPostStim',oPlotData);
 %             %During stim singleton
 %             oPlotData.z = oAverageData.Stim.z;
-%             %AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
+%             AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
 %             %Post stim
 %             oPlotData.z = oAverageData.PostStim.z;
-%             %AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
-%             %Difference maps
+%             AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
+            %Difference maps
 %             %Pre minus during 
 %             oPlotData.z = oAverageData.PreStim.z - oAverageData.Stim.z;
 %             oPlotData.MaxZLim = max(oPlotData(1).z);
@@ -251,9 +256,9 @@ classdef MapElectrodes < SubFigure
 %             oPlotData(1).z = -oAverageData.PreStim.z;
 %             oPlotData(2).z = -oAverageData.PostStim.z;
 %             %AxesControl(oFigure,'3DTriSurf','3DPreVsPostStimAverage',oPlotData);
-%             
-%         end
-%         
+            
+        end
+        
         function oDataCursorOnTool_Callback(oFigure, src, event)
             %Turn brushing on so that the user can select a range of data
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');

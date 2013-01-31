@@ -55,6 +55,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oAcceptAllMenu, 'callback', @(src, event) oAcceptAllChannels_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCentralDifferenceMenu, 'callback', @(src, event) oCentralDifferenceMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oMaxSpatialMenu, 'callback', @(src, event) oMaxSpatialMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oReMenu, 'callback', @(src, event) oReMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
@@ -315,13 +316,18 @@ classdef AnalyseSignals < SubFigure
         
         % --------------------------------------------------------------------
         function oSteepestSlopeMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope');%,oFigure.oSlideControl.GetSliderIntegerValue('oSlider')
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
         % --------------------------------------------------------------------
         function oMaxSpatialMenu_Callback(oFigure, src, event)
             oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.Replot();
+        end
+        
+        function oReMenu_Callback(oFigure, src, event)
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('MaxSignalMagnitude',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         

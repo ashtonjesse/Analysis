@@ -183,13 +183,14 @@ classdef PressureAnalysis < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
             aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.GetHeartRateData(dMaxPeaks);
-            oFigure.CreateSubPlot(4);
+            oFigure.CreateSubPlot(3);
             oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
-            oFigure.PlotVRMS(oFigure.aPlots(4));
-            plot(oFigure.aPlots(3),oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,aRateData,'k');
-            set(oFigure.aPlots(3),'XTick',[]);
-            ylabel(oFigure.aPlots(3),'Heart rate (bpm)');
+%             oFigure.PlotRefSignal(oFigure.aPlots(2));
+            
+            plot(oFigure.aPlots(2),oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,aRateData,'k');
+            set(oFigure.aPlots(2),'XTick',[]);
+            ylabel(oFigure.aPlots(2),'Heart rate (bpm)');
+            oFigure.PlotVRMS(oFigure.aPlots(3));
         end
         
         function CreateSubPlot(oFigure,iPlotCount)
@@ -250,10 +251,11 @@ classdef PressureAnalysis < SubFigure
             oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName('15-09');
             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oElectrode.Processed.Data,'k');
             set(oAxesHandle,'XTick',[]);
+            set(oAxesHandle,'YTick',[]);
             ymax = max(oElectrode.Processed.Data);
             ymin = min(oElectrode.Processed.Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            
+            ylabel(oAxesHandle,'Electrogram at x');
         end
         
         function TimeAlign(oFigure, src, event)

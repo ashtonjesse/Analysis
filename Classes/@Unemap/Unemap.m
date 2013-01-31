@@ -98,7 +98,7 @@ classdef Unemap < BasePotential
                 end
                 %Perform on processed data
                 oUnemap.Electrodes(iElectrodeNumber).Processed.Slope = ...
-                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,50,3);
+                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,5,3);
             else
                 %No electrode number has been specified so loop through
                 %all
@@ -107,7 +107,7 @@ classdef Unemap < BasePotential
                 end
                 for i = 1:size(oUnemap.Electrodes,2)
                     oUnemap.Electrodes(i).Processed.Slope = ...
-                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,40,3);
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,5,3);
                 end
             end
         end
@@ -657,6 +657,17 @@ classdef Unemap < BasePotential
                                     oUnemap.Electrodes(i).Processed.BeatIndexes);
                                 oUnemap.Electrodes(i).Activation(1).Method = 'SteepestSlope';
                             end
+                        case 'SteepestNegativeSlope'
+                            for i = 1:size(oUnemap.Electrodes,2);
+                                % Get slope data if this has not been done already
+                                if isnan(oUnemap.Electrodes(i).Processed.Slope)
+                                    oUnemap.GetSlope(i);
+                                end
+                                oUnemap.Electrodes(i).Activation(1).Indexes =  fSteepestNegativeSlope(oUnemap.TimeSeries, ...
+                                    oUnemap.Electrodes(i).Processed.Slope, ...
+                                    oUnemap.Electrodes(i).Processed.BeatIndexes);
+                                oUnemap.Electrodes(i).Activation(1).Method = 'SteepestNegativeSlope';
+                            end
                         case 'CentralDifference'
                             for i = 1:size(oUnemap.Electrodes,2);
                                 oUnemap.Electrodes(i).Activation(1).Indexes = fSteepestSlope(oUnemap.TimeSeries, ...
@@ -690,7 +701,13 @@ classdef Unemap < BasePotential
                                     abs(oUnemap.Electrodes(i).Processed.CentralDifference), ...
                                     oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:));
                                 oUnemap.Electrodes(i).Activation(1).Method = 'CentralDifference';
-                                
+                            end
+                        case 'MaxSignalMagnitude'
+                            for i = 1:size(oUnemap.Electrodes,2);
+                                [C, oUnemap.Electrodes(i).Activation(1).Indexes(iBeat)] = ...
+                                    max(oUnemap.Electrodes(i).Processed.Data(oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,1):...
+                                    oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,2)));
+                                oUnemap.Electrodes(i).Activation(1).Method = 'MaxSignalMagnitude';
                             end
                     end
                 end
@@ -720,9 +737,9 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            
-            for i = 1:size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-                %i = dVals(k);
+            dVals = [1];
+            for k = 1:length(dVals);%size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+                i = dVals(k);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));

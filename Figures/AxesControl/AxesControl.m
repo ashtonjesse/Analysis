@@ -61,13 +61,15 @@ classdef AxesControl < SubFigure
         function oPrintMenu_Callback(oFigure, src, event)
             %Get the save file path
             %Call built-in file dialog to select filename
-            sPathName = uigetdir('','Specify a directory to save to');
+            [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
             %Make sure the dialogs return char objects
-            if ~ischar(sPathName)
+            if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
-            sLongFileName=strcat(sPathName,'\',oFigure.PlotName);
-            oFigure.PrintFigureToFile(sLongFileName);
+            
+            %Get the full file name and save it to string attribute
+            sLongDataFileName=strcat(sPathName,sFilename);
+            oFigure.PrintFigureToFile(sLongDataFileName);
         end
         
     end
@@ -92,12 +94,21 @@ classdef AxesControl < SubFigure
 %                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
                 case '2DScatter'
                     scatter(oFigure.oGuiHandle.oAxes, oFigure.PlotData.x, oFigure.PlotData.y, 100, oFigure.PlotData.z, 'filled');
+                    set(oFigure.oGuiHandle.oAxes,'XLim', oFigure.PlotData.XLim,'YLim', oFigure.PlotData.YLim);
                     colormap(oFigure.oGuiHandle.oAxes, colormap(flipud(colormap(jet))));
-                    colorbar('peer',oFigure.oGuiHandle.oAxes);
-                    colorbar('location','EastOutside');
-                    set(oFigure.oGuiHandle.oAxes,'CLim',[oFigure.PlotData.MinCLim oFigure.PlotData.MaxCLim]);
+%                     colorbar('peer',oFigure.oGuiHandle.oAxes);
+%                     colorbar('location','EastOutside');
+                    set(oFigure.oGuiHandle.oAxes,'CLim',[floor(oFigure.PlotData.MinCLim) ceil(oFigure.PlotData.MaxCLim)]);
                     set(oFigure.oGuiHandle.oAxes,'XTick',[],'YTick',[]);
                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
+                    iSplit = (abs(floor(oFigure.PlotData.MinCLim))+abs(ceil(oFigure.PlotData.MaxCLim)))/16;
+                    iSplit = str2num(sprintf('%3.2f',iSplit));
+                    oHandle = cbarf(oFigure.PlotData.z,floor(oFigure.PlotData.MinCLim):iSplit:ceil(oFigure.PlotData.MaxCLim));
+                    oTitle = get(oHandle, 'title');
+                    set(oTitle,'units','pixels');
+                    set(oTitle,'string','Time (ms)','position',[15 720]);
+                    
+                    
                 case '3DTriSurf'
                     for i = 1:size(oFigure.PlotData,2);
                         aTriangulatedMesh = delaunay(oFigure.PlotData(i).x, oFigure.PlotData(i).y);
@@ -115,8 +126,22 @@ classdef AxesControl < SubFigure
                     colorbar('peer',oFigure.oGuiHandle.oAxes);
                     colorbar('location','EastOutside');
                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
-                case 'LineGraph'
-                    
+                case '2DFittedContour'
+                    %Create the interpolation vectors needed for the gridfit
+                     xlin = linspace(min(oFigure.PlotData.x(~isnan(oFigure.PlotData.z))), ...
+                         max(oFigure.PlotData.x(~isnan(oFigure.PlotData.z))),length(oFigure.PlotData.x(~isnan(oFigure.PlotData.z))));
+                     ylin = linspace(min(oFigure.PlotData.y(~isnan(oFigure.PlotData.z))), ...
+                         max(oFigure.PlotData.y(~isnan(oFigure.PlotData.z))),length(oFigure.PlotData.y(~isnan(oFigure.PlotData.z))));
+                     [X, Y] = meshgrid(xlin, ylin);
+                     %Z = gridfit(oFigure.Activation.x, oFigure.Activation.y,oFigure.Activation.z(:,iBeat),X,Y,'cubic');
+                     Z = gridfit(oFigure.PlotData.x, oFigure.PlotData.y,oFigure.PlotData.z,xlin,ylin,'extend','never');
+                     iSplit = abs(oFigure.PlotData.MaxCLim - oFigure.PlotData.MinCLim)/20;
+                     iSplit = str2num(sprintf('%3.1f',iSplit));
+                     contourf(oFigure.oGuiHandle.oAxes,X,Y,Z,floor(oFigure.PlotData.MinCLim):iSplit:ceil(oFigure.PlotData.MaxCLim));
+                     oColorBar = cbarf(Z,floor(oFigure.PlotData.MinCLim):iSplit:ceil(oFigure.PlotData.MaxCLim));
+                     oTitle = get(oColorBar, 'title');
+                     set(oTitle,'string','Time (ms)');
+                     set(oFigure.oGuiHandle.oAxes,'XTick',[],'YTick',[]);
             end
             
         end

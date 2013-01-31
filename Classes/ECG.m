@@ -97,6 +97,31 @@ classdef ECG < BasePotential
             oECG.TimeSeries = [1:1:size(oECG.Original,1)]*(1/oECG.oExperiment.Unemap.ADConversion.SamplingRate);
         end       
         
+        function oECG = GetAverageECGFromTXTFile(oECG,sFile)
+            %   Get an entity by loading data from a txt file - only done the
+            %   first time you are creating an ECG entity. The ECG is
+            %   calculated from all the signals supplied in the txt file
+            
+            %   If the ECG does not have an Experiment loaded yet
+            %   then load one
+            if isempty(oECG.oExperiment)
+                %   Look for a metadata file in the same directory that will
+                %   contain the Experiment data
+                [sPath] = fileparts(sFile);
+                aFileFull = fGetFileNamesOnly(sPath,'*_experiment.txt');
+                %   There should be one experiment file and no more
+                if ~(size(aFileFull,1) == 1)
+                    error('VerifyInput:TooManyInputFiles', 'There is the wrong number of experimental metadata files in the directory %s',sPath);
+                end
+                %   Get the Experiment entity
+                oECG.oExperiment = GetExperimentFromTxtFile(Experiment, char(aFileFull(1)));
+            end
+            %   Load the potential data from the txt file
+            aFileContents = oECG.oDAL.LoadFromFile(sFile);
+            %   Set the Original and TimeSeries Structured arrays
+            oECG.Original = mean(aFileContents(:,2:end),2);
+            oECG.TimeSeries = [1:1:size(oECG.Original,1)]*(1/oECG.oExperiment.Unemap.ADConversion.SamplingRate);
+        end
     end
 end
 

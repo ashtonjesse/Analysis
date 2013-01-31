@@ -122,7 +122,7 @@ classdef BeatDetection < SubFigure
             oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = cell2mat(aOutData(1));
             oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes = cell2mat(aOutData(2));
             %Mark activation for future analysis
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope');
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestNegativeSlope');
             %Plot the detected beats on the ECG
             oFigure.PlotECG('DetectBeats');
         end
