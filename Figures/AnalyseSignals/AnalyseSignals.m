@@ -15,6 +15,7 @@ classdef AnalyseSignals < SubFigure
         ActivationPeakThreshold;
         Dragging;
         Annotate;
+        CurrentEventLine;
     end
         
     events
@@ -27,7 +28,7 @@ classdef AnalyseSignals < SubFigure
             oFigure = oFigure@SubFigure(oParent,'AnalyseSignals',@AnalyseSignals_OpeningFcn);
             oFigure.oSlideControl = SlideControl(oFigure,'Select Beat');
             %Set up slider
-            iNumBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Activation(1).Indexes,1);
+            iNumBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
             set(oFigure.oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumBeats, 'Value', 1,'SliderStep',[1/iNumBeats  0.02]);
             set(oFigure.oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
@@ -46,7 +47,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
-            set(oFigure.oGuiHandle.oSteepestSlopeMenu, 'callback', @(src, event) oSteepestSlopeMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oNewEventMenu, 'callback', @(src, event) oNewEventMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oGetSlopeMenu, 'callback', @(src, event) oGetSlopeMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAnnotationMenu, 'callback', @(src, event) oAnnotationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAdjustBeatMenu, 'callback', @(src, event) oAdjustBeatMenu_Callback(oFigure, src, event));
@@ -54,8 +55,6 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oRejectAllMenu, 'callback', @(src, event) oRejectAllChannels_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAcceptAllMenu, 'callback', @(src, event) oAcceptAllChannels_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCentralDifferenceMenu, 'callback', @(src, event) oCentralDifferenceMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oMaxSpatialMenu, 'callback', @(src, event) oMaxSpatialMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oReMenu, 'callback', @(src, event) oReMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
@@ -155,9 +154,10 @@ classdef AnalyseSignals < SubFigure
         function StartDrag(oFigure, src, event)
             %The function that fires when a line on a subplot is dragged
             oFigure.Dragging = 1;
-            oSlopePlot = get(src,'Parent');
-            oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(oSlopePlot,'tag'));
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oSlopePlot)));
+            oPlot = get(src,'Parent');
+            oFigure.CurrentEventLine = get(src,'tag');
+            oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(oPlot,'tag'));
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oPlot)));
         end
         
         function StopDrag(oFigure, src, event)
@@ -171,15 +171,17 @@ classdef AnalyseSignals < SubFigure
                 iChannelNumber = oFigure.SelectedChannel;
                 %Get the handle to these axes from the panel children
                 oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
-                oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('Slope%d',iChannelNumber));
+                oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('SignalEventPlot%d',iChannelNumber));
                 %Get the handle to the line on these axes
                 oAxesChildren = get(oAxes,'children');
-                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, sprintf('ActLine%d',iChannelNumber));
+                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
+                %Get the current event for this channel
+                iEvent = oFigure.GetEventNumberFromTag(oFigure.CurrentEventLine);
                 %Get the xdata of this line and convert it into a timeseries
                 %index
                 dXdata = get(oLine, 'XData');
-                %Update the activation for this electrode and beat number
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateActivationMark(iChannelNumber, oFigure.oSlideControl.GetSliderIntegerValue('oSlider'), dXdata(1));
+                %Update the signal event for this electrode and beat number
+                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.oSlideControl.GetSliderIntegerValue('oSlider'), dXdata(1));
                 %Refresh the plot
                 oFigure.Replot(iChannelNumber);
             end
@@ -188,14 +190,13 @@ classdef AnalyseSignals < SubFigure
         function Drag(oFigure, src, event)
             %The function that fires while a line on a subplot is being
             %dragged
-            oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
-            oAxesTag = oFigure.oDAL.oHelper.GetDoubleFromString(get(event.ParentAxesHandle,'tag'));
             oAxesChildren = get(event.ParentAxesHandle,'children');
-            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, sprintf('ActLine%d',oAxesTag));
+            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
+            oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
             set(oLine, 'XData', oPoint(1)*[1 1]);
         end
         
-        function oSlopePlot_Callback(oFigure, src, event)
+        function oSignalEventPlot_Callback(oFigure, src, event)
             oFigure.PreviousChannel = oFigure.SelectedChannel;
             oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(src,'tag'));
             oFigure.Replot(oFigure.SelectedChannel);
@@ -258,6 +259,7 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
+        %% Event Callbacks --------------------------------------
         function SubtractEnvelope(oFigure,src,event)
             %Carries out an envelope subtraction neighbourhood action
             
@@ -270,6 +272,25 @@ classdef AnalyseSignals < SubFigure
             aInOptions.KernelBounds = [iRows iCols];
             oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
+        
+        function NewEventCreated(oFigure,src,event)
+            %Get the values from the mixedcontrol
+            switch (char(event.Values{4}))
+                case 'AllBeats'
+                    for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
+                        iChannel = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}));
+                    end
+                case 'SingleBeat'
+                    iBeat = oFigure.oSlideControl.GetSliderIntegerValue('oSlider');
+                    for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
+                        iChannel = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), iBeat);
+                    end                   
+            end
+            oFigure.Replot();
+        end
+        %% ------------------------------------------------------------------
         
         function bUpdateBeat_Callback(oFigure, src, event)
             %Update the currently selected beat 
@@ -294,7 +315,6 @@ classdef AnalyseSignals < SubFigure
             %Reset the gui
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
             oFigure.Replot();
         end
         
@@ -315,9 +335,14 @@ classdef AnalyseSignals < SubFigure
         end
         
         % --------------------------------------------------------------------
-        function oSteepestSlopeMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestSlope',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
-            oFigure.Replot();
+        function oNewEventMenu_Callback(oFigure, src, event)
+            aControlData = cell(4,1);
+            aControlData{1} = {'r','g','b','k','c','m','y'};
+            aControlData{2} = {'Activation','Repolarisation'};
+            aControlData{3} = {'SteepestPositiveSlope','SteepestNegativeSlope','CentralDifference','MaxSignalMagnitude'};
+            aControlData{4} = {'SingleBeat','AllBeats'};
+            oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique and beat selection details for the new event.',aControlData);
+            addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
         end
         
         % --------------------------------------------------------------------
@@ -369,6 +394,18 @@ classdef AnalyseSignals < SubFigure
      end
      
      methods (Access = private)
+         function iEventNumber = GetEventNumberFromTag(oFigure, sTag)
+             %Find the event number specified by the input handle tag 
+             [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
+             iEventNumber = str2double(char(splitstring(1,2)));
+         end
+         
+         function iChannel = GetChannelFromTag(oFigure, sTag)
+             %Find the channel specified by the input handle tag 
+             [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
+             iChannel = str2double(char(splitstring(1,1)));
+         end
+         
          function Replot(oFigure,varargin)
              %Make sure the current figure is AnalyseSignals
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
@@ -432,6 +469,9 @@ classdef AnalyseSignals < SubFigure
                  %Create axes for slope data
                  oSlopePlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
                      'Tag', sprintf('Slope%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
+                 %Create axes for event lines
+                 oSignalEventPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
+                     'Tag', sprintf('SignalEventPlot%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
              end
          end
          
@@ -523,7 +563,7 @@ classdef AnalyseSignals < SubFigure
              TimeMax = max(aTime);
              TimeMin = min(aTime);
              dWidth = TimeMax-TimeMin;
-             dHeight = SlopeYMax - SlopeYMin;
+             dHeight = SignalYMax - SignalYMin;
              %Get the handle to current signal plot
              oSignalPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, sprintf('Signal%d',iChannelIndex));
              %Rename it as this is deleted after each load and hide
@@ -549,6 +589,12 @@ classdef AnalyseSignals < SubFigure
                  sprintf('Slope%d',iChannelIndex),'NextPlot','replacechildren');
              cla(oSlopePlot);
              
+             %Get the handle to current signalevent plot
+             oSignalEventPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, sprintf('SignalEventPlot%d',iChannelIndex));
+             set(oSignalEventPlot,'XTick',[],'YTick',[], 'Tag', ...
+                 sprintf('SignalEventPlot%d',iChannelIndex),'NextPlot','replacechildren');
+             cla(oSignalEventPlot);
+             
              %Plot the data and slope
              if oElectrode.Accepted
                  %If the signal is accepted then plot it as black
@@ -566,27 +612,26 @@ classdef AnalyseSignals < SubFigure
                  
                  %Plot the slope data
                  line(aTime,aSlope,'color','r','parent',oSlopePlot);
-                 hold(oSlopePlot,'on');
-                 if ~isempty(oElectrode.Activation)
-                     %Mark the activation times with a line
-                     %Label the line with the activation time
-                     dMidPoint = aSlope(oElectrode.Activation(1).Indexes(iBeat));
-                     oLine = line([aTime(oElectrode.Activation(1).Indexes(iBeat)) ...
-                         aTime(oElectrode.Activation(1).Indexes(iBeat))], ...
-                         [dMidPoint + (dHeight/2)*0.8, dMidPoint - (dHeight/2)*0.8]);
-                     set(oLine,'Tag',sprintf('ActLine%d',iChannelIndex),'color','r','parent',oSlopePlot, ...
+                 %Loop through events
+                 for j = 1:length(oElectrode.SignalEvent)
+                     %Mark the event times with a line
+                     %dMidPoint = aData(oElectrode.SignalEvent(j).Index(iBeat));
+                     %[dMidPoint + (dHeight/2)*0.9, dMidPoint - (dHeight/2)*0.9]
+                     oLine = line([aTime(oElectrode.SignalEvent(j).Index(iBeat)) ...
+                         aTime(oElectrode.SignalEvent(j).Index(iBeat))], [SignalYMax, SignalYMin]);
+                     sLineTag = strcat(sprintf('SignalEventLine%d',iChannelIndex),'_',sprintf('%d',j));
+                     set(oLine,'Tag',sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot, ...
                          'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
+                     %Label the line with the event time
                      if oFigure.Annotate
-                         oActivationLabel = text(TimeMax-dWidth*0.5, SlopeYMin + dHeight*0.1, ...
-                             num2str(aTime(oElectrode.Activation(1).Indexes(iBeat)),'% 10.4f'));
-                         set(oActivationLabel,'color','r','FontWeight','bold','FontUnits','points');
-                         set(oActivationLabel,'FontSize',10);
-                         set(oActivationLabel,'parent',oSlopePlot);
+                         oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, ...
+                             num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f'));
+                         set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
+                         set(oEventLabel,'FontSize',10);
+                         set(oEventLabel,'parent',oSignalEventPlot);
                      end
                  end
-                 hold(oSlopePlot,'off');
-                 
              else
                  %The signal is not accepted so plot it as red
                  %without gradient
@@ -594,15 +639,16 @@ classdef AnalyseSignals < SubFigure
              end
              
              %Set some callbacks for this subplot
-             set(oSlopePlot, 'buttondownfcn', @(src, event)  oSlopePlot_Callback(oFigure, src, event));
+             set(oSignalEventPlot, 'buttondownfcn', @(src, event) oSignalEventPlot_Callback(oFigure, src, event));
              %Set the axis on the subplot
              axis(oSignalPlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
              axis(oSubtractedPlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
              axis(oSlopePlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
+             axis(oSignalEventPlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
              
              if oFigure.Annotate
                  %Create a label that shows the channel name
-                 oLabel = text(TimeMin,SlopeYMax - dHeight*0.1,char(oElectrode.Name));
+                 oLabel = text(TimeMin,SignalYMax - dHeight*0.1,char(oElectrode.Name));
                  if iChannelIndex == oFigure.SelectedChannel;
                      set(oLabel,'color','b','FontWeight','bold','FontUnits','points');
                      set(oLabel,'FontSize',10);%0.2
@@ -610,7 +656,7 @@ classdef AnalyseSignals < SubFigure
                      set(oLabel,'FontUnits','points');
                      set(oLabel,'FontSize',10);%0.15
                  end
-                 set(oLabel,'parent',oSlopePlot);
+                 set(oLabel,'parent',oSignalEventPlot);
              end
              
          end

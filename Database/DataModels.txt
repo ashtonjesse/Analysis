@@ -20,8 +20,10 @@ Electrodes(i).Name
 Electrodes(i).Status
 Electrodes(i).Potential.Data
 Electrodes(i).Coords
-Electrodes(i).Activation(j{Method or Event}).Indexes
-Electrodes(i).Activation(j).Method
+Electrodes(i).SignalEvent(j).Index
+Electrodes(i).SignalEvent(j).Range
+Electrodes(i).SignalEvent(j).Method
+Electrodes(i).SignalEvent(j).Label.Colour
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.EnvelopeSubtracted
 Electrodes(i).Processed.Envelope
