@@ -727,16 +727,16 @@ classdef Unemap < BasePotential
             %electrodes and the activation times for each.
             
             %Get the electrode processed data 
-            aActivationIndexes = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Activation','Indexes');
+            aActivationIndexes = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'SignalEvent','Index');
             aActivationTimes = zeros(size(aActivationIndexes,1),size(aActivationIndexes,2));
             %Make the activation indexes absolute, normalise them and
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            dVals = [1];
-            for k = 1:length(dVals);%size(oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-                i = dVals(k);
-                aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
+            %dVals = [1];
+            for i = 1:size(oUnemap.Electrodes(1).SignalEvent.Range,1);
+                %i = dVals(k);
+                aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).SignalEvent.Range(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));
                 aAcceptedTimes = oUnemap.TimeSeries(aAcceptedActivations);
@@ -771,14 +771,14 @@ classdef Unemap < BasePotential
             oMapData = struct();
             oMapData.x = oActivationData.x;
             oMapData.y = oActivationData.y;
-            oMapData.PreStim.z =  mean(oActivationData.z(:,1:18),2);
-            oMapData.Stim.z =  mean(oActivationData.z(:,19:31),2);
-            oMapData.PostStim.z =  mean(oActivationData.z(:,32:end),2);
+            oMapData.PreStim.z =  mean(oActivationData.z(:,8:12),2);
+            oMapData.Stim.z =  mean(oActivationData.z(:,20:24),2);
+            oMapData.PostStim.z =  mean(oActivationData.z(:,46:50),2);
         end
         
         function CreateNewEvent(oUnemap, iElectrodeNumber, varargin)
             %Create a new event from the provided details
-            if size(varargin,2) > 3
+            if size(varargin,2) >= 3
                 iEvent = length(oUnemap.Electrodes(iElectrodeNumber).SignalEvent) + 1;
                 %Specify the processed beat indexes as the default range
                 oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Range = oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes;
@@ -793,6 +793,15 @@ classdef Unemap < BasePotential
                     oUnemap.MarkEvent(iElectrodeNumber, iEvent);
                 end
             end
+        end
+        
+        function DeleteEvent(oUnemap, iEvent, iElectrodes)
+            %Delete the specified event
+            for i = 1:length(iElectrodes)
+                aEvents = oUnemap.Electrodes(i).SignalEvent;
+                
+            end
+            
         end
         %% Functions for reconstructing entity
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)

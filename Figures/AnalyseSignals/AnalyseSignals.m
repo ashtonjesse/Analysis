@@ -3,12 +3,11 @@ classdef AnalyseSignals < SubFigure
     %   Detailed explanation goes here
     
     properties
-        oSlideControl;
-        oMapElectrodesFigure;
-        oEditControl;
         CurrentZoomLimits = [];
+        SelectedChannels;
         SelectedChannel = 2;
         PreviousChannel = 1;
+        SelectedBeat = 1;
         SubPlotXdim;
         SubPlotYdim;
         NumberofChannels;
@@ -19,21 +18,24 @@ classdef AnalyseSignals < SubFigure
     end
         
     events
-        BeatSelected;
+        SlideSelectionChange;
+        ChannelSelected;
+        FigureDeleted;
     end
     
     methods
         function oFigure = AnalyseSignals(oParent)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'AnalyseSignals',@AnalyseSignals_OpeningFcn);
-            oFigure.oSlideControl = SlideControl(oFigure,'Select Beat');
+            oSlideControl = SlideControl(oFigure,'Select Beat');
             %Set up slider
             iNumBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-            set(oFigure.oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+            set(oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumBeats, 'Value', 1,'SliderStep',[1/iNumBeats  0.02]);
-            set(oFigure.oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
-            set(oFigure.oSlideControl.oGuiHandle.oSliderTxtRight,'string',iNumBeats);
-            set(oFigure.oSlideControl.oGuiHandle.oSliderEdit,'string',1);
+            set(oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
+            set(oSlideControl.oGuiHandle.oSliderTxtRight,'string',iNumBeats);
+            set(oSlideControl.oGuiHandle.oSliderEdit,'string',1);
+            addlistener(oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             
             %Get constants
             oFigure.SubPlotXdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.xDim;
@@ -66,11 +68,16 @@ classdef AnalyseSignals < SubFigure
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
-            oFigure.oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
+            oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
             %Add a listener so that the figure knows when a user has
             %made a channel selection
-            addlistener(oFigure.oMapElectrodesFigure,'ChannelSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
-            addlistener(oFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
+            addlistener(oMapElectrodesFigure,'ChannelSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
+            %Set default selection
+            oFigure.SelectedChannels = 1:(oFigure.SubPlotXdim*oFigure.SubPlotYdim);
+            
+            %Open a beat plot
+            oBeatPlotFigure = BeatPlot(oFigure);
+            addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
             
             %set zoom callback
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
@@ -107,6 +114,7 @@ classdef AnalyseSignals < SubFigure
      methods (Access = protected)
          %% Protected methods inherited from superclass
         function deleteme(oFigure)
+            notify(oFigure,'FigureDeleted');
             deleteme@BaseFigure(oFigure);
         end
         
@@ -119,8 +127,6 @@ classdef AnalyseSignals < SubFigure
      methods (Access = public)
          %% Ui control callbacks
         function oFigure = Close_fcn(oFigure, src, event)
-            deletefigure(oFigure.oMapElectrodesFigure);
-            deletefigure(oFigure.oSlideControl);
             deleteme(oFigure);
         end
         
@@ -169,6 +175,7 @@ classdef AnalyseSignals < SubFigure
                 oFigure.Dragging = 0;
                 %The tag of the current axes is the channel number
                 iChannelNumber = oFigure.SelectedChannel;
+                notify('ChannelSelected',DataPassingEvent([],iChannelNumber));
                 %Get the handle to these axes from the panel children
                 oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
                 oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('SignalEventPlot%d',iChannelNumber));
@@ -181,7 +188,7 @@ classdef AnalyseSignals < SubFigure
                 %index
                 dXdata = get(oLine, 'XData');
                 %Update the signal event for this electrode and beat number
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.oSlideControl.GetSliderIntegerValue('oSlider'), dXdata(1));
+                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1));
                 %Refresh the plot
                 oFigure.Replot(iChannelNumber);
             end
@@ -199,6 +206,7 @@ classdef AnalyseSignals < SubFigure
         function oSignalEventPlot_Callback(oFigure, src, event)
             oFigure.PreviousChannel = oFigure.SelectedChannel;
             oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(src,'tag'));
+            notify(oFigure,'ChannelSelected',DataPassingEvent([],oFigure.SelectedChannel));
             oFigure.Replot(oFigure.SelectedChannel);
         end
         
@@ -208,9 +216,8 @@ classdef AnalyseSignals < SubFigure
             iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,xDim);
             %Notify listeners so that the selected beat can be propagated
             %and update the Slide Control
-            set(oFigure.oSlideControl.oGuiHandle.oSlider,'Value',iBeatIndexes{1,1});
-            set(oFigure.oSlideControl.oGuiHandle.oSliderEdit,'String',iBeatIndexes{1,1});
-            notify(oFigure,'BeatSelected');
+            oFigure.SelectedBeat = iBeatIndexes{1,1};
+            notify(oFigure,'SlideSelectionChange',DataPassingEvent([],iBeatIndexes{1,1}));
             oFigure.Replot();
         end
         
@@ -228,34 +235,40 @@ classdef AnalyseSignals < SubFigure
         
         function oRejectAllChannels_Callback(oFigure,src,event)
             %Reject all selected channels
-            for i = 1:length(oFigure.oMapElectrodesFigure.SelectedChannels)
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(oFigure.oMapElectrodesFigure.SelectedChannels(i));
+            for i = 1:length(oFigure.SelectedChannels)
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(oFigure.SelectedChannels(i));
             end
             oFigure.Replot();
         end
                 
         function oAcceptAllChannels_Callback(oFigure,src,event)
             %Reject all selected channels
-            for i = 1:length(oFigure.oMapElectrodesFigure.SelectedChannels)
-                oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.oMapElectrodesFigure.SelectedChannels(i));
+            for i = 1:length(oFigure.SelectedChannels)
+                oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.SelectedChannels(i));
             end
             oFigure.Replot();
         end
-        
+        %% Event listeners
         function ChannelSelectionChange(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new set of channels and hits
             %the update selection menu option in MapElectrodes.fig
             %Draw plots
+            oFigure.SelectedChannels = event.ArrayData;
             oFigure.CreateSubPlot();
             %Fill plots
             oFigure.Replot();
+        end
+        
+        function SignalEventRangeListener(oFigure,src, event);
+            
         end
         
         function SlideValueListener(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new beat using the
             %SlideControl
+            oFigure.SelectedBeat = event.Value;
             oFigure.Replot();
         end
         
@@ -277,14 +290,14 @@ classdef AnalyseSignals < SubFigure
             %Get the values from the mixedcontrol
             switch (char(event.Values{4}))
                 case 'AllBeats'
-                    for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
-                        iChannel = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                    for i = 1:size(oFigure.SelectedChannels,2);
+                        iChannel = oFigure.SelectedChannels(i);
                         oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}));
                     end
                 case 'SingleBeat'
-                    iBeat = oFigure.oSlideControl.GetSliderIntegerValue('oSlider');
-                    for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
-                        iChannel = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                    iBeat = oFigure.SelectedBeat;
+                    for i = 1:size(oFigure.SelectedChannels,2);
+                        iChannel = oFigure.SelectedChannels(i);
                         oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), iBeat);
                     end                   
             end
@@ -347,12 +360,12 @@ classdef AnalyseSignals < SubFigure
         
         % --------------------------------------------------------------------
         function oMaxSpatialMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.SelectedBeat);
             oFigure.Replot();
         end
         
         function oReMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('MaxSignalMagnitude',oFigure.oSlideControl.GetSliderIntegerValue('oSlider'));
+            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('MaxSignalMagnitude',oFigure.SelectedBeat);
             oFigure.Replot();
         end
         
@@ -439,8 +452,8 @@ classdef AnalyseSignals < SubFigure
                  delete(aPlotObjects(i));
              end
              %Find the bounds of the selected area
-             iMinChannel = min(oFigure.oMapElectrodesFigure.SelectedChannels);
-             iMaxChannel = max(oFigure.oMapElectrodesFigure.SelectedChannels);
+             iMinChannel = min(oFigure.SelectedChannels);
+             iMaxChannel = max(oFigure.SelectedChannels);
              %Convert into row and col indices
              [iMinRow iMinCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMinChannel);
              [iMaxRow iMaxCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMaxChannel);
@@ -449,8 +462,8 @@ classdef AnalyseSignals < SubFigure
              yDiv = 1/(iMaxCol-iMinCol+1);
                          
              %Loop through the selected channels
-             for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
-                 [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(oFigure.oMapElectrodesFigure.SelectedChannels(i));
+             for i = 1:size(oFigure.SelectedChannels,2);
+                 [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(oFigure.SelectedChannels(i));
                  %Normalise the row and columns to the minimum.
                  iRow = iRow - iMinRow;
                  iCol = iCol - iMinCol;
@@ -459,19 +472,19 @@ classdef AnalyseSignals < SubFigure
                  %Create a subplot in the position specified for Signal
                  %data
                  oSignalPlot = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals, 'Tag', ...
-                     sprintf('Signal%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
+                     sprintf('Signal%d',oFigure.SelectedChannels(i)));
                   %Create axes for envelope data
                  oEnvelopePlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
-                     'Tag', sprintf('Envelope%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
+                     'Tag', sprintf('Envelope%d',oFigure.SelectedChannels(i)));
                  %Create axes for envelopesubtracted data
                  oEnvelopeSubtractedPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
-                     'Tag', sprintf('Subtracted%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
+                     'Tag', sprintf('Subtracted%d',oFigure.SelectedChannels(i)));
                  %Create axes for slope data
                  oSlopePlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
-                     'Tag', sprintf('Slope%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
+                     'Tag', sprintf('Slope%d',oFigure.SelectedChannels(i)));
                  %Create axes for event lines
                  oSignalEventPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
-                     'Tag', sprintf('SignalEventPlot%d',oFigure.oMapElectrodesFigure.SelectedChannels(i)));
+                     'Tag', sprintf('SignalEventPlot%d',oFigure.SelectedChannels(i)));
              end
          end
          
@@ -482,9 +495,9 @@ classdef AnalyseSignals < SubFigure
              %pnSignals panel
              aSubPlots = get(oFigure.oGuiHandle.pnSignals,'children');
              %Get the current property values
-             iBeat = oFigure.oSlideControl.GetSliderIntegerValue('oSlider');
+             iBeat = oFigure.SelectedBeat;
              %Find the max and min Y axis values for this selection
-             aSelectedElectrodes = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.oMapElectrodesFigure.SelectedChannels);
+             aSelectedElectrodes = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels);
              %Find the accepted channels within this subset
              [rowIndexes, colIndexes, vector] = find(cell2mat({aSelectedElectrodes(:).Accepted}));
              %Select the accepted channels if there are any
@@ -522,8 +535,8 @@ classdef AnalyseSignals < SubFigure
              %Check if an electrode number was supplied
              if isempty(varargin)
                  %If not, plot all electrodes for this beat
-                 for i = 1:size(oFigure.oMapElectrodesFigure.SelectedChannels,2);
-                     iChannelIndex = oFigure.oMapElectrodesFigure.SelectedChannels(i);
+                 for i = 1:size(oFigure.SelectedChannels,2);
+                     iChannelIndex = oFigure.SelectedChannels(i);
                      oFigure.PlotElectrode(aSubPlots,iChannelIndex,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeLimits);
                  end
              elseif nargin == 2
@@ -531,7 +544,7 @@ classdef AnalyseSignals < SubFigure
                  %selected electrode
                  iChannelIndex = varargin{1}{1}(1);
                  oFigure.PlotElectrode(aSubPlots,iChannelIndex,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeLimits);
-                 if max(ismember(oFigure.oMapElectrodesFigure.SelectedChannels,oFigure.PreviousChannel))
+                 if max(ismember(oFigure.SelectedChannels,oFigure.PreviousChannel))
                      oFigure.PlotElectrode(aSubPlots,oFigure.PreviousChannel,iBeat,SignalYMax,SignalYMin,SlopeYMax,SlopeYMin,aEnvelope,aEnvelopeLimits);
                  end
              end
@@ -667,7 +680,7 @@ classdef AnalyseSignals < SubFigure
              %the bottom
              
              %Get the current property values
-             iBeat = oFigure.oSlideControl.GetSliderIntegerValue('oSlider');
+             iBeat = oFigure.SelectedBeat;
              iChannel = oFigure.SelectedChannel;
              oAxes = oFigure.oGuiHandle.oElectrodeAxes;
              aProcessedData = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data;

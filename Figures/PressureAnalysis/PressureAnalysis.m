@@ -24,6 +24,7 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oExportMenu, 'callback', @(src, event) oExportMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTimeAlignMenu, 'callback', @(src, event) oTimeAlignMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oHeartRateMenu, 'callback', @(src, event) oHeartRateMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oIntegralMenu, 'callback', @(src, event) oIntegralMenu_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -131,6 +132,40 @@ classdef PressureAnalysis < SubFigure
             oFigure.PlotRefSignal(oFigure.aPlots(2));
         end
         
+        function oIntegralMenu_Callback(oFigure, src, event)
+            % Calculate a bin integral for the phrenic signal
+            aPhrenic = oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status);
+            aIntegral = zeros(length(aPhrenic),1);
+            dIntegrand = 0;
+            iBinSize = 100;
+            iBinCount = 1;
+            for i = 1:length(aIntegral)
+                if (iBinCount * iBinSize) == i
+                    iStart = (iBinSize * (iBinCount-1) + 1);
+                    iEnd = iStart + iBinSize;
+                    dSum = sum(abs(aPhrenic(iStart:iEnd)));
+                    dIntegrand = dSum / iBinSize;
+                    iBinCount = iBinCount + 1;
+                end
+                aIntegral(i) = dIntegrand;
+            end
+            %Make sure the current figure is PressureAnalysis
+            set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+            
+            %Plot the data
+            oFigure.CreateSubPlot(3);
+            oFigure.PlotPressure(oFigure.aPlots(1));
+            %oFigure.PlotRefSignal(oFigure.aPlots(2));
+            oFigure.PlotVRMS(oFigure.aPlots(2));
+            plot(oFigure.aPlots(3),oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),aIntegral,'k');
+            set(oFigure.aPlots(3),'XTick',[]);
+            set(oFigure.aPlots(3),'YTick',[]);
+            ylabel(oFigure.aPlots(3),'Phrenic Integral');
+            ymax = max(aIntegral);
+            ymin = min(aIntegral);
+            ylim(oFigure.aPlots(3),[ymin-abs(ymin/25) ymax+ymax/25]);
+        end
+        
         function oTimeAlignMenu_Callback(oFigure, src, event)
             %Bring up a dialog box that allows user to enter points to time
             %align
@@ -230,7 +265,7 @@ classdef PressureAnalysis < SubFigure
             ylabel(oAxesHandle,'Pressure (mmHg)');
             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
-            ylim(oAxesHandle,[ymin-abs(ymin/10) ymax+ymax/10]);
+            ylim(oAxesHandle,[ymin-abs(ymin/25) ymax+ymax/25]);
         end
         
         function PlotRefSignal(oFigure,oAxesHandle)
@@ -239,6 +274,7 @@ classdef PressureAnalysis < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),'k');
 %             axis(oAxesHandle,'tight');
             set(oAxesHandle,'XTick',[]);
+            set(oAxesHandle,'YTick',[]);
             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
@@ -256,6 +292,15 @@ classdef PressureAnalysis < SubFigure
             ymin = min(oElectrode.Processed.Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
             ylabel(oAxesHandle,'Electrogram at x');
+            
+%             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
+%                 oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),'k');
+%             set(oAxesHandle,'XTick',[]);
+%             set(oAxesHandle,'YTick',[]);
+%             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+%             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+%             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
+%             ylabel(oAxesHandle,'Phrenic Nerve Signal');
         end
         
         function TimeAlign(oFigure, src, event)

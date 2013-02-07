@@ -9,6 +9,7 @@ classdef Pressure < BaseSignal
         TimeSeries;
         RefSignal;
         Processed;
+        Phrenic;
         Status = 'Original';
     end
     
@@ -41,6 +42,7 @@ classdef Pressure < BaseSignal
             %Truncate the original  data
             oPressure.(oPressure.Status).Data = oPressure.(oPressure.Status).Data(bIndexesToKeep);
             oPressure.RefSignal.(oPressure.Status) = oPressure.RefSignal.(oPressure.Status)(bIndexesToKeep);
+            oPressure.Phrenic.(oPressure.Status) = oPressure.Phrenic.(oPressure.Status)(bIndexesToKeep);
         end
         
         function ResampleOriginalData(oPressure, dNewFrequency)
@@ -48,6 +50,8 @@ classdef Pressure < BaseSignal
              oPressure.Processed.Data = resample(oPressure.Original.Data, dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
             oPressure.RefSignal.Processed = resample(oPressure.RefSignal.Original, dNewFrequency, ...
+                oPressure.oExperiment.PerfusionPressure.SamplingRate);
+            oPressure.Phrenic.Processed = resample(oPressure.Phrenic.Original, dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
             oPressure.TimeSeries.Processed = [1:1:size(oPressure.Processed.Data,1)] * (1/dNewFrequency);
             oPressure.Status = 'Processed';
@@ -65,6 +69,7 @@ classdef Pressure < BaseSignal
             oPressure.TimeSeries = oData.oEntity.TimeSeries;
             oPressure.Processed = oData.oEntity.Processed;
             oPressure.RefSignal = oData.oEntity.RefSignal;
+            oPressure.Phrenic = oData.oEntity.Phrenic;
             oPressure.Status =  oData.oEntity.Status;
         end
         
@@ -92,6 +97,7 @@ classdef Pressure < BaseSignal
             oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
             oPressure.TimeSeries.Original = aFileContents(:,1);
             oPressure.RefSignal.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
+            oPressure.Phrenic.Original = aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn);
         end       
         
     end

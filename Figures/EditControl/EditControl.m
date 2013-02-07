@@ -15,6 +15,8 @@ classdef EditControl < SubFigure
             
             %This figure can be closed by the user
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            %Add one so the figure knows when it's parent has been deleted
+            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
             
             % --- Executes just before the figure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
@@ -46,11 +48,6 @@ classdef EditControl < SubFigure
     end
     
     methods (Access = public)
-        function deletefigure(oFigure)
-            %A function that can be called by other figures to delete this
-            %one.
-             deleteme(oFigure);
-        end
         function oFigure = Close_fcn(oFigure, src, event)
             deleteme(oFigure);
         end
@@ -64,7 +61,7 @@ classdef EditControl < SubFigure
     end
     
     methods (Access = private)
-        %% Private UI control callbacks
+        %% Private functions
         function btnDone_Callback(oFigure, src, event)
             %Get the edit handles
             oChildren = get(oFigure.oGuiHandle.oPanel,'children');
@@ -78,6 +75,9 @@ classdef EditControl < SubFigure
             %Notify listeners and pass the selected value
             notify(oFigure,'ValuesEntered',EditValuesEnteredEvent(aValues));
         end
+        
+        function ParentFigureDeleted(oFigure,src, event)
+             deleteme(oFigure);
+         end
     end
-    
 end

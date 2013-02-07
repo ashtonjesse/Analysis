@@ -95,15 +95,15 @@ classdef AxesControl < SubFigure
                 case '2DScatter'
                     scatter(oFigure.oGuiHandle.oAxes, oFigure.PlotData.x, oFigure.PlotData.y, 100, oFigure.PlotData.z, 'filled');
                     set(oFigure.oGuiHandle.oAxes,'XLim', oFigure.PlotData.XLim,'YLim', oFigure.PlotData.YLim);
-                    colormap(oFigure.oGuiHandle.oAxes, colormap(flipud(colormap(jet))));
+                    colormap(oFigure.oGuiHandle.oAxes, colormap(jet));%colormap(flipud(colormap(jet)))
 %                     colorbar('peer',oFigure.oGuiHandle.oAxes);
 %                     colorbar('location','EastOutside');
-                    set(oFigure.oGuiHandle.oAxes,'CLim',[floor(oFigure.PlotData.MinCLim) ceil(oFigure.PlotData.MaxCLim)]);
+                    set(oFigure.oGuiHandle.oAxes,'CLim',[oFigure.PlotData.MinCLim oFigure.PlotData.MaxCLim]);
                     set(oFigure.oGuiHandle.oAxes,'XTick',[],'YTick',[]);
                     title(oFigure.oGuiHandle.oAxes,oFigure.PlotName);
-                    iSplit = (abs(floor(oFigure.PlotData.MinCLim))+abs(ceil(oFigure.PlotData.MaxCLim)))/16;
-                    iSplit = str2num(sprintf('%3.2f',iSplit));
-                    oHandle = cbarf(oFigure.PlotData.z,floor(oFigure.PlotData.MinCLim):iSplit:ceil(oFigure.PlotData.MaxCLim));
+                    %iSplit = (abs(floor(oFigure.PlotData.MinCLim))+abs(ceil(oFigure.PlotData.MaxCLim)))/7;
+                    %iSplit = str2num(sprintf('%3.2f',iSplit));
+                    oHandle = cbarf(oFigure.PlotData.z,oFigure.PlotData.MinCLim:0.25:oFigure.PlotData.MaxCLim);
                     oTitle = get(oHandle, 'title');
                     set(oTitle,'units','pixels');
                     set(oTitle,'string','Time (ms)','position',[15 720]);
@@ -133,7 +133,8 @@ classdef AxesControl < SubFigure
                      ylin = linspace(min(oFigure.PlotData.y(~isnan(oFigure.PlotData.z))), ...
                          max(oFigure.PlotData.y(~isnan(oFigure.PlotData.z))),length(oFigure.PlotData.y(~isnan(oFigure.PlotData.z))));
                      [X, Y] = meshgrid(xlin, ylin);
-                     %Z = gridfit(oFigure.Activation.x, oFigure.Activation.y,oFigure.Activation.z(:,iBeat),X,Y,'cubic');
+                     %Z = gridfit(oFigure.Activation.x,
+                     %oFigure.Activation.y,oFigure.Activation.z(:,iBeat),X,Y,'cubic');
                      Z = gridfit(oFigure.PlotData.x, oFigure.PlotData.y,oFigure.PlotData.z,xlin,ylin,'extend','never');
                      iSplit = abs(oFigure.PlotData.MaxCLim - oFigure.PlotData.MinCLim)/20;
                      iSplit = str2num(sprintf('%3.1f',iSplit));

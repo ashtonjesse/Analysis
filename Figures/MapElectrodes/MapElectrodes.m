@@ -34,11 +34,16 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveActivationMenu, 'callback', @(src, event) oSaveActivationMenu_Callback(oFigure, src, event));
             
+            %Sets the figure close function. This lets the class know that
+            %the figure wants to close and thus the class should cleanup in
+            %memory as well
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Add a listener so that the figure knows when a user has
             %made a beat selection
-            addlistener(oFigure.oParentFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
-            addlistener(oFigure.oParentFigure,'BeatSelected',@(src,event) oFigure.BeatSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'SlideSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
+            %Add one so the figure knows when it's parent has been deleted
+            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
             
             %Set constants and plot 
             oFigure.PlotPosition = get(oFigure.oGuiHandle.oMapAxes,'Position');
@@ -48,6 +53,7 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotElectrodes();
             %Set default selection
             oFigure.SelectedChannels = 1:(Xdim*Ydim);
+
             % --- Executes just before BaselineCorrection is made visible.
             function MapElectrodes_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -80,9 +86,10 @@ classdef MapElectrodes < SubFigure
      end
     
      methods (Access = public)
-         function deletefigure(oFigure)
+         function oFigure = Close_fcn(oFigure, src, event)
              deleteme(oFigure);
          end
+         
          %% Menu Callbacks
         % -----------------------------------------------------------------
         function oFileMenu_Callback(oFigure, src, event)
@@ -158,7 +165,7 @@ classdef MapElectrodes < SubFigure
             if ~isempty(colIndices)
                 oFigure.SelectedChannels = colIndices;
                 %Notify listeners
-                notify(oFigure,'ChannelSelection');
+                notify(oFigure,'ChannelSelection',DataPassingEvent(colIndices,[]));
             else
                 error('MapElectrodes.oUpdateMenu_Callback:NoSelectedChannels', 'You need to select at least 1 channel');
             end
@@ -190,12 +197,12 @@ classdef MapElectrodes < SubFigure
             oPlotData.MaxCLim = ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
             %2D
             %The prestim
-            oPlotData.z = oAverageData.Stim.z - oAverageData.PostStim.z;
+            oPlotData.z = oAverageData.Stim.z;
             oPlotData.MaxCLim = max(oPlotData.z);
             oPlotData.MinCLim = min(oPlotData.z);
             oPlotData.XLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
             oPlotData.YLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
-            AxesControl(oFigure,'2DScatter','2DDuringMinusPostStim',oPlotData);
+            AxesControl(oFigure,'2DScatter','2DDuringStim',oPlotData);
 %             %During stim singleton
 %             oPlotData.z = oAverageData.Stim.z;
 %             AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
@@ -320,6 +327,10 @@ classdef MapElectrodes < SubFigure
      end
      
      methods (Access = private)
+         function ParentFigureDeleted(oFigure,src, event)
+             deleteme(oFigure);
+         end
+         
          function PlotElectrodes(oFigure)
              %Plots the electrode locations on the map axes
              
