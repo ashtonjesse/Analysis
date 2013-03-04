@@ -67,7 +67,7 @@ classdef MixedControl < SubFigure
             aValues{2} = oFigure.GetPopUpSelectionString('ppMidLeft');
             aValues{3} = oFigure.GetPopUpSelectionString('ppMidRight');
             aValues{4} = oFigure.GetPopUpSelectionString('ppRight');
-            
+            aValues{5} = get(oFigure.oGuiHandle.edt1,'string');
             %Notify listeners and pass the selected value
             notify(oFigure,'ValuesEntered',EditValuesEnteredEvent(aValues));
         end

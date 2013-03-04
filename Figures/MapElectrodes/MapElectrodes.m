@@ -117,13 +117,6 @@ classdef MapElectrodes < SubFigure
             
             %Get the full file name and save it to string attribute
             sLongDataFileName=strcat(sPathName,sFilename);
-            %Loop through the beats and save the axes image
-            iNumBeats =  get(oFigure.oParentFigure.oSlideControl.oGuiHandle.oSlider,'max');
-            %for i = 1:iNumBeats;
-            
-            %Get the full file name
-%             sFileName = strcat(oFigure.PlotType,sprintf('MapBeat%d',i));
-%             sLongFileName=strcat(sPathName,'\',sFileName);
             oFigure.PrintFigureToFile(sLongDataFileName);
             %end
         end
@@ -408,7 +401,7 @@ classdef MapElectrodes < SubFigure
              %Make sure the current figure is MapElectrodes
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              %Get the beat number from the slide control
-             iBeat = oFigure.oParentFigure.oSlideControl.GetSliderIntegerValue('oSlider');
+             iBeat = oFigure.oParentFigure.SelectedBeat;
              %Which plot type to use
              switch (oFigure.PlotType)
                  case '2DContour'

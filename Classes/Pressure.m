@@ -11,6 +11,7 @@ classdef Pressure < BaseSignal
         Processed;
         Phrenic;
         Status = 'Original';
+        oUnemap;
     end
     
     methods
@@ -71,6 +72,7 @@ classdef Pressure < BaseSignal
             oPressure.RefSignal = oData.oEntity.RefSignal;
             oPressure.Phrenic = oData.oEntity.Phrenic;
             oPressure.Status =  oData.oEntity.Status;
+            oPressure.oUnemap = Unemap(oData.oEntity.oUnemap);
         end
         
         function [oPressure] = GetPressureFromTXTFile(oPressure,sFile)
@@ -97,6 +99,7 @@ classdef Pressure < BaseSignal
             oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
             oPressure.TimeSeries.Original = aFileContents(:,1);
             oPressure.RefSignal.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
+            oPressure.RefSignal.Name = oPressure.oExperiment.PerfusionPressure.RefSignalName;
             oPressure.Phrenic.Original = aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn);
         end       
         

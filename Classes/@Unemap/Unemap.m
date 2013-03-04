@@ -15,9 +15,18 @@ classdef Unemap < BasePotential
     end
     
     methods
-        function oUnemap = Unemap()
+        function oUnemap = Unemap(varargin)
             %% Constructor
             oUnemap = oUnemap@BasePotential();
+            if nargin == 1
+                if isstruct(varargin{1}) || isa(varargin{1},'Unemap')
+                    oUnemapStruct = varargin{1};
+                    oUnemap.TimeSeries = oUnemapStruct.TimeSeries;
+                    oUnemap.oExperiment = Experiment(oUnemapStruct.oExperiment);
+                    oUnemap.Electrodes = oUnemapStruct.Electrodes;
+                    oUnemap.RMS = oUnemapStruct.RMS;
+                end
+            end
         end
     end
     
@@ -733,9 +742,9 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            %dVals = [1];
-            for i = 1:size(oUnemap.Electrodes(1).SignalEvent.Range,1);
-                %i = dVals(k);
+            dVals = [1,70, 120];
+            for k = 1:length(dVals)%size(oUnemap.Electrodes(1).SignalEvent.Index,1);
+                i = dVals(k);
                 aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).SignalEvent.Range(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));
@@ -779,16 +788,38 @@ classdef Unemap < BasePotential
         function CreateNewEvent(oUnemap, iElectrodeNumber, varargin)
             %Create a new event from the provided details
             if size(varargin,2) >= 3
-                iEvent = length(oUnemap.Electrodes(iElectrodeNumber).SignalEvent) + 1;
+                if ~isfield(oUnemap.Electrodes(iElectrodeNumber), 'SignalEvent')
+                    %Initialise the SignalEvent field
+                    oUnemap.Electrodes(iElectrodeNumber).SignalEvent = [];
+                    iEvent = 1;
+                elseif isfield(oUnemap.Electrodes(iElectrodeNumber).SignalEvent,'ID')
+                    %Check the event ID 
+                    aEventIDs = {oUnemap.Electrodes(iElectrodeNumber).SignalEvent(:).ID};
+                    [sLeftover iIndex iIsPresent] = setxor(aEventIDs, char(varargin{4}));
+                    if isempty(sLeftover)
+                        %There is only one event and it is the current one
+                        iEvent = 1;
+                    elseif isempty(iIsPresent)
+                        %This event is not present in the EventID array
+                        iEvent = length(oUnemap.Electrodes(iElectrodeNumber).SignalEvent) + 1;
+                    else
+                        %This event has already been created for this
+                        %electrode
+                        iEvent = iIndex;
+                    end
+                else
+                    iEvent = 1;
+                end
                 %Specify the processed beat indexes as the default range
                 oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Range = oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes;
                 oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Label.Colour = char(varargin{1});
                 oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Type = char(varargin{2});
                 oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Method = char(varargin{3});
-                if size(varargin,2) == 4
+                oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).ID = char(varargin{4});
+                if size(varargin,2) == 5
                     %A beat number has been specified so mark event just
                     %for this beat (otherwise all beats)
-                    oUnemap.MarkEvent(iElectrodeNumber, iEvent,[varargin{4}]);
+                    oUnemap.MarkEvent(iElectrodeNumber, iEvent,[varargin{5}]);
                 else
                     oUnemap.MarkEvent(iElectrodeNumber, iEvent);
                 end
@@ -860,9 +891,28 @@ classdef Unemap < BasePotential
             end
             % Get the electrodes 
             oUnemap.Electrodes = oUnemap.oDAL.GetElectrodesFromConfigFile(...
-                oUnemap.oExperiment.Unemap.NumberOfChannels, char(aFileFull(1)));
+                oUnemap.oExperiment.Unemap.NumberOfChannels, char(aFileFull(1)),0);
             % Get the electrode data
             oUnemap.oDAL.GetDataFromSignalFile(oUnemap,sFile);
+        end
+        
+        function oUnemap = GetSpecificElectrodeFromTXTFile(oUnemap, iElectrodeNumber, sFile, oExperiment)
+            %   Get an entity by loading data from a txt file - only done the
+            %   first time you are creating a Unemap entity
+            
+            %   Get the path
+            [sPath] = fileparts(sFile);
+            
+            %   Look for an array config file in the same directory that will
+            %   contain the electrode names/positions
+            aFileFull = fGetFileNamesOnly(sPath,'*.cnfg');
+            %Set the experiment
+            oUnemap.oExperiment = oExperiment;
+            % Get the electrodes
+            oUnemap.Electrodes = oUnemap.oDAL.GetElectrodesFromConfigFile(...
+                0, char(aFileFull(1)),iElectrodeNumber);
+            % Get the electrode data
+            oUnemap.oDAL.GetElectrodeFromSignalFile(oUnemap,iElectrodeNumber,sFile);
         end
     end
     

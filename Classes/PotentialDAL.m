@@ -29,10 +29,13 @@ classdef PotentialDAL < BaseDAL
     end
     
     methods (Access = public)
-        function oElectrodes = GetElectrodesFromConfigFile(oPotentialDAL,iNumberOfElectrodes,sFile)
+        function oElectrodes = GetElectrodesFromConfigFile(oPotentialDAL,iNumberOfElectrodes,sFile,iSpecificElectrode)
             %Parses the file specified by sFile and populates an oElectrodes
             %struct.
-            
+            %If you want a number of electrodes then specify
+            %iNumberOfElectrodes > 0 and iSpecificElectrode = 0
+            %If you want just a specific electrode then specify
+            %iSpecificElectrode > 0
             %Intitialise the struct
             oElectrodes = struct('Name', zeros(iNumberOfElectrodes,1));
             iElectrodeCount = 0;
@@ -53,38 +56,58 @@ classdef PotentialDAL < BaseDAL
                     case 'electrode'
                         %Increment the electrode count
                         iElectrodeCount = iElectrodeCount + 1;
-                        %Check to see if the electrode count has reached
-                        %the maximum
-                        if iElectrodeCount > iNumberOfElectrodes 
-                            break
+                        if iSpecificElectrode > 0
+                            %Check to see if the electrode count has reached
+                            %the specific electrode
+                            if iElectrodeCount == iSpecificElectrode
+                                %Initialise the electrode struct
+                                oElectrodes.Name = oValue;
+                                oElectrodes.Accepted = 1;
+                                oElectrodes.Activation = [];
+                                oElectrodes.Potential = [];
+                                oElectrodes.Processed = [];
+                                oElectrodes.Status = 'Potential';
+                                break
+                            end
+                        else
+                            %Check to see if the electrode count has reached
+                            %the maximum
+                            if iElectrodeCount > iNumberOfElectrodes
+                                break
+                            end
+                            %Initialise the electrode struct
+                            oElectrodes(iElectrodeCount).Name = oValue;
+                            oElectrodes(iElectrodeCount).Accepted = 1;
+                            oElectrodes(iElectrodeCount).Activation = [];
+                            oElectrodes(iElectrodeCount).Potential = [];
+                            oElectrodes(iElectrodeCount).Processed = [];
+                            oElectrodes(iElectrodeCount).Status = 'Potential';
                         end
-                        %Initialise the electrode struct
-                        
-                        oElectrodes(iElectrodeCount).Name = oValue;
-                        oElectrodes(iElectrodeCount).Accepted = 1; 
-                        oElectrodes(iElectrodeCount).Activation = [];
-                        oElectrodes(iElectrodeCount).Potential = [];
-                        oElectrodes(iElectrodeCount).Processed = [];
-                        oElectrodes(iElectrodeCount).Status = 'Potential';
                     case 'position'
-                         %Split the oValue on the ,
-                         [~,~,~,~,~,~,splitstring] = regexpi(oValue,',');
-                         sXInfo = strtrim(char(splitstring(1,1)));
-                         sYInfo  = strtrim(char(splitstring(1,2)));
-                         %Split the sXInfo on the =
-                         [~,~,~,~,~,~,splitstring] = regexpi(sXInfo,'=');
-                         iXPos = str2double(strtrim(char(splitstring(1,2))));
-                         %Split the sYInfo on the =
-                         [~,~,~,~,~,~,splitstring] = regexpi(sYInfo,'=');
-                         iYPos = str2double(strtrim(char(splitstring(1,2))));
-                         oElectrodes(iElectrodeCount).Coords = [iXPos iYPos];
+                        if iSpecificElectrode == 0
+                            %Split the oValue on the ,
+                            [~,~,~,~,~,~,splitstring] = regexpi(oValue,',');
+                            sXInfo = strtrim(char(splitstring(1,1)));
+                            sYInfo  = strtrim(char(splitstring(1,2)));
+                            %Split the sXInfo on the =
+                            [~,~,~,~,~,~,splitstring] = regexpi(sXInfo,'=');
+                            iXPos = str2double(strtrim(char(splitstring(1,2))));
+                            %Split the sYInfo on the =
+                            [~,~,~,~,~,~,splitstring] = regexpi(sYInfo,'=');
+                            iYPos = str2double(strtrim(char(splitstring(1,2))));
+                            oElectrodes(iElectrodeCount).Coords = [iXPos iYPos];
+                        end
                     case 'channel'
-                        oElectrodes(iElectrodeCount).Channel = str2double(oValue);
+                        if iSpecificElectrode == 0
+                            oElectrodes(iElectrodeCount).Channel = str2double(oValue);
+                        end
                 end
                 tline = fgets(fid);
             end
-            %Trim extra zeros
-            oElectrodes = oElectrodes(1:iElectrodeCount-1);
+            if iSpecificElectrode == 0
+                %Trim extra zeros
+                oElectrodes = oElectrodes(1:iElectrodeCount-1);
+            end
         end
         
         function GetDataFromSignalFile(oPotentialDAL,oUnemap,sFile)
@@ -98,6 +121,19 @@ classdef PotentialDAL < BaseDAL
                 oUnemap.Electrodes(i).Potential.Data = aFileContents(:,i+1);
                 oUnemap.Electrodes(i).Processed.Data = NaN(size(aFileContents,1),1);
             end
+            %Get the Timeseries data
+            oUnemap.TimeSeries = [1:1:size(aFileContents,1)]*(1/oUnemap.oExperiment.Unemap.ADConversion.SamplingRate);
+        end
+        
+        function GetElectrodeFromSignalFile(oPotentialDAL, oUnemap, iElectrodeNumber, sFile)
+            %Get the potential data for a given channel from the input
+            %signal (txt) file.
+            
+             %Load the potential data from the txt file
+            aFileContents = oPotentialDAL.LoadFromFile(sFile);
+            %Get the potential data and initialise processed.data
+            oUnemap.Electrodes.Potential.Data = aFileContents(:,iElectrodeNumber+1);
+            oUnemap.Electrodes.Processed.Data = NaN(size(aFileContents,1),1);
             %Get the Timeseries data
             oUnemap.TimeSeries = [1:1:size(aFileContents,1)]*(1/oUnemap.oExperiment.Unemap.ADConversion.SamplingRate);
         end

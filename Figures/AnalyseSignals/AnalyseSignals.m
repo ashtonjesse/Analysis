@@ -15,12 +15,14 @@ classdef AnalyseSignals < SubFigure
         Dragging;
         Annotate;
         CurrentEventLine;
+        sECGAxesContent = 'ECG';
     end
         
     events
         SlideSelectionChange;
         ChannelSelected;
         FigureDeleted;
+        EventMarkChange;
     end
     
     methods
@@ -60,6 +62,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.bUpdateBeat, 'callback', @(src, event)  bUpdateBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oPlotPressureMenu, 'callback', @(src, event) oPlotPressureMenu_Callback(oFigure, src, event));
             
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
             
@@ -175,7 +178,7 @@ classdef AnalyseSignals < SubFigure
                 oFigure.Dragging = 0;
                 %The tag of the current axes is the channel number
                 iChannelNumber = oFigure.SelectedChannel;
-                notify('ChannelSelected',DataPassingEvent([],iChannelNumber));
+                notify(oFigure,'ChannelSelected',DataPassingEvent([],iChannelNumber));
                 %Get the handle to these axes from the panel children
                 oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
                 oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('SignalEventPlot%d',iChannelNumber));
@@ -189,6 +192,8 @@ classdef AnalyseSignals < SubFigure
                 dXdata = get(oLine, 'XData');
                 %Update the signal event for this electrode and beat number
                 oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1));
+                aPassData = {iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1)};
+                notify(oFigure,'EventMarkChange',DataPassingEvent(aPassData,[]));
                 %Refresh the plot
                 oFigure.Replot(iChannelNumber);
             end
@@ -260,7 +265,7 @@ classdef AnalyseSignals < SubFigure
             oFigure.Replot();
         end
         
-        function SignalEventRangeListener(oFigure,src, event);
+        function SignalEventRangeListener(oFigure,src, event)
             
         end
         
@@ -292,13 +297,13 @@ classdef AnalyseSignals < SubFigure
                 case 'AllBeats'
                     for i = 1:size(oFigure.SelectedChannels,2);
                         iChannel = oFigure.SelectedChannels(i);
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}));
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), char(event.Values{5}));
                     end
                 case 'SingleBeat'
                     iBeat = oFigure.SelectedBeat;
                     for i = 1:size(oFigure.SelectedChannels,2);
                         iChannel = oFigure.SelectedChannels(i);
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), iBeat);
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), char(event.Values{5}), iBeat);
                     end                   
             end
             oFigure.Replot();
@@ -354,7 +359,7 @@ classdef AnalyseSignals < SubFigure
             aControlData{2} = {'Activation','Repolarisation'};
             aControlData{3} = {'SteepestPositiveSlope','SteepestNegativeSlope','CentralDifference','MaxSignalMagnitude'};
             aControlData{4} = {'SingleBeat','AllBeats'};
-            oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique and beat selection details for the new event.',aControlData);
+            oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique, beat selection and string ID details for the new event.',aControlData);
             addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
         end
         
@@ -404,9 +409,13 @@ classdef AnalyseSignals < SubFigure
             aInOptions.KernelBounds = [3 3];
             oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
-     end
-     
-     methods (Access = private)
+                
+        function oPlotPressureMenu_Callback(oFigure, src, event)
+            %Plot pressure on the ECG axes
+            oFigure.sECGAxesContent = 'Pressure';
+            oFigure.PlotPressure();
+        end
+        
          function iEventNumber = GetEventNumberFromTag(oFigure, sTag)
              %Find the event number specified by the input handle tag 
              [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
@@ -419,7 +428,7 @@ classdef AnalyseSignals < SubFigure
              iChannel = str2double(char(splitstring(1,1)));
          end
          
-         function Replot(oFigure,varargin)
+          function Replot(oFigure,varargin)
              %Make sure the current figure is AnalyseSignals
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              if isempty(varargin)
@@ -428,10 +437,17 @@ classdef AnalyseSignals < SubFigure
                  oFigure.PlotBeat(varargin);
              end
              oFigure.PlotWholeRecord();
-             oFigure.PlotECG();
+             switch (oFigure.sECGAxesContent)
+                 case 'ECG'
+                     oFigure.PlotECG();
+                 case 'Pressure'
+                     oFigure.PlotPressure();
+             end
              oFigure.CheckRejectToggleButton();
          end
-         
+     end
+     
+     methods (Access = private)
          function CheckRejectToggleButton(oFigure)
              if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannel).Accepted
                  set(oFigure.oGuiHandle.bRejectChannel,'Value',0);
@@ -625,24 +641,26 @@ classdef AnalyseSignals < SubFigure
                  
                  %Plot the slope data
                  line(aTime,aSlope,'color','r','parent',oSlopePlot);
-                 %Loop through events
-                 for j = 1:length(oElectrode.SignalEvent)
-                     %Mark the event times with a line
-                     %dMidPoint = aData(oElectrode.SignalEvent(j).Index(iBeat));
-                     %[dMidPoint + (dHeight/2)*0.9, dMidPoint - (dHeight/2)*0.9]
-                     oLine = line([aTime(oElectrode.SignalEvent(j).Index(iBeat)) ...
-                         aTime(oElectrode.SignalEvent(j).Index(iBeat))], [SignalYMax, SignalYMin]);
-                     sLineTag = strcat(sprintf('SignalEventLine%d',iChannelIndex),'_',sprintf('%d',j));
-                     set(oLine,'Tag',sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot, ...
-                         'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
-                     set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
-                     %Label the line with the event time
-                     if oFigure.Annotate
-                         oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, ...
-                             num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f'));
-                         set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
-                         set(oEventLabel,'FontSize',10);
-                         set(oEventLabel,'parent',oSignalEventPlot);
+                 if isfield(oElectrode,'SignalEvent')
+                     %Loop through events
+                     for j = 1:length(oElectrode.SignalEvent)
+                         %Mark the event times with a line
+                         %dMidPoint = aData(oElectrode.SignalEvent(j).Index(iBeat));
+                         %[dMidPoint + (dHeight/2)*0.9, dMidPoint - (dHeight/2)*0.9]
+                         oLine = line([aTime(oElectrode.SignalEvent(j).Index(iBeat)) ...
+                             aTime(oElectrode.SignalEvent(j).Index(iBeat))], [SignalYMax, SignalYMin]);
+                         sLineTag = strcat(sprintf('SignalEventLine%d',iChannelIndex),'_',sprintf('%d',j));
+                         set(oLine,'Tag',sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot, ...
+                             'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
+                         set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
+                         %Label the line with the event time
+                         if oFigure.Annotate
+                             oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, ...
+                                 num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f'));
+                             set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
+                             set(oEventLabel,'FontSize',10);
+                             set(oEventLabel,'parent',oSignalEventPlot);
+                         end
                      end
                  end
              else
@@ -753,6 +771,24 @@ classdef AnalyseSignals < SubFigure
             set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
          end
              
+         function PlotPressure(oFigure)
+             % Plot Pressure Data
+            
+            %Clear axes and set to be visible
+            cla(oFigure.oGuiHandle.oECGAxes);
+            %Find axis limits
+            TimeMin = min(oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+            TimeMax = max(oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+            YMin = min(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
+            YMax = max(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
+            %Plot the Pressure data
+            plot(oFigure.oGuiHandle.oECGAxes, ...
+                oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
+                oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,'k');
+            axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
+            oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
+            set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
+         end
      end
 end
 

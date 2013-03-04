@@ -3,8 +3,12 @@ classdef PressureAnalysis < SubFigure
 
     properties
         DefaultPath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\';
-        oEditControl;
         aPlots;
+        CurrentZoomLimits = [];
+    end
+    
+    events
+        FigureDeleted;
     end
     
     methods
@@ -20,7 +24,7 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oSaveMenu, 'callback', @(src, event) oSaveMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) Unused_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oPlotVRMS, 'callback', @(src, event) oPlotVRMS_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oPlotUnemapRefSignal, 'callback', @(src, event) oPlotUnemapRef_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExportMenu, 'callback', @(src, event) oExportMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTimeAlignMenu, 'callback', @(src, event) oTimeAlignMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oHeartRateMenu, 'callback', @(src, event) oHeartRateMenu_Callback(oFigure, src, event));
@@ -33,27 +37,43 @@ classdef PressureAnalysis < SubFigure
             
             if isempty(oFigure.oParentFigure.oGuiHandle.oPressure)
                 %Call built-in file dialog to select filename
-                [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Pressure data',oFigure.DefaultPath);
-                %Make sure the dialogs return char objects
-                if (~ischar(sDataFileName) && ~ischar(sDataPathName))
-                    return
-                end
-                %Check the extension
-                sLongDataFileName=strcat(sDataPathName,sDataFileName);
-                [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
+                %                 [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Pressure data',oFigure.DefaultPath);
+                %                 %Make sure the dialogs return char objects
+                %                 if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                %                     return
+                %                 end
+                %                 %Check the extension
+                %                 sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                sLongDataFileName = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\baropacetest001_pressure.mat';
+                 [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
                 switch (ext)
                     case '.txt'
                         oFigure.oParentFigure.oGuiHandle.oPressure =  GetPressureFromTXTFile(Pressure,sLongDataFileName);
                     case '.mat'
                         oFigure.oParentFigure.oGuiHandle.oPressure = GetPressureFromMATFile(Pressure,sLongDataFileName);
                 end
+                
+                %                 [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Unemap signal data',oFigure.DefaultPath);
+                %                 %Make sure the dialogs return char objects
+                %                 if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                %                     return
+                %                 end
+                %                 %Check the extension
+                %                 sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                %                 sLongDataFileName = 'D:\Users\jash042\Documents\DataLocal\TxtFiles\20130221\baropacetest001.txt';
+                
+                %Get the unemap reference data
+                %                 oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
             end
-             
+             %Turn zoom on for this figure
+            set(oFigure.oZoom,'enable','on'); 
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
             %Plot the data
             oFigure.CreateSubPlot(2);
             oFigure.PlotPressure(oFigure.aPlots(1));
             oFigure.PlotRefSignal(oFigure.aPlots(2));
+            
             % --- Executes just before BaselineCorrection is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -73,11 +93,27 @@ classdef PressureAnalysis < SubFigure
     methods (Access = protected)
         %% Protected methods that are inherited
         function deleteme(oFigure)
+            notify(oFigure,'FigureDeleted');
             deleteme@BaseFigure(oFigure);
         end
     end
     
     methods (Access = private)
+        % --------------------------------------------------------------------
+        function PostZoom_Callback(oFigure, src, event)
+            %Synchronize the zoom of all the axes
+            
+            %Get the current axes and selected limit
+            oCurrentAxes = event.Axes;
+            oXLim = get(oCurrentAxes,'XLim');
+            oYLim = get(oCurrentAxes,'YLim');
+            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
+            %Apply to axes
+            set(oFigure.aPlots(1),'XLim',oXLim);
+            set(oFigure.aPlots(2),'XLim',oXLim);
+            set(oFigure.aPlots(3),'XLim',oXLim);
+        end
+        
         %% Private UI control callbacks
         function oFigure = Close_fcn(oFigure, src, event)
             deleteme(oFigure);
@@ -156,7 +192,7 @@ classdef PressureAnalysis < SubFigure
             oFigure.CreateSubPlot(3);
             oFigure.PlotPressure(oFigure.aPlots(1));
             %oFigure.PlotRefSignal(oFigure.aPlots(2));
-            oFigure.PlotVRMS(oFigure.aPlots(2));
+            oFigure.PlotUnemapRefSignal(oFigure.aPlots(2));
             plot(oFigure.aPlots(3),oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),aIntegral,'k');
             set(oFigure.aPlots(3),'XTick',[]);
             set(oFigure.aPlots(3),'YTick',[]);
@@ -169,24 +205,26 @@ classdef PressureAnalysis < SubFigure
         function oTimeAlignMenu_Callback(oFigure, src, event)
             %Bring up a dialog box that allows user to enter points to time
             %align
-            oFigure.oEditControl = EditControl(oFigure,'Enter the times of the points to align.',2);
-            addlistener(oFigure.oEditControl,'ValuesEntered',@(src,event) oFigure.TimeAlign(src, event));
+            oEditControl = EditControl(oFigure,'Enter the times of the points to align.',2);
+            addlistener(oEditControl,'ValuesEntered',@(src,event) oFigure.TimeAlign(src, event));
         end
         
         function oTruncateMenu_Callback(oFigure, src, event)
-            %Open the SelectData figure to select the data to truncate
-            sInstructions = 'Select a range of data to truncate.';
+            %Truncate the data to match the limits of the unemap reference signal
             
-            oSelectDataFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),...
-                oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,...
-                {{'oInstructionText','string',sInstructions} ; ...
-                {'oBottomText','visible','off'} ; ...
-                {'oBottomPopUp','visible','off'} ; ...
-                {'oButton','string','Done'} ; ...
-                {'oAxes','title',sprintf('Pressure %s Data',oFigure.oParentFigure.oGuiHandle.oPressure.Status)}});
-            %Add a listener so that the figure knows when a user has
-            %selected the data to truncate            
-            addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.TruncateData(src, event));
+            %Get Unemap reference signal time series limits
+            dMinTime = min(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.TimeSeries);
+            dMaxTime = max(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.TimeSeries);
+            %Get the values below and above these limits
+            bLowIndexes = oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status) < dMinTime;
+            bHighIndexes = oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status) > dMaxTime;
+            %Combine these and negate to determine indexes to keep
+            bIndexesToKeep = ~(bLowIndexes | bHighIndexes);
+            %truncate the data and time series
+            oFigure.oParentFigure.oGuiHandle.oPressure.TruncateData(bIndexesToKeep);
+            %replot
+            oFigure.PlotPressure(oFigure.aPlots(1));
+            oFigure.PlotRefSignal(oFigure.aPlots(2));
         end
         
          function TruncateData(oFigure, src, event)
@@ -201,8 +239,8 @@ classdef PressureAnalysis < SubFigure
             oFigure.PlotRefSignal(oFigure.aPlots(2));
         end
         
-        function oPlotVRMS_Callback(oFigure, src, event)
-            %Plot the VRMS from the Unemap data
+        function oPlotUnemapRef_Callback(oFigure, src, event)
+            %Plot the reference signal from the Unemap data
             %Make sure the current figure is PressureAnalysis
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             
@@ -210,7 +248,7 @@ classdef PressureAnalysis < SubFigure
             oFigure.CreateSubPlot(3);
             oFigure.PlotPressure(oFigure.aPlots(1));
             oFigure.PlotRefSignal(oFigure.aPlots(2));
-            oFigure.PlotVRMS(oFigure.aPlots(3));
+            oFigure.PlotUnemapRefSignal(oFigure.aPlots(3));
         end
         
         function oHeartRateMenu_Callback(oFigure, src, event)
@@ -225,7 +263,7 @@ classdef PressureAnalysis < SubFigure
             plot(oFigure.aPlots(2),oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,aRateData,'k');
             set(oFigure.aPlots(2),'XTick',[]);
             ylabel(oFigure.aPlots(2),'Heart rate (bpm)');
-            oFigure.PlotVRMS(oFigure.aPlots(3));
+            oFigure.PlotUnemapRefSignal(oFigure.aPlots(3));
         end
         
         function CreateSubPlot(oFigure,iPlotCount)
@@ -278,20 +316,30 @@ classdef PressureAnalysis < SubFigure
             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            ylabel(oAxesHandle,'ECG');
+            ylabel(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.Name);
         end
         
-        function PlotVRMS(oFigure,oAxesHandle)
+        function PlotUnemapRefSignal(oFigure,oAxesHandle)
             %Plot the unemap VRMS data
             %Get channel to plot
-            oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName('15-09');
-            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oElectrode.Processed.Data,'k');
+            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.TimeSeries,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data,'k');
+            xLimits = get(oFigure.aPlots(1),'xlim');
+            xlim(oAxesHandle,xLimits);
             set(oAxesHandle,'XTick',[]);
             set(oAxesHandle,'YTick',[]);
-            ymax = max(oElectrode.Processed.Data);
-            ymin = min(oElectrode.Processed.Data);
+            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
+            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            ylabel(oAxesHandle,'Electrogram at x');
+            ylabel(oAxesHandle,'Phrenic signal as recorded via Unemap');
+
+%             oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName('15-09');
+%             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oElectrode.Processed.Data,'k');
+%             set(oAxesHandle,'XTick',[]);
+%             set(oAxesHandle,'YTick',[]);
+%             ymax = max(oElectrode.Processed.Data);
+%             ymin = min(oElectrode.Processed.Data);
+%             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
+%             ylabel(oAxesHandle,'Electrogram at x');
             
 %             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
 %                 oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),'k');
@@ -305,8 +353,8 @@ classdef PressureAnalysis < SubFigure
         
         function TimeAlign(oFigure, src, event)
             %Get the times of the points to align
-            dFirstTime = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_1');
-            dSecondTime = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_2');
+            dFirstTime = event.Values(1);
+            dSecondTime = event.Values(2);
             %Shift the time array by the difference
             dDiff = dFirstTime - dSecondTime;
             oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.Processed = ...
