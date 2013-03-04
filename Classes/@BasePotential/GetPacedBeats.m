@@ -1,10 +1,12 @@
-function [aOutData aMaxPeaks] = GetBeats(oBasePotential, aInData, aPeaks)
-%   GetBeats 
+function [aOutData aMaxPeaks] = GetPacedBeats(oBasePotential, aInData, aPeaks)
+%   GetPacedBeats 
 %   Get the segments of the data that correspond to the beats
 %   indicated between the peaks in aPeaks and fill in gaps with NaNs.
 %   Returns a cell array with the beats and the start and end times of each
 %   and an array that contains the locations of the maximum peaks in each
-%   window
+%   window. Differs from GetSinusBeats in that it looks for a stimulus
+%   artifact and returns the location of this
+
 
 %Get the number of peak locations n
 [m,n] = size(aPeaks);

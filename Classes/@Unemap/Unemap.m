@@ -152,8 +152,8 @@ classdef Unemap < BasePotential
             end
         end
         
-        function GetArrayBeats(oUnemap, aPeaks)
-            %Does some checks and then calls the inherited GetBeats
+        function GetArrayBeats(oUnemap, aPeaks, sBeatType)
+            %Does some checks and then calls the appropriate inherited GetBeats
             %method
             
             if strcmp(oUnemap.Electrodes(1).Status,'Potential');
@@ -164,7 +164,12 @@ classdef Unemap < BasePotential
                 %array
                 aInData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
             end
-            [aOutData dMaxPeaks] = oUnemap.GetBeats(aInData,aPeaks);
+            switch (sBeatType)
+                case 'Paced'
+                    [aOutData dMaxPeaks] = oUnemap.GetPacedBeats(aInData,aPeaks);
+                case 'Sinus'
+                    [aOutData dMaxPeaks] = oUnemap.GetSinusBeats(aInData,aPeaks);
+            end
             %Split again into the Electrodes
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',cell2mat(aOutData(1)));
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));

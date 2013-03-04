@@ -25,7 +25,8 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oDetectMenu, 'callback', @(src, event) oDetectMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oInterbeatMenu, 'callback', @(src, event) oInterbeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
-             set(oFigure.oGuiHandle.oBeatSelectionMenu, 'callback', @(src, event) oBeatSelectionMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oBeatSelectionMenu, 'callback', @(src, event) oBeatSelectionMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDetectPacedBeatsMenu, 'callback', @(src, event) oDetectPacedBeatsMenu_Callback(oFigure, src, event));
              
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
             set(oFigure.oGuiHandle.oBottomAxes,'Visible','off');
@@ -113,16 +114,34 @@ classdef BeatDetection < SubFigure
             %Get the data associated with the thresholded beats for Unemap
             %and ECG
             oFigure.oParentFigure.oGuiHandle.oUnemap.GetArrayBeats(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks, 'Sinus');
             
             [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oECG.GetBeats(...
                 oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks, 'Sinus');
             
             oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = cell2mat(aOutData(1));
             oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes = cell2mat(aOutData(2));
             %Mark activation for future analysis
 %            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('SteepestNegativeSlope');
+            %Plot the detected beats on the ECG
+            oFigure.PlotECG('DetectBeats');
+        end
+        
+        % -----------------------------------------------------------------
+        function oDetectPacedBeatsMenu_Callback(oFigure, src, event)
+            %Get the data associated with the thresholded beats for Unemap
+            %and ECG
+            oFigure.oParentFigure.oGuiHandle.oUnemap.GetArrayBeats(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks, 'Paced');
+            
+            [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oECG.GetBeats(...
+                oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks, 'Paced');
+            
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats = cell2mat(aOutData(1));
+            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes = cell2mat(aOutData(2));
+
             %Plot the detected beats on the ECG
             oFigure.PlotECG('DetectBeats');
         end
