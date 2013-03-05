@@ -4,6 +4,7 @@ classdef BeatPlot < SubFigure
     properties
         CurrentEventLine;
         Dragging;
+        SelectedEventID = [];
     end
     
     events
@@ -20,6 +21,7 @@ classdef BeatPlot < SubFigure
             addlistener(oFigure.oParentFigure,'SlideSelectionChange',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.SelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.SelectionListener(src, event));
             %Add one so the figure knows when it's parent has been deleted
             addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
             %Sets the figure close function. This lets the class know that
@@ -27,6 +29,7 @@ classdef BeatPlot < SubFigure
             %memory as well
             set(oFigure.oGuiHandle.oEventButtonGroup,  'SelectionChangeFcn', @(src,event) oFigure.EventSelectionChange_callback(src, event));
             set(oFigure.oGuiHandle.btnDeleteEvent,  'callback', @(src,event) oFigure.btnDeleteEvent_callback(src, event));
+            set(oFigure.oGuiHandle.btnEventRange,  'callback', @(src,event) oFigure.btnEventRange_callback(src, event));
             
             %Set callbacks and other functions
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
@@ -71,17 +74,6 @@ classdef BeatPlot < SubFigure
 
         end
                 
-        function oDataCursorOnTool_Callback(oFigure, src, event)
-            %Turn brushing on so that the user can select a range of data
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
-        end
-        
-        function oDataCursorOffTool_Callback(oFigure, src, event)
-            %Turn brushing off 
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-        end
-        
         %% Callbacks
         function SelectionListener(oFigure,src,event)
             %An event listener callback
@@ -96,7 +88,55 @@ classdef BeatPlot < SubFigure
      
      methods (Access = private)
          function EventSelectionChange_callback(oFigure, src, event)
+             %Update the selectedevent holder
              
+             %Get the selected event
+             oSelectedEvent = get(event.NewValue);
+             %Save the string property
+             oFigure.SelectedEventID = oSelectedEvent.String;
+         end
+         
+         function btnEventRange_callback(oFigure, src, event)
+             %Check the button state
+             ButtonState = get(oFigure.oGuiHandle.btnEventRange,'Value');
+             if ~isempty(oFigure.SelectedEventID)
+                 if ButtonState == get(oFigure.oGuiHandle.btnEventRange,'Max')
+                     % Toggle button has just been pressed
+                     % Turn brushing on so that the user can select a range of data
+                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
+                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
+                 elseif ButtonState == get(oFigure.oGuiHandle.btnEventRange,'Min')
+                     % Toggle button has just been unpressed
+                     
+                     %Get the handle to these axes from the panel children
+                     oPanelChildren = get(oFigure.oGuiHandle.oPanel,'children');
+                     oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, 'SignalPlot');
+                     %Get the selected indexes
+                     % Find any brushline objects associated with the ElectrodeAxes
+                     hBrushLines = findall(oAxes,'tag','Brushing');
+                     % Get the Xdata and Ydata attitributes of this
+                     brushedData = get(hBrushLines, {'Xdata','Ydata'});
+                     % The data that has not been selected is labelled as NaN so get
+                     % rid of this
+                     brushedIdx = ~isnan([brushedData{1,1}]);
+                     [row, colIndices] = find(brushedIdx);
+                     if ~isempty(colIndices)
+                         aEventRange = [colIndices(1) colIndices(end)];
+                         iBeat = oFigure.oParentFigure.SelectedBeat;
+                         aBeatIndexes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.oParentFigure.SelectedChannel).Processed.BeatIndexes(iBeat,:);
+                         iEventIndex = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel,oFigure.SelectedEventID);
+                         oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEventIndex, iBeat, oFigure.oParentFigure.SelectedChannels, aEventRange + aBeatIndexes(1,1));
+                     else
+                         error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+                     end
+                     % Turn brushing off
+                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                     %Refresh the plot
+                     oFigure.PlotBeat();
+                     %Notify listeners
+                     notify(oFigure,'SignalEventRangeChange');
+                 end
+             end
          end
          
          function btnDeleteEvent_callback(oFigure,src, event)
@@ -110,6 +150,7 @@ classdef BeatPlot < SubFigure
                  %Get the string id of the event
                  sEventID = oSelectedEvent.String;
                  oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.DeleteEvent(sEventID, oFigure.oParentFigure.SelectedChannels);
+                 oFigure.SelectedEventID = [];
              end
              %Refresh the plot
              oFigure.PlotBeat();
@@ -137,6 +178,7 @@ classdef BeatPlot < SubFigure
                 oFigure.Dragging = 0;
                 %The tag of the current axes is the channel number
                 iChannelNumber = oFigure.oParentFigure.SelectedChannel;
+                iBeat = oFigure.oParentFigure.SelectedBeat;
                 %Get the handle to these axes from the panel children
                 oPanelChildren = get(oFigure.oGuiHandle.oPanel,'children');
                 oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, 'SignalEventPlot');
@@ -148,8 +190,12 @@ classdef BeatPlot < SubFigure
                 %Get the xdata of this line and convert it into a timeseries
                 %index
                 dXdata = get(oLine, 'XData');
+                %Reset the range for this event to the beat indexes as the
+                %user is manually changing the event time
+                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
+                    oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelNumber).Processed.BeatIndexes(iBeat,:))
                 %Update the signal event for this electrode and beat number
-                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.oParentFigure.SelectedBeat, dXdata(1));
+                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, iBeat, dXdata(1));
                 oFigure.oParentFigure.Replot(iChannelNumber);
                 %Refresh the plot
                 oFigure.PlotBeat();
@@ -295,6 +341,10 @@ classdef BeatPlot < SubFigure
                          set(oEventLabel,'parent',oSignalEventPlot);
                          set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'string',oElectrode.SignalEvent(j).ID);
                          set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'visible','on');
+                     end
+                     if isempty(oFigure.SelectedEventID) && ~isempty(oElectrode.SignalEvent)
+                         set(oFigure.oGuiHandle.oEventButtonGroup,'SelectedObject',oFigure.oGuiHandle.rbtnEvent1);
+                         oFigure.SelectedEventID = get(oFigure.oGuiHandle.rbtnEvent1,'string');
                      end
                  end
              else

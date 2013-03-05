@@ -23,6 +23,7 @@ classdef AnalyseSignals < SubFigure
         ChannelSelected;
         FigureDeleted;
         EventMarkChange;
+        BeatIndexChange;
     end
     
     methods
@@ -179,6 +180,7 @@ classdef AnalyseSignals < SubFigure
                 oFigure.Dragging = 0;
                 %The tag of the current axes is the channel number
                 iChannelNumber = oFigure.SelectedChannel;
+                iBeat = oFigure.SelectedBeat;
                 notify(oFigure,'ChannelSelected',DataPassingEvent([],iChannelNumber));
                 %Get the handle to these axes from the panel children
                 oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
@@ -191,6 +193,10 @@ classdef AnalyseSignals < SubFigure
                 %Get the xdata of this line and convert it into a timeseries
                 %index
                 dXdata = get(oLine, 'XData');
+                 %Reset the range for this event to the beat indexes as the
+                %user is manually changing the event time
+                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelNumber).Processed.BeatIndexes(iBeat,:))
                 %Update the signal event for this electrode and beat number
                 oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1));
                 aPassData = {iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1)};
@@ -267,7 +273,7 @@ classdef AnalyseSignals < SubFigure
         end
         
         function SignalEventRangeListener(oFigure,src, event)
-            
+            oFigure.Replot();
         end
         
         function EventDeleted(oFigure,src,event)
@@ -339,6 +345,7 @@ classdef AnalyseSignals < SubFigure
             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
             oFigure.Replot();
+            notify(oFigure,'BeatIndexChange');
         end
         
         %% Menu Callbacks
