@@ -8,6 +8,7 @@ classdef BeatPlot < SubFigure
     
     events
         SignalEventRangeChange;
+        SignalEventDeleted;
     end
     
     methods
@@ -24,12 +25,16 @@ classdef BeatPlot < SubFigure
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
+            set(oFigure.oGuiHandle.oEventButtonGroup,  'SelectionChangeFcn', @(src,event) oFigure.EventSelectionChange_callback(src, event));
+            set(oFigure.oGuiHandle.btnDeleteEvent,  'callback', @(src,event) oFigure.btnDeleteEvent_callback(src, event));
+            
+            %Set callbacks and other functions
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Plot data
             oFigure.CreatePlots();
             oFigure.PlotBeat();
-            % --- Executes just before BaselineCorrection is made visible.
+            % --- Executes just before oFigure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
                 % hObject    handle to figure 
@@ -39,7 +44,11 @@ classdef BeatPlot < SubFigure
                 
                 %Can actually access oParent from here as this is a
                 %subfunction :) :)
-
+                set(handles.rbtnEvent1,'visible','off');
+                set(handles.rbtnEvent2,'visible','off');
+                set(handles.rbtnEvent3,'visible','off');
+                set(handles.rbtnEvent4,'visible','off');
+                set(handles.rbtnEvent5,'visible','off');
                 %Set the output attribute
                 handles.output = hObject;
                 %Update the gui handles 
@@ -86,6 +95,27 @@ classdef BeatPlot < SubFigure
      end
      
      methods (Access = private)
+         function EventSelectionChange_callback(oFigure, src, event)
+             
+         end
+         
+         function btnDeleteEvent_callback(oFigure,src, event)
+             %Delete the selected event for the current beat for all
+             %electrodes
+             
+             %Get the selected event
+             oSelectedEvent = get(get(oFigure.oGuiHandle.oEventButtonGroup,'SelectedObject'));
+             %Check that it is visible
+             if strcmp(oSelectedEvent.Visible,'on')
+                 %Get the string id of the event
+                 sEventID = oSelectedEvent.String;
+                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.DeleteEvent(sEventID, oFigure.oParentFigure.SelectedChannels);
+             end
+             %Refresh the plot
+             oFigure.PlotBeat();
+             notify(oFigure,'SignalEventDeleted');
+         end
+         
          function ParentFigureDeleted(oFigure,src, event)
              deleteme(oFigure);
          end
@@ -164,6 +194,13 @@ classdef BeatPlot < SubFigure
              
              %Make sure the current figure is MapElectrodes
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+             %Reset the visibility of the events
+             set(oFigure.oGuiHandle.rbtnEvent1,'visible','off');
+             set(oFigure.oGuiHandle.rbtnEvent2,'visible','off');
+             set(oFigure.oGuiHandle.rbtnEvent3,'visible','off');
+             set(oFigure.oGuiHandle.rbtnEvent4,'visible','off');
+             set(oFigure.oGuiHandle.rbtnEvent5,'visible','off');
+
              %Get the current property values
              iBeat = oFigure.oParentFigure.SelectedBeat;
              %Find the max and min Y axis values for this selection
@@ -256,6 +293,8 @@ classdef BeatPlot < SubFigure
                          set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
                          set(oEventLabel,'FontSize',10);
                          set(oEventLabel,'parent',oSignalEventPlot);
+                         set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'string',oElectrode.SignalEvent(j).ID);
+                         set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'visible','on');
                      end
                  end
              else

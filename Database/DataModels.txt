@@ -24,6 +24,7 @@ Electrodes(i).SignalEvent(j).Index
 Electrodes(i).SignalEvent(j).Range
 Electrodes(i).SignalEvent(j).Method
 Electrodes(i).SignalEvent(j).Label.Colour
+Electrodes(i).SignalEvent(j).ID
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.EnvelopeSubtracted
 Electrodes(i).Processed.Envelope

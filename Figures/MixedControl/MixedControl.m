@@ -13,8 +13,11 @@ classdef MixedControl < SubFigure
             %Set callbacks
             set(oFigure.oGuiHandle.btnDone, 'callback', @(src, event) btnDone_Callback(oFigure, src, event));
             
+            
             %This figure can be closed by the user
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            %Delete the figure if the parent is deleted
+            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
             
             % --- Executes just before the figure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
@@ -57,6 +60,10 @@ classdef MixedControl < SubFigure
     methods (Access = private)
         %% Private UI control callbacks
         function oFigure = Close_fcn(oFigure, src, event)
+            deleteme(oFigure);
+        end
+        
+        function ParentFigureDeleted(oFigure,src, event)
             deleteme(oFigure);
         end
         

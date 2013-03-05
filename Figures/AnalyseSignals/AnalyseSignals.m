@@ -81,6 +81,7 @@ classdef AnalyseSignals < SubFigure
             %Open a beat plot
             oBeatPlotFigure = BeatPlot(oFigure);
             addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
+            addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.EventDeleted(src,event));
             
             %set zoom callback
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
@@ -267,6 +268,10 @@ classdef AnalyseSignals < SubFigure
         
         function SignalEventRangeListener(oFigure,src, event)
             
+        end
+        
+        function EventDeleted(oFigure,src,event)
+            oFigure.Replot();
         end
         
         function SlideValueListener(oFigure,src,event)

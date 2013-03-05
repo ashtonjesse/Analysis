@@ -166,7 +166,8 @@ classdef Unemap < BasePotential
             end
             switch (sBeatType)
                 case 'Paced'
-                    [aOutData dMaxPeaks] = oUnemap.GetPacedBeats(aInData,aPeaks);
+                    [aOutData aPacingIndexes] = oUnemap.GetPacedBeats(aInData,aPeaks);
+                    oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Pacing','Index',aPacingIndexes);
                 case 'Sinus'
                     [aOutData dMaxPeaks] = oUnemap.GetSinusBeats(aInData,aPeaks);
             end
@@ -804,7 +805,7 @@ classdef Unemap < BasePotential
                     if isempty(sLeftover)
                         %There is only one event and it is the current one
                         iEvent = 1;
-                    elseif isempty(iIsPresent)
+                    elseif ~isempty(iIsPresent)
                         %This event is not present in the EventID array
                         iEvent = length(oUnemap.Electrodes(iElectrodeNumber).SignalEvent) + 1;
                     else
@@ -831,13 +832,29 @@ classdef Unemap < BasePotential
             end
         end
         
-        function DeleteEvent(oUnemap, iEvent, iElectrodes)
-            %Delete the specified event
-            for i = 1:length(iElectrodes)
-                aEvents = oUnemap.Electrodes(i).SignalEvent;
+        function DeleteEvent(oUnemap, sEventID, aElectrodes)
+            %Delete the specified event for the selected electrodes and all
+            %beats
+            for i = 1:length(aElectrodes)
+                aEvents = oUnemap.Electrodes(aElectrodes(i)).SignalEvent;
+                if length(aEvents) > 1
+                    aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID), aEvents);
+                    oUnemap.Electrodes(aElectrodes(i)).SignalEvent = oUnemap.Electrodes(aElectrodes(i)).SignalEvent(~aIndices);
+                else
+                    if strcmpi(aEvents.ID, sEventID)
+                        oUnemap.Electrodes(aElectrodes(i)).SignalEvent = [];
+                    end
+                end
                 
             end
             
+            function dOut = FindID(oEvent)
+                %Find the index of the 
+                dOut = 1;
+                if strcmpi(sEventID,oEvent.ID)
+                    dOut = 0;
+                end
+            end
         end
         %% Functions for reconstructing entity
         function oUnemap = GetUnemapFromMATFile(oUnemap, sFile)

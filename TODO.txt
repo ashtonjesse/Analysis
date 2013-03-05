@@ -3,3 +3,6 @@ TODO
 -Detect pacing stimulus during getbeats and record the index in Electrodes.Pacing.Index
 -Be able to delete signalevents
 -Display activation times relative to the pacing stimulus
+-Be able to define a range over which the signal event should be marked
+	Have this in BeatPlot. Put in a checkbox list of the events for that beat and electrode. 
+	Have dropdown menus that let the user choose to define a range.
