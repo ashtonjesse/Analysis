@@ -64,13 +64,18 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPlotPressureMenu, 'callback', @(src, event) oPlotPressureMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oNormaliseBeatMenu, 'callback', @(src, event) oNormaliseBeatMenu_Callback(oFigure, src, event));
             
+            set(oFigure.oGuiHandle.bNextGroup, 'callback', @(src, event) bNextGroup_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.bPreviousGroup, 'callback', @(src, event) bPreviousGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) KeyPress_fcn(oFigure, src, event));
+            
             
             oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
             %Add a listener so that the figure knows when a user has
@@ -107,6 +112,8 @@ classdef AnalyseSignals < SubFigure
                 
                 %Set ui control creation attributes 
 
+                %Set the keypress function for the figure
+                
                 
                 %Set the output attribute
                 handles.output = hObject;
@@ -131,316 +138,374 @@ classdef AnalyseSignals < SubFigure
     
      methods (Access = public)
          %% Ui control callbacks
-        function oFigure = Close_fcn(oFigure, src, event)
-            deleteme(oFigure);
-        end
-        
-        function oZoomOnTool_Callback(oFigure, src, event)
-            set(oFigure.oZoom,'enable','on'); 
-        end
-        
-        function oZoomOffTool_Callback(oFigure, src, event)
-            set(oFigure.oZoom,'enable','off'); 
-        end
-        
-        %--------------------------------------------------------------------
-        function PostZoom_Callback(oFigure, src, event)
-            %Synchronize the zoom of electrode and ECG axes
-            
-            %Get the current axes and selected limit
-            oCurrentAxes = event.Axes;
-            oXLim = get(oCurrentAxes,'XLim');
-            oYLim = get(oCurrentAxes,'YLim');
-            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
-            oFigure.ApplyZoomLimits();
-        end
-        
-        function ApplyZoomLimits(oFigure)
-            %Apply to axes
-            set(oFigure.oGuiHandle.oElectrodeAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
-            set(oFigure.oGuiHandle.oECGAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
-            set(oFigure.oGuiHandle.oElectrodeAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
-        end
-        
-        function StartDrag(oFigure, src, event)
-            %The function that fires when a line on a subplot is dragged
-            oFigure.Dragging = 1;
-            oPlot = get(src,'Parent');
-            oFigure.CurrentEventLine = get(src,'tag');
-            oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(oPlot,'tag'));
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oPlot)));
-        end
-        
-        function StopDrag(oFigure, src, event)
-            %The function that fires when the user lets go of a line on a
-            %subplot
-            if oFigure.Dragging
-                %Make sure that the windowbuttonmotionfcn is no longer active
-                set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', '');
-                oFigure.Dragging = 0;
-                %The tag of the current axes is the channel number
-                iChannelNumber = oFigure.SelectedChannel;
-                iBeat = oFigure.SelectedBeat;
-                notify(oFigure,'ChannelSelected',DataPassingEvent([],iChannelNumber));
-                %Get the handle to these axes from the panel children
-                oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
-                oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('SignalEventPlot%d',iChannelNumber));
-                %Get the handle to the line on these axes
-                oAxesChildren = get(oAxes,'children');
-                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
-                %Get the current event for this channel
-                iEvent = oFigure.GetEventNumberFromTag(oFigure.CurrentEventLine);
-                %Get the xdata of this line and convert it into a timeseries
-                %index
-                dXdata = get(oLine, 'XData');
+         function KeyPress_fcn(oFigure, src, event)
+             %Handles key press events
+             switch event.Key
+                 case 'n'
+                     bNextGroup_Callback(oFigure, oFigure.oGuiHandle.bNextGroup, []);
+                 case 'p'
+                     bPreviousGroup_Callback(oFigure, oFigure.oGuiHandle.bPreviousGroup, []);
+                 case 'r'
+                     bAcceptChannel_Callback(oFigure, oFigure.oGuiHandle.bRejectChannel, []);
+             end
+         end
+         
+         function oFigure = Close_fcn(oFigure, src, event)
+             deleteme(oFigure);
+         end
+         
+         function oZoomOnTool_Callback(oFigure, src, event)
+             set(oFigure.oZoom,'enable','on');
+         end
+         
+         function oZoomOffTool_Callback(oFigure, src, event)
+             set(oFigure.oZoom,'enable','off');
+         end
+         
+         function PostZoom_Callback(oFigure, src, event)
+             %Synchronize the zoom of electrode and ECG axes
+             
+             %Get the current axes and selected limit
+             oCurrentAxes = event.Axes;
+             oXLim = get(oCurrentAxes,'XLim');
+             oYLim = get(oCurrentAxes,'YLim');
+             oFigure.CurrentZoomLimits = [oXLim ; oYLim];
+             oFigure.ApplyZoomLimits();
+         end
+         
+         function ApplyZoomLimits(oFigure)
+             %Apply to axes
+             set(oFigure.oGuiHandle.oElectrodeAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+             set(oFigure.oGuiHandle.oECGAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+             set(oFigure.oGuiHandle.oElectrodeAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
+         end
+         
+         function StartDrag(oFigure, src, event)
+             %The function that fires when a line on a subplot is dragged
+             oFigure.Dragging = 1;
+             oPlot = get(src,'Parent');
+             oFigure.CurrentEventLine = get(src,'tag');
+             oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(oPlot,'tag'));
+             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oPlot)));
+         end
+         
+         function StopDrag(oFigure, src, event)
+             %The function that fires when the user lets go of a line on a
+             %subplot
+             if oFigure.Dragging
+                 %Make sure that the windowbuttonmotionfcn is no longer active
+                 set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', '');
+                 oFigure.Dragging = 0;
+                 %The tag of the current axes is the channel number
+                 iChannelNumber = oFigure.SelectedChannel;
+                 iBeat = oFigure.SelectedBeat;
+                 notify(oFigure,'ChannelSelected',DataPassingEvent([],iChannelNumber));
+                 %Get the handle to these axes from the panel children
+                 oPanelChildren = get(oFigure.oGuiHandle.pnSignals,'children');
+                 oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, sprintf('SignalEventPlot%d',iChannelNumber));
+                 %Get the handle to the line on these axes
+                 oAxesChildren = get(oAxes,'children');
+                 oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
+                 %Get the current event for this channel
+                 iEvent = oFigure.GetEventNumberFromTag(oFigure.CurrentEventLine);
+                 %Get the xdata of this line and convert it into a timeseries
+                 %index
+                 dXdata = get(oLine, 'XData');
                  %Reset the range for this event to the beat indexes as the
-                %user is manually changing the event time
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelNumber).Processed.BeatIndexes(iBeat,:))
-                %Update the signal event for this electrode and beat number
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1));
-                aPassData = {iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1)};
-                notify(oFigure,'EventMarkChange',DataPassingEvent(aPassData,[]));
-                %Refresh the plot
-                oFigure.Replot(iChannelNumber);
-            end
-        end
-        
-        function Drag(oFigure, src, event)
-            %The function that fires while a line on a subplot is being
-            %dragged
-            oAxesChildren = get(event.ParentAxesHandle,'children');
-            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
-            oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
-            set(oLine, 'XData', oPoint(1)*[1 1]);
-        end
-        
-        function oSignalEventPlot_Callback(oFigure, src, event)
-            oFigure.PreviousChannel = oFigure.SelectedChannel;
-            oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(src,'tag'));
-            notify(oFigure,'ChannelSelected',DataPassingEvent([],oFigure.SelectedChannel));
-            oFigure.Replot(oFigure.SelectedChannel);
-        end
-        
-        function oElectrodePlot_Callback(oFigure, src, event)
-            oPoint = get(src,'currentpoint');
-            xDim = oPoint(1,1);
-            iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,xDim);
-            %Notify listeners so that the selected beat can be propagated
-            %and update the Slide Control
-            oFigure.SelectedBeat = iBeatIndexes{1,1};
-            notify(oFigure,'SlideSelectionChange',DataPassingEvent([],iBeatIndexes{1,1}));
-            oFigure.Replot();
-        end
-        
-        function bAcceptChannel_Callback(oFigure,src,event)
-            ButtonState = get(oFigure.oGuiHandle.bRejectChannel,'Value');
-            if ButtonState == get(oFigure.oGuiHandle.bRejectChannel,'Max')
-                % Toggle button is pressed
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(oFigure.SelectedChannel);
-            elseif ButtonState == get(oFigure.oGuiHandle.bRejectChannel,'Min')
-                % Toggle button is not pressed
-                oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.SelectedChannel);
-            end
-            oFigure.Replot(oFigure.SelectedChannel);
-        end
-        
-        function oRejectAllChannels_Callback(oFigure,src,event)
-            %Reject all selected channels
-            for i = 1:length(oFigure.SelectedChannels)
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(oFigure.SelectedChannels(i));
-            end
-            oFigure.Replot();
-        end
-                
-        function oAcceptAllChannels_Callback(oFigure,src,event)
-            %Reject all selected channels
-            for i = 1:length(oFigure.SelectedChannels)
-                oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.SelectedChannels(i));
-            end
-            oFigure.Replot();
-        end
-        %% Event listeners
-        function ChannelSelectionChange(oFigure,src,event)
-            %An event listener callback
-            %Is called when the user selects a new set of channels and hits
-            %the update selection menu option in MapElectrodes.fig
-            %Draw plots
-            oFigure.SelectedChannels = event.ArrayData;
-            oFigure.CreateSubPlot();
-            %Fill plots
-            oFigure.Replot();
-        end
-        
-        function SignalEventRangeListener(oFigure,src, event)
-            oFigure.Replot();
-        end
-        
-        function EventDeleted(oFigure,src,event)
-            oFigure.Replot();
-        end
-        
-        function SlideValueListener(oFigure,src,event)
-            %An event listener callback
-            %Is called when the user selects a new beat using the
-            %SlideControl
-            oFigure.SelectedBeat = event.Value;
-            oFigure.Replot();
-        end
-        
-        %% Event Callbacks --------------------------------------
-        function SubtractEnvelope(oFigure,src,event)
-            %Carries out an envelope subtraction neighbourhood action
-            
-            %Get the rows and cols
-            iRows = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_1');
-            iCols = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_2');
-            %Set up inputs
-            aInOptions = struct();
-            aInOptions.Procedure = 'SignalEnvelopeSubtraction';
-            aInOptions.KernelBounds = [iRows iCols];
-            oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
-        end
-        
-        function NewEventCreated(oFigure,src,event)
-            %Get the values from the mixedcontrol
-            switch (char(event.Values{4}))
-                case 'AllBeats'
-                    for i = 1:size(oFigure.SelectedChannels,2);
-                        iChannel = oFigure.SelectedChannels(i);
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), char(event.Values{5}));
-                    end
-                case 'SingleBeat'
-                    iBeat = oFigure.SelectedBeat;
-                    for i = 1:size(oFigure.SelectedChannels,2);
-                        iChannel = oFigure.SelectedChannels(i);
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), char(event.Values{5}), iBeat);
-                    end                   
-            end
-            oFigure.Replot();
-        end
-        %% ------------------------------------------------------------------
-        
-        function bUpdateBeat_Callback(oFigure, src, event)
-            %Update the currently selected beat 
-            
-            % Find any brushline objects associated with the ElectrodeAxes
-            hBrushLines = findall(oFigure.oGuiHandle.oElectrodeAxes,'tag','Brushing');
-            % Get the Xdata and Ydata attitributes of this
-            brushedData = get(hBrushLines, {'Xdata','Ydata'});
-            % The data that has not been selected is labelled as NaN so get
-            % rid of this
-            brushedIdx = ~isnan([brushedData{1,1}]);
-            [row, colIndices] = find(brushedIdx);
-            if ~isempty(colIndices)
-                aBeatIndexes = [colIndices(1) colIndices(end)];
-                dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
-                aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
-                oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
-            else
-                error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
-            end
-            
-            %Reset the gui
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-            set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-            oFigure.Replot();
-            notify(oFigure,'BeatIndexChange');
-        end
-        
-        %% Menu Callbacks
-        % -----------------------------------------------------------------
-        function oFileMenu_Callback(oFigure, src, event)
+                 %user is manually changing the event time
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
+                     oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelNumber).Processed.BeatIndexes(iBeat,:))
+                 %Update the signal event for this electrode and beat number
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1));
+                 aPassData = {iChannelNumber, iEvent, oFigure.SelectedBeat, dXdata(1)};
+                 notify(oFigure,'EventMarkChange',DataPassingEvent(aPassData,[]));
+                 %Refresh the plot
+                 oFigure.Replot(iChannelNumber);
+             end
+         end
+         
+         function Drag(oFigure, src, event)
+             %The function that fires while a line on a subplot is being
+             %dragged
+             oAxesChildren = get(event.ParentAxesHandle,'children');
+             oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
+             oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
+             set(oLine, 'XData', oPoint(1)*[1 1]);
+         end
+         
+         function oSignalEventPlot_Callback(oFigure, src, event)
+             oFigure.PreviousChannel = oFigure.SelectedChannel;
+             oFigure.SelectedChannel = oFigure.oDAL.oHelper.GetDoubleFromString(get(src,'tag'));
+             notify(oFigure,'ChannelSelected',DataPassingEvent([],oFigure.SelectedChannel));
+             oFigure.Replot(oFigure.SelectedChannel);
+         end
+         
+         function oElectrodePlot_Callback(oFigure, src, event)
+             oPoint = get(src,'currentpoint');
+             xDim = oPoint(1,1);
+             iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,xDim);
+             %Notify listeners so that the selected beat can be propagated
+             %and update the Slide Control
+             oFigure.SelectedBeat = iBeatIndexes{1,1};
+             notify(oFigure,'SlideSelectionChange',DataPassingEvent([],iBeatIndexes{1,1}));
+             oFigure.Replot();
+         end
+         
+         function bAcceptChannel_Callback(oFigure,src,event)
+             ButtonState = get(oFigure.oGuiHandle.bRejectChannel,'Value');
+             if ButtonState == get(oFigure.oGuiHandle.bRejectChannel,'Max')
+                 % Toggle button is pressed
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(oFigure.SelectedChannel);
+             elseif ButtonState == get(oFigure.oGuiHandle.bRejectChannel,'Min')
+                 % Toggle button is not pressed
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.SelectedChannel);
+             end
+             oFigure.Replot(oFigure.SelectedChannel);
+         end
+         
+         function oRejectAllChannels_Callback(oFigure,src,event)
+             %Reject all selected channels
+             for i = 1:length(oFigure.SelectedChannels)
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.RejectChannel(oFigure.SelectedChannels(i));
+             end
+             oFigure.Replot();
+         end
+         
+         function oAcceptAllChannels_Callback(oFigure,src,event)
+             %Reject all selected channels
+             for i = 1:length(oFigure.SelectedChannels)
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(oFigure.SelectedChannels(i));
+             end
+             oFigure.Replot();
+         end
+         
+         function bNextGroup_Callback(oFigure, src, event)
+             %Select the next group of channels - where group is
+             %defined by the x and y dimensions specified in the experiment
+             %metadata
+             
+             %Find the max channel currently selected
+             iCornerChannel = max(oFigure.SelectedChannels);
+             if iCornerChannel > (oFigure.NumberofChannels - oFigure.SubPlotXdim*oFigure.SubPlotYdim)
+                 %Go back to the start
+                 oFigure.SelectedChannels = 1:oFigure.SubPlotXdim*oFigure.SubPlotYdim;
+             else
+                 %Move to the next group
+                 oFigure.SelectedChannels = (iCornerChannel + 1):(iCornerChannel + oFigure.SubPlotXdim*oFigure.SubPlotYdim);
+             end
+             %replot
+             oFigure.CreateSubPlot();
+             oFigure.Replot();
+         end
+         
+         function bPreviousGroup_Callback(oFigure, src, event)
+             %Select the previous group of channels - where group is
+             %defined by the x and y dimensions specified in the experiment
+             %metadata
 
-        end
-                
-        % --------------------------------------------------------------------
-        function oEditMenu_Callback(oFigure, src, event)
-
-        end
-        
-        % --------------------------------------------------------------------
-        function oToolMenu_Callback(oFigure, src, event)
-            
-        end
-        
-        % --------------------------------------------------------------------
-        function oNewEventMenu_Callback(oFigure, src, event)
-            aControlData = cell(4,1);
-            aControlData{1} = {'r','g','b','k','c','m','y'};
-            aControlData{2} = {'Activation','Repolarisation'};
-            aControlData{3} = {'SteepestPositiveSlope','SteepestNegativeSlope','CentralDifference','MaxSignalMagnitude'};
-            aControlData{4} = {'SingleBeat','AllBeats'};
-            oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique, beat selection and string ID details for the new event.',aControlData);
-            addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
-        end
-        
-        % --------------------------------------------------------------------
-        function oMaxSpatialMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.SelectedBeat);
-            oFigure.Replot();
-        end
-        
-        function oReMenu_Callback(oFigure, src, event)
-            oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('MaxSignalMagnitude',oFigure.SelectedBeat);
-            oFigure.Replot();
-        end
-        
-        function oGetSlopeMenu_Callback(oFigure, src, event)
-           oFigure.oParentFigure.oGuiHandle.oUnemap.GetSlope();
-           oFigure.Replot();
-        end
-        
-        function oAdjustBeatMenu_Callback(oFigure, src, event)
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
-            set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'on');
-        end
-        
-        function oAnnotationMenu_Callback(oFigure, src, event)
-            %Change the annotation flag 
-            if oFigure.Annotate
-                oFigure.Annotate = 0;
-            else
-                oFigure.Annotate = 1;
-            end
-            %Replot
-            oFigure.Replot();
-        end
-        
-        function oEnvelopeMenu_Callback(oFigure, src, event)
-            %Open an edit control
-            oFigure.oEditControl = EditControl(oFigure,'Enter the number of rows and columns to have in the kernel.',2);
-            addlistener(oFigure.oEditControl,'ValuesEntered',@(src,event) oFigure.SubtractEnvelope(src, event));
-        end
-        
-        function oCentralDifferenceMenu_Callback(oFigure, src, event)
-            %Set up inputs
-            aInOptions = struct();
-            aInOptions.Procedure = 'CentralDifference';
-            aInOptions.KernelBounds = [3 3];
-            oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
-        end
-                
-        function oPlotPressureMenu_Callback(oFigure, src, event)
-            %Plot pressure on the ECG axes
-            oFigure.sECGAxesContent = 'Pressure';
-            oFigure.PlotPressure();
-        end
-        
+             %Find the min channel currently selected
+             iCornerChannel = min(oFigure.SelectedChannels);
+             if iCornerChannel < (oFigure.SubPlotXdim*oFigure.SubPlotYdim)
+                 %Stay at the start
+                 oFigure.SelectedChannels = 1:oFigure.SubPlotXdim*oFigure.SubPlotYdim;
+             else
+                 %Move to the previous group
+                 oFigure.SelectedChannels = (iCornerChannel - oFigure.SubPlotXdim*oFigure.SubPlotYdim):(iCornerChannel - 1);
+             end
+             %replot
+             oFigure.CreateSubPlot();
+             oFigure.Replot();
+         end
+         
+         %% Event listeners
+         function ChannelSelectionChange(oFigure,src,event)
+             %An event listener callback
+             %Is called when the user selects a new set of channels and hits
+             %the update selection menu option in MapElectrodes.fig
+             %Draw plots
+             oFigure.SelectedChannels = event.ArrayData;
+             oFigure.CreateSubPlot();
+             %Fill plots
+             oFigure.Replot();
+         end
+         
+         function SignalEventRangeListener(oFigure,src, event)
+             oFigure.Replot();
+         end
+         
+         function EventDeleted(oFigure,src,event)
+             oFigure.Replot();
+         end
+         
+         function SlideValueListener(oFigure,src,event)
+             %An event listener callback
+             %Is called when the user selects a new beat using the
+             %SlideControl
+             oFigure.SelectedBeat = event.Value;
+             notify(oFigure,'SlideSelectionChange');
+             oFigure.Replot();
+             
+         end
+         
+         %% Event Callbacks --------------------------------------
+         function SubtractEnvelope(oFigure,src,event)
+             %Carries out an envelope subtraction neighbourhood action
+             
+             %Get the rows and cols
+             iRows = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_1');
+             iCols = oFigure.oEditControl.GetEditInputDouble(oFigure.oEditControl.oGuiHandle.oPanel,'oEdit_2');
+             %Set up inputs
+             aInOptions = struct();
+             aInOptions.Procedure = 'SignalEnvelopeSubtraction';
+             aInOptions.KernelBounds = [iRows iCols];
+             oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
+         end
+         
+         function NewEventCreated(oFigure,src,event)
+             %Get the values from the mixedcontrol
+             switch (char(event.Values{4}))
+                 case 'AllBeats'
+                     for i = 1:size(oFigure.SelectedChannels,2);
+                         iChannel = oFigure.SelectedChannels(i);
+                         oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), char(event.Values{5}));
+                     end
+                 case 'SingleBeat'
+                     iBeat = oFigure.SelectedBeat;
+                     for i = 1:size(oFigure.SelectedChannels,2);
+                         iChannel = oFigure.SelectedChannels(i);
+                         oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}), char(event.Values{5}), iBeat);
+                     end
+             end
+             oFigure.Replot();
+         end
+         %% ------------------------------------------------------------------
+         
+         function bUpdateBeat_Callback(oFigure, src, event)
+             %Update the currently selected beat
+             
+             % Find any brushline objects associated with the ElectrodeAxes
+             hBrushLines = findall(oFigure.oGuiHandle.oElectrodeAxes,'tag','Brushing');
+             % Get the Xdata and Ydata attitributes of this
+             brushedData = get(hBrushLines, {'Xdata','Ydata'});
+             % The data that has not been selected is labelled as NaN so get
+             % rid of this
+             brushedIdx = ~isnan([brushedData{1,1}]);
+             [row, colIndices] = find(brushedIdx);
+             if ~isempty(colIndices)
+                 aBeatIndexes = [colIndices(1) colIndices(end)];
+                 dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
+                 aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
+             else
+                 error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+             end
+             
+             %Reset the gui
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+             oFigure.Replot();
+             notify(oFigure,'BeatIndexChange');
+         end
+         
+         %% Menu Callbacks
+         % -----------------------------------------------------------------
+         function oFileMenu_Callback(oFigure, src, event)
+             
+         end
+         
+         % --------------------------------------------------------------------
+         function oEditMenu_Callback(oFigure, src, event)
+             
+         end
+         
+         % --------------------------------------------------------------------
+         function oToolMenu_Callback(oFigure, src, event)
+             
+         end
+         
+         % --------------------------------------------------------------------
+         function oNewEventMenu_Callback(oFigure, src, event)
+             aControlData = cell(4,1);
+             aControlData{1} = {'r','g','b','k','c','m','y'};
+             aControlData{2} = {'Activation','Repolarisation'};
+             aControlData{3} = {'SteepestPositiveSlope','SteepestNegativeSlope','CentralDifference','MaxSignalMagnitude'};
+             aControlData{4} = {'SingleBeat','AllBeats'};
+             oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique, beat selection and string ID details for the new event.',aControlData);
+             addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
+         end
+         
+         % --------------------------------------------------------------------
+         function oMaxSpatialMenu_Callback(oFigure, src, event)
+             oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('CentralDifference',oFigure.SelectedBeat);
+             oFigure.Replot();
+         end
+         
+         function oReMenu_Callback(oFigure, src, event)
+             oFigure.oParentFigure.oGuiHandle.oUnemap.MarkActivation('MaxSignalMagnitude',oFigure.SelectedBeat);
+             oFigure.Replot();
+         end
+         
+         function oGetSlopeMenu_Callback(oFigure, src, event)
+             oFigure.oParentFigure.oGuiHandle.oUnemap.GetSlope();
+             oFigure.Replot();
+         end
+         
+         function oAdjustBeatMenu_Callback(oFigure, src, event)
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
+             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'on');
+         end
+         
+         function oAnnotationMenu_Callback(oFigure, src, event)
+             %Change the annotation flag
+             if oFigure.Annotate
+                 oFigure.Annotate = 0;
+             else
+                 oFigure.Annotate = 1;
+             end
+             %Replot
+             oFigure.Replot();
+         end
+         
+         function oEnvelopeMenu_Callback(oFigure, src, event)
+             %Open an edit control
+             oFigure.oEditControl = EditControl(oFigure,'Enter the number of rows and columns to have in the kernel.',2);
+             addlistener(oFigure.oEditControl,'ValuesEntered',@(src,event) oFigure.SubtractEnvelope(src, event));
+         end
+         
+         function oCentralDifferenceMenu_Callback(oFigure, src, event)
+             %Set up inputs
+             aInOptions = struct();
+             aInOptions.Procedure = 'CentralDifference';
+             aInOptions.KernelBounds = [3 3];
+             oFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
+         end
+         
+         function oPlotPressureMenu_Callback(oFigure, src, event)
+             %Plot pressure on the ECG axes
+             oFigure.sECGAxesContent = 'Pressure';
+             oFigure.PlotPressure();
+         end
+         
+         function oNormaliseBeatMenu_Callback(oFigure, src, event)
+             %Carry out normalisation of the potential values of the selected beat
+             oFigure.oParentFigure.oGuiHandle.oUnemap.NormaliseBeat(oFigure.SelectedBeat);
+             oFigure.Replot();
+         end
+         
          function iEventNumber = GetEventNumberFromTag(oFigure, sTag)
-             %Find the event number specified by the input handle tag 
+             %Find the event number specified by the input handle tag
              [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
              iEventNumber = str2double(char(splitstring(1,2)));
          end
          
          function iChannel = GetChannelFromTag(oFigure, sTag)
-             %Find the channel specified by the input handle tag 
+             %Find the channel specified by the input handle tag
              [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
              iChannel = str2double(char(splitstring(1,1)));
          end
          
-          function Replot(oFigure,varargin)
+         function Replot(oFigure,varargin)
              %Make sure the current figure is AnalyseSignals
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              if isempty(varargin)
@@ -486,9 +551,9 @@ classdef AnalyseSignals < SubFigure
              [iMinRow iMinCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMinChannel);
              [iMaxRow iMaxCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMaxChannel);
              %Divide up the space for the subplots
-             xDiv = 1/(iMaxRow-iMinRow+1); 
+             xDiv = 1/(iMaxRow-iMinRow+1);
              yDiv = 1/(iMaxCol-iMinCol+1);
-                         
+             
              %Loop through the selected channels
              for i = 1:size(oFigure.SelectedChannels,2);
                  [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(oFigure.SelectedChannels(i));
@@ -501,7 +566,7 @@ classdef AnalyseSignals < SubFigure
                  %data
                  oSignalPlot = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals, 'Tag', ...
                      sprintf('Signal%d',oFigure.SelectedChannels(i)));
-                  %Create axes for envelope data
+                 %Create axes for envelope data
                  oEnvelopePlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'color','none',...
                      'Tag', sprintf('Envelope%d',oFigure.SelectedChannels(i)));
                  %Create axes for envelopesubtracted data
@@ -517,7 +582,7 @@ classdef AnalyseSignals < SubFigure
          end
          
          function PlotBeat(oFigure,varargin)
-             %Plot the beats for the selected channels in the subplot 
+             %Plot the beats for the selected channels in the subplot
              
              %Get the array of handles to the subplots that are children of
              %pnSignals panel
@@ -529,7 +594,7 @@ classdef AnalyseSignals < SubFigure
              %Find the accepted channels within this subset
              [rowIndexes, colIndexes, vector] = find(cell2mat({aSelectedElectrodes(:).Accepted}));
              %Select the accepted channels if there are any
-             if ~isempty(colIndexes) 
+             if ~isempty(colIndexes)
                  aSelectedElectrodes = aSelectedElectrodes(colIndexes);
              end
              %Get the data associated with these channels in individual
@@ -584,7 +649,7 @@ classdef AnalyseSignals < SubFigure
              %The channel data to plot on the iIndex subplot
              oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelIndex);
              %Get the data
-             aData = oElectrode.Processed.Data(...
+             aData = oElectrode.Processed.Beats(...
                  oElectrode.Processed.BeatIndexes(iBeat,1):...
                  oElectrode.Processed.BeatIndexes(iBeat,2));
              aSlope = oElectrode.Processed.Slope(...
@@ -644,12 +709,12 @@ classdef AnalyseSignals < SubFigure
                  if ~isempty(aEnvelope)
                      %Plot the envelope data
                      line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
-                     axis(oEnvelopePlot,[TimeMin, TimeMax, 1.1*aEnvelopeSubtracted(1), 1.1*aEnvelopeSubtracted(2)]);
+                     axis(oEnvelopePlot,[TimeMin, TimeMax, (1-sign(aEnvelopeSubtracted(1))*0.1)*aEnvelopeSubtracted(1), (1+sign(aEnvelopeSubtracted(2))*0.1)*aEnvelopeSubtracted(2)]);
                  end
-%                  if ~isempty(aEnvelopeSubtracted)
-%                      %Plot the envelope subtracted data
-%                      line(aTime,aEnvelopeSubtracted(oElectrode.Processed.BeatIndexes(iBeat,1):oElectrode.Processed.BeatIndexes(iBeat,2),iChannelIndex),'color','g','parent',oSubtractedPlot);
-%                  end
+                 %                  if ~isempty(aEnvelopeSubtracted)
+                 %                      %Plot the envelope subtracted data
+                 %                      line(aTime,aEnvelopeSubtracted(oElectrode.Processed.BeatIndexes(iBeat,1):oElectrode.Processed.BeatIndexes(iBeat,2),iChannelIndex),'color','g','parent',oSubtractedPlot);
+                 %                  end
                  
                  %Plot the slope data
                  line(aTime,aSlope,'color','r','parent',oSlopePlot);
@@ -667,8 +732,17 @@ classdef AnalyseSignals < SubFigure
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
                          %Label the line with the event time
                          if oFigure.Annotate
-                             oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, ...
-                                 num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f'));
+                             if isfield(oElectrode,'Pacing')
+                                 %This is a sequence of paced beats so express
+                                 %the time relative to the pacing index
+                                 sLabel = num2str((aTime(oElectrode.SignalEvent(j).Index(iBeat)) -  ...
+                                     oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Pacing.Index(iBeat)))*1000,'% 10.2f');
+                             else
+                                 %Just express the time relative to the start
+                                 %of the recording
+                                 sLabel = num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f');
+                             end
+                             oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, sLabel);
                              set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
                              set(oEventLabel,'FontSize',10);
                              set(oEventLabel,'parent',oSignalEventPlot);
@@ -684,10 +758,10 @@ classdef AnalyseSignals < SubFigure
              %Set some callbacks for this subplot
              set(oSignalEventPlot, 'buttondownfcn', @(src, event) oSignalEventPlot_Callback(oFigure, src, event));
              %Set the axis on the subplot
-             axis(oSignalPlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
-             axis(oSubtractedPlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
-             axis(oSlopePlot,[TimeMin, TimeMax, 1.1*SlopeYMin, 1.1*SlopeYMax]);
-             axis(oSignalEventPlot,[TimeMin, TimeMax, 1.1*SignalYMin, 1.1*SignalYMax]);
+             axis(oSignalPlot,[TimeMin, TimeMax, (1-sign(SignalYMin)*0.1)*SignalYMin, (1+sign(SignalYMax)*0.1)*SignalYMax]);
+             axis(oSubtractedPlot,[TimeMin, TimeMax, (1-sign(SlopeYMin)*0.1)*SlopeYMin, (1+sign(SlopeYMax)*0.1)*SlopeYMax]);
+             axis(oSlopePlot,[TimeMin, TimeMax, (1-sign(SlopeYMin)*0.1)*SlopeYMin, (1+sign(SlopeYMax)*0.1)*SlopeYMax]);
+             axis(oSignalEventPlot,[TimeMin, TimeMax, (1-sign(SignalYMin)*0.1)*SignalYMin, (1+sign(SignalYMax)*0.1)*SignalYMax]);
              
              if oFigure.Annotate
                  %Create a label that shows the channel name
@@ -703,8 +777,7 @@ classdef AnalyseSignals < SubFigure
              end
              
          end
- 
-         
+                  
          function PlotWholeRecord(oFigure)
              %Plot all the beats for the selected channel in the axes at
              %the bottom
@@ -731,7 +804,7 @@ classdef AnalyseSignals < SubFigure
              aSelectedTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
                  oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,1):...
                  oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,2));
-             %Plot all the data        
+             %Plot all the data
              cla(oAxes);
              if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannel).Accepted
                  %If the signal is accepted then plot it as black
@@ -761,45 +834,45 @@ classdef AnalyseSignals < SubFigure
          
          function PlotECG(oFigure)
              % Plot ECG Data
-            
-            %Clear axes and set to be visible
-            cla(oFigure.oGuiHandle.oECGAxes);
-            %Find axis limits
-            TimeMin = min(oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries);
-            TimeMax = max(oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries);
-            YMin = min(oFigure.oParentFigure.oGuiHandle.oECG.Original);
-            YMax = max(oFigure.oParentFigure.oGuiHandle.oECG.Original);
-            %Plot the ECG channel data
-            plot(oFigure.oGuiHandle.oECGAxes, ...
-                oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oECG.Original,'k');
-            hold(oFigure.oGuiHandle.oECGAxes, 'on');
-            plot(oFigure.oGuiHandle.oECGAxes, ...
-                oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
-                transpose(oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats),'-g');
-            axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
-            hold(oFigure.oGuiHandle.oECGAxes, 'off');
-            oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
-            set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
-         end
              
+             %Clear axes and set to be visible
+             cla(oFigure.oGuiHandle.oECGAxes);
+             %Find axis limits
+             TimeMin = min(oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries);
+             TimeMax = max(oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries);
+             YMin = min(oFigure.oParentFigure.oGuiHandle.oECG.Original);
+             YMax = max(oFigure.oParentFigure.oGuiHandle.oECG.Original);
+             %Plot the ECG channel data
+             plot(oFigure.oGuiHandle.oECGAxes, ...
+                 oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
+                 oFigure.oParentFigure.oGuiHandle.oECG.Original,'k');
+             hold(oFigure.oGuiHandle.oECGAxes, 'on');
+             plot(oFigure.oGuiHandle.oECGAxes, ...
+                 oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
+                 transpose(oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats),'-g');
+             axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
+             hold(oFigure.oGuiHandle.oECGAxes, 'off');
+             oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
+             set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
+         end
+         
          function PlotPressure(oFigure)
              % Plot Pressure Data
-            
-            %Clear axes and set to be visible
-            cla(oFigure.oGuiHandle.oECGAxes);
-            %Find axis limits
-            TimeMin = min(oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
-            TimeMax = max(oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
-            YMin = min(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
-            YMax = max(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
-            %Plot the Pressure data
-            plot(oFigure.oGuiHandle.oECGAxes, ...
-                oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
-                oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,'k');
-            axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
-            oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
-            set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
+             
+             %Clear axes and set to be visible
+             cla(oFigure.oGuiHandle.oECGAxes);
+             %Find axis limits
+             TimeMin = min(oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+             TimeMax = max(oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
+             YMin = min(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
+             YMax = max(oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data);
+             %Plot the Pressure data
+             plot(oFigure.oGuiHandle.oECGAxes, ...
+                 oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
+                 oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,'k');
+             axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
+             oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
+             set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
          end
      end
 end

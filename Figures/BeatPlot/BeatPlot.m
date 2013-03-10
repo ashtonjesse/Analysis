@@ -23,7 +23,7 @@ classdef BeatPlot < SubFigure
             addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.SelectionListener(src, event));
             %Add one so the figure knows when it's parent has been deleted
-            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
+            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) ParentFigureDeleted(oFigure,src, event));
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
@@ -306,9 +306,9 @@ classdef BeatPlot < SubFigure
              cla(oSignalEventPlot);
              
              %Set the axis on the plot
-             axis(oSignalPlot,[TimeMin, TimeMax, -1.1*abs(SignalYMin), 1.1*SignalYMax]);
-             axis(oSlopePlot,[TimeMin, TimeMax, -1.1*abs(SlopeYMin), 1.1*SlopeYMax]);
-             axis(oSignalEventPlot,[TimeMin, TimeMax, -1.1*abs(SignalYMin), 1.1*SignalYMax]);
+             axis(oSignalPlot,[TimeMin, TimeMax, (1-sign(SignalYMin)*0.1)*SignalYMin, (1+sign(SignalYMax)*0.1)*SignalYMax]);
+             axis(oSlopePlot,[TimeMin, TimeMax, (1-sign(SlopeYMin)*0.1)*SlopeYMin, (1+sign(SlopeYMax)*0.1)*SlopeYMax]);
+             axis(oSignalEventPlot,[TimeMin, TimeMax, (1-sign(SignalYMin)*0.1)*SignalYMin, (1+sign(SignalYMax)*0.1)*SignalYMax]);
              
              %Plot the data and slope
              if oElectrode.Accepted
@@ -318,7 +318,7 @@ classdef BeatPlot < SubFigure
                  if ~isempty(aEnvelope)
                      %Plot the envelope data
                      line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
-                     axis(oEnvelopePlot,[TimeMin, TimeMax, 1.1*aEnvelopeLimits(1), 1.1*aEnvelopeLimits(2)]);
+                     axis(oEnvelopePlot,[TimeMin, TimeMax, (1-sign(aEnvelopeLimits(1))*0.1)*aEnvelopeLimits(1), (1+sign(aEnvelopeLimits(2))*0.1)*aEnvelopeLimits(2)]);
                  end
                  
                  %Plot the slope data
@@ -334,8 +334,17 @@ classdef BeatPlot < SubFigure
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
                          %Label the line with the event time
-                         oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, ...
-                             num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f'));
+                         if isfield(oElectrode,'Pacing')
+                             %This is a sequence of paced beats so express
+                             %the time relative to the pacing index
+                             sLabel = num2str((aTime(oElectrode.SignalEvent(j).Index(iBeat)) - ...
+                                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Pacing.Index(iBeat)))*1000,'% 10.2f');
+                         else
+                             %Just express the time relative to the start
+                             %of the recording
+                             sLabel = num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f');
+                         end
+                         oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, sLabel);
                          set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
                          set(oEventLabel,'FontSize',10);
                          set(oEventLabel,'parent',oSignalEventPlot);

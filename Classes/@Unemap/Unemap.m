@@ -82,6 +82,8 @@ classdef Unemap < BasePotential
             %This is a hacky way to do it but IDGF
             oElectrode = [];
             for i = 1:length(oUnemap.Electrodes)
+                %Revisit this by trying aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID),
+                %aEvents);
                 if strcmp(oUnemap.Electrodes(i).Name,sChannelName)
                     oElectrode = oUnemap.Electrodes(i);
                 end
@@ -98,16 +100,28 @@ classdef Unemap < BasePotential
             end
         end
         
-        function GetSlope(oUnemap,varargin)
-            if nargin > 1
+        function GetSlope(oUnemap, varargin)
+            if nargin > 2
                 %An electrode number has been specified so use this
-                iElectrodeNumber = varargin{1};
+                sDataType = char(varargin{1});
+                iElectrodeNumber = varargin{2};
                 if strcmp(oUnemap.Electrodes(iElectrodeNumber).Status,'Potential');
                     error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
                 end
                 %Perform on processed data
                 oUnemap.Electrodes(iElectrodeNumber).Processed.Slope = ...
-                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.Data,5,3);
+                    oUnemap.CalculateSlope(oUnemap.Electrodes(iElectrodeNumber).Processed.(sDataType),5,3);
+            elseif nargin > 1
+                 %A datatype has been specified
+                sDataType = char(varargin{1});
+                if strcmp(oUnemap.Electrodes(1).Status,'Potential');
+                    error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
+                end
+                %Perform on data of datatype
+                for i = 1:size(oUnemap.Electrodes,2)
+                    oUnemap.Electrodes(i).Processed.Slope = ...
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.(sDataType),5,3);
+                end
             else
                 %No electrode number has been specified so loop through
                 %all
@@ -116,7 +130,7 @@ classdef Unemap < BasePotential
                 end
                 for i = 1:size(oUnemap.Electrodes,2)
                     oUnemap.Electrodes(i).Processed.Slope = ...
-                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,5,3);
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,10,3);
                 end
             end
         end
@@ -271,7 +285,7 @@ classdef Unemap < BasePotential
             %The channel is now processed
             oUnemap.Electrodes(iChannel).Status = 'Processed';
             %Calculate slope and curvature
-            oUnemap.GetSlope(iChannel);
+            oUnemap.GetSlope('Data',iChannel);
             oUnemap.GetCurvature(iChannel);
            
         end
@@ -648,8 +662,32 @@ classdef Unemap < BasePotential
             end
         end
         
+        function NormaliseBeat(oUnemap, iBeat)
+            %Normalise the specified beat making the most negative value 0
+            %and the most positive value 1.
+            
+            %Get the electrode processed data
+            aProcessedData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+            aBeatData = aProcessedData(oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1):...
+                oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2),:);
+            %Blank the first 40 values to ignore the stimulus artifact
+            aMinValues = min(aBeatData(40:end,:), [], 1);
+            aNewData = zeros(size(aBeatData));
+            for i = 1:size(aBeatData,2)
+                %Loop through the electrodes
+                aNewData(:,i) = -sign(aMinValues(i))*abs(aMinValues(i)) + aBeatData(:,i);
+                %again blank the first 40 values
+                aNewData(:,i) = aNewData(:,i) / max(aNewData(40:end,i));
+            end
+            aBeatData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats');
+            aBeatData(oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1):...
+                oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2),:) = aNewData;
+            %Reload the beat data
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',aBeatData);
+            oUnemap.GetSlope('Beats');
+        end
         %% Methods relating to Electrode Activation data
-         function UpdateEventRange(oUnemap, iEventIndex, iBeat, aElectrodes, aRange)
+        function UpdateEventRange(oUnemap, iEventIndex, iBeat, aElectrodes, aRange)
             %Change the range for the specified event and beat and selected
             %electrodes
             
@@ -677,7 +715,7 @@ classdef Unemap < BasePotential
                         case 'SteepestPositiveSlope'
                             % Get slope data if this has not been done already
                             if isnan(oUnemap.Electrodes(iElectrode).Processed.Slope)
-                                oUnemap.GetSlope(iElectrode);
+                                oUnemap.GetSlope('Data',iElectrode);
                             end
                             oUnemap.Electrodes(iElectrode).SignalEvent(iEvent).Index =  fSteepestSlope(oUnemap.TimeSeries, ...
                                 oUnemap.Electrodes(iElectrode).Processed.Slope, ...
@@ -685,7 +723,7 @@ classdef Unemap < BasePotential
                         case 'SteepestNegativeSlope'
                             % Get slope data if this has not been done already
                             if isnan(oUnemap.Electrodes(iElectrode).Processed.Slope)
-                                oUnemap.GetSlope(iElectrode);
+                                oUnemap.GetSlope('Data',iElectrode);
                             end
                             oUnemap.Electrodes(iElectrode).SignalEvent(iEvent).Index =  fSteepestNegativeSlope(oUnemap.TimeSeries, ...
                                 oUnemap.Electrodes(iElectrode).Processed.Slope, ...
@@ -712,7 +750,7 @@ classdef Unemap < BasePotential
                         case 'SteepestPositiveSlope'
                             % Get slope data if this has not been done already
                             if isnan(oUnemap.Electrodes(iElectrode).Processed.Slope)
-                                oUnemap.GetSlope(iElectrode);
+                                oUnemap.GetSlope('Data',iElectrode);
                             end
                             iIndex =  fSteepestSlope(oUnemap.TimeSeries, ...
                                 oUnemap.Electrodes(iElectrode).Processed.Slope, ...
@@ -722,7 +760,7 @@ classdef Unemap < BasePotential
                         case 'SteepestNegativeSlope'
                             % Get slope data if this has not been done already
                             if isnan(oUnemap.Electrodes(iElectrode).Processed.Slope)
-                                oUnemap.GetSlope(iElectrode);
+                                oUnemap.GetSlope('Data',iElectrode);
                             end
                             iIndex = fSteepestNegativeSlope(oUnemap.TimeSeries, ...
                                 oUnemap.Electrodes(iElectrode).Processed.Slope, ...
@@ -769,15 +807,25 @@ classdef Unemap < BasePotential
             %convert to ms
             aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
             dMaxAcceptedTime = 0;
-            dVals = [1,70, 120];
+            dVals = [1];
             for k = 1:length(dVals)%size(oUnemap.Electrodes(1).SignalEvent.Index,1);
                 i = dVals(k);
-                aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).SignalEvent.Range(i,1);
+                aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
                 %Select accepted channels
                 aAcceptedActivations = aActivationIndexes(i,logical(aAcceptedChannels));
                 aAcceptedTimes = oUnemap.TimeSeries(aAcceptedActivations);
                 %Convert to ms
-                aActivationTimes(i,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(i,:)) - min(aAcceptedTimes));
+                if isfield(oUnemap.Electrodes(1),'Pacing')
+                    %this is a sequence of paced beats so express the
+                    %activation time relative to the pacing stimulus
+                    aActivationTimes(i,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(i,:)) - oUnemap.TimeSeries(oUnemap.Electrodes(1).Pacing.Index(i)));
+                else
+                    %this is a sequence of sinus beats so express the
+                    %activation time relative to the earliest accepted
+                    %activation
+                    aActivationTimes(i,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(i,:)) - min(aAcceptedTimes));
+                end
+                
                 dMaxAcceptedTime = max(max(aActivationTimes(i,logical(aAcceptedChannels))),dMaxAcceptedTime);
             end
             aActivationTimes = transpose(aActivationTimes);

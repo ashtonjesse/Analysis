@@ -196,7 +196,7 @@ classdef MapElectrodes < SubFigure
             oPlotData.XLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
             oPlotData.YLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
             AxesControl(oFigure,'2DScatter','2DDuringStim',oPlotData);
-%             %During stim singleton
+%            %During stim singleton
 %             oPlotData.z = oAverageData.Stim.z;
 %             AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
 %             %Post stim
