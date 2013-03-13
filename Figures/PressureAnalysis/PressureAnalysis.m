@@ -192,7 +192,7 @@ classdef PressureAnalysis < SubFigure
             oFigure.CreateSubPlot(3);
             oFigure.PlotPressure(oFigure.aPlots(1));
             %oFigure.PlotRefSignal(oFigure.aPlots(2));
-            oFigure.PlotUnemapRefSignal(oFigure.aPlots(2));
+            oFigure.PlotRefSignal(oFigure.aPlots(2));
             plot(oFigure.aPlots(3),oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),aIntegral,'k');
             set(oFigure.aPlots(3),'XTick',[]);
             set(oFigure.aPlots(3),'YTick',[]);
