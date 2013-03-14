@@ -3,11 +3,11 @@ classdef MapElectrodes < SubFigure
     
     properties
         SelectedChannels;
-        Potentials;
-        Activation;
+        Potential = [];
+        Activation = [];
         cmin;
         cmax;
-        PlotType; %A string specifying the currently displayed plot
+        PlotType; %A string specifying the currently selected type of plot
         PlotPosition; %An array that can be used to store the position of the oMapAxes 
     end
     
@@ -26,13 +26,14 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oGenScatterMenu, 'callback', @(src, event) oGenScatterMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oGenContourMenu, 'callback', @(src, event) oGenContourMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oGenAverageMenu, 'callback', @(src, event) oGenAverageMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oActScatterMenu, 'callback', @(src, event) oActScatterMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oActContourMenu, 'callback', @(src, event) oActContourMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oActAverageMenu, 'callback', @(src, event) oActAverageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) oViewMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oReplotMenu, 'callback', @(src, event) oReplotMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oSaveActivationMenu, 'callback', @(src, event) oSaveActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSaveMapMenu, 'callback', @(src, event) oSaveMapMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -44,7 +45,12 @@ classdef MapElectrodes < SubFigure
             addlistener(oFigure.oParentFigure,'SlideSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
             %Add one so the figure knows when it's parent has been deleted
             addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
-            
+            %Add a listener so the figure knows when a new time point has
+            %been selected.
+            addlistener(oFigure.oParentFigure,'TimeSelectionChange',@(src,event) oFigure.TimeSelectionListener(src, event));
+            %Add a listener so the figure knows when a new channel has been
+            %selected
+            addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.ChannelSelectionListener(src, event));
             %Set constants and plot 
             oFigure.PlotPosition = get(oFigure.oGuiHandle.oMapAxes,'Position');
             oFigure.PlotType = 'JustElectrodes';
@@ -106,7 +112,7 @@ classdef MapElectrodes < SubFigure
         end
         
         % -----------------------------------------------------------------
-        function oSaveActivationMenu_Callback(oFigure, src, event)
+        function oSaveMapMenu_Callback(oFigure, src, event)
             %Get the save file path
             %Call built-in file dialog to select filename
             [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
@@ -178,7 +184,7 @@ classdef MapElectrodes < SubFigure
             oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
         end
         
-        function oGenAverageMenu_Callback(oFigure, src, event)
+        function oActAverageMenu_Callback(oFigure, src, event)
             %Prepare average activation maps for beats preceeding, during
             %and after stimulation period
             oAverageData = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
@@ -195,7 +201,7 @@ classdef MapElectrodes < SubFigure
             oPlotData.MinCLim = min(oPlotData.z);
             oPlotData.XLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
             oPlotData.YLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
-            AxesControl(oFigure,'2DScatter','2DDuringStim',oPlotData);
+            AxesControl(oFigure,'Activation2DScatter','2DDuringStim',oPlotData);
 %            %During stim singleton
 %             oPlotData.z = oAverageData.Stim.z;
 %             AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
@@ -271,26 +277,46 @@ classdef MapElectrodes < SubFigure
         end
         
         %% Callbacks
-       
-        function oGenScatterMenu_Callback(oFigure, src, event);
-            %Generate activation map for the current beat
-            oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
+        function oPotContourMenu_Callback(oFigure, src, event)
+            %Generate potential map for the current beat
             
-            %Plot 2D by default
+            %Check if the potential data needs to be prepared
+            if isempty(oFigure.Potential)
+                oFigure.Potential = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PreparePotentialMap(50);
+            end
+            
             %Update the plot type
-            oFigure.PlotType = '2DActivation';
+            oFigure.PlotType = 'Potential2DContour';
+
+            %Plot a potential contour map
+            oFigure.PlotPotential();
+        end
+        
+        function oActScatterMenu_Callback(oFigure, src, event);
+            %Generate activation map for the current beat
+            
+            %Check if the activation data needs to be prepared
+            if isempty(oFigure.Activation)
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
+            end
+            
+            %Update the plot type
+            oFigure.PlotType = 'Activation2DScatter';
 
             %Plot a 2D activation map
             oFigure.PlotActivation();
         end
         
-        function oGenContourMenu_Callback(oFigure, src, event);
+        function oActContourMenu_Callback(oFigure, src, event);
             %Generate activation map for the current beat
-            oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
             
-            %Plot 2D by default
+            %Check if the activation data needs to be prepared
+            if isempty(oFigure.Activation)
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
+            end
+            
             %Update the plot type
-            oFigure.PlotType = '2DContour';
+            oFigure.PlotType = 'Activation2DContour';
 
             %Plot a 2D activation map
             oFigure.PlotActivation();
@@ -302,8 +328,10 @@ classdef MapElectrodes < SubFigure
             %SlideControl
             
             %Choose which plot to call.
-            if ~strcmpi(oFigure.PlotType,'JustElectrodes')
-                oFigure.PlotActivation();
+            if strncmpi(oFigure.PlotType,'Act',3)
+                oFigure.PlotActivation();                
+            elseif strncmpi(oFigure.PlotType,'Pot',3)
+                oFigure.PlotPotential();
             end
         end
        
@@ -313,9 +341,35 @@ classdef MapElectrodes < SubFigure
             %plot in AnalyseSignals
             
             %Choose which plot to call.
-            if ~strcmpi(oFigure.PlotType,'JustElectrodes')
-                oFigure.PlotActivation();
+            if strncmpi(oFigure.PlotType,'Act',3)
+                oFigure.PlotActivation();                
+            elseif strncmpi(oFigure.PlotType,'Pot',3)
+                oFigure.PlotPotential();
             end
+        end
+        
+        function TimeSelectionListener(oFigure, src, event)
+            %An event listener callback
+            %Is called when the user selects a new time point using the
+            %slidecontrol
+                        
+            if strncmpi(oFigure.PlotType,'Pot',3)
+                oFigure.PlotPotential();
+            end
+        end
+        
+        function ChannelSelectionListener(oFigure, src, event)
+            %An event listener callback
+            %Is called when the user selects a new channel
+            
+             %Choose which plot to call.
+            if strncmpi(oFigure.PlotType,'Act',3)
+                oFigure.PlotActivation();                
+            elseif strncmpi(oFigure.PlotType,'Pot',3)
+                oFigure.PlotPotential();
+            end
+            
+           
         end
      end
      
@@ -404,7 +458,7 @@ classdef MapElectrodes < SubFigure
              iBeat = oFigure.oParentFigure.SelectedBeat;
              %Which plot type to use
              switch (oFigure.PlotType)
-                 case '2DContour'
+                 case 'Activation2DContour'
                      %Create the interpolation vectors needed for the gridfit
                      xlin = linspace(min(oFigure.Activation.x(~isnan(oFigure.Activation.z(:,iBeat)))), ...
                          max(oFigure.Activation.x(~isnan(oFigure.Activation.z(:,iBeat)))),length(oFigure.Activation.x(~isnan(oFigure.Activation.z(:,iBeat)))));
@@ -431,7 +485,7 @@ classdef MapElectrodes < SubFigure
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      %set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
 
-                 case '2DActivation' 
+                 case 'Activation2DScatter' 
                      oXLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
                      oYLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
                      scatter(oFigure.oGuiHandle.oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
@@ -448,7 +502,7 @@ classdef MapElectrodes < SubFigure
                      
                      %Remove ticks
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
-                 case '3DActivation'
+                 case 'Activation3DSurface'
                      aTriangulatedMesh = delaunay(oFigure.Activation.x, oFigure.Activation.y);
                      trisurf(aTriangulatedMesh,oFigure.Activation.x, oFigure.Activation.y,-oFigure.Activation.z(:,iBeat));
                      zlim(oFigure.oGuiHandle.oMapAxes,[-ceil(oFigure.Activation.MaxActivationTime) 0]);
@@ -459,6 +513,43 @@ classdef MapElectrodes < SubFigure
                      colorbar('location','EastOutside');
              end
              title(oFigure.oGuiHandle.oMapAxes,sprintf('Activation map for beat #%d',iBeat));
+         end
+         
+         function PlotPotential(oFigure)
+             %Make sure the current figure is MapElectrodes
+             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+             %Get the selected beat
+             iBeat = oFigure.oParentFigure.SelectedBeat;
+             %Get the time point selected
+             iTimeIndex = oFigure.oParentFigure.SelectedTimePoint;
+             %Which plot type to use
+             switch (oFigure.PlotType)
+                 case 'Potential2DContour'
+                     %Save axes limits
+                     oXLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
+                     oYLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
+                     %Assuming the potential field has been normalised.
+                     contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potential.x,oFigure.Potential.y,oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,0:0.1:1.1);
+                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     %check if there is an existing colour bar
+                     %get figure children
+                     oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+                     oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+                     if oHandle < 0
+                         oColorBar = cbarf(oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,0:0.1:1.1);
+                         oTitle = get(oColorBar, 'title');
+                         set(oTitle,'units','pixels');
+                         set(oTitle,'string','Time (ms)','position',[15 620]);
+                     end
+                     set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
+                     iChannel = oFigure.oParentFigure.SelectedChannel;
+                     %Get the electrodes
+                     hold(oFigure.oGuiHandle.oMapAxes,'on');
+                     oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
+                     plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), '.', ...
+                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     hold(oFigure.oGuiHandle.oMapAxes,'off');
+             end
          end
      end
 end

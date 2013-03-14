@@ -670,14 +670,14 @@ classdef Unemap < BasePotential
             aProcessedData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
             aBeatData = aProcessedData(oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1):...
                 oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2),:);
-            %Blank the first 40 values to ignore the stimulus artifact
-            aMinValues = min(aBeatData(40:end,:), [], 1);
+            %Blank the first 25 values to ignore the stimulus artifact
+            aMinValues = min(aBeatData(25:end,:), [], 1);
             aNewData = zeros(size(aBeatData));
             for i = 1:size(aBeatData,2)
                 %Loop through the electrodes
                 aNewData(:,i) = -sign(aMinValues(i))*abs(aMinValues(i)) + aBeatData(:,i);
-                %again blank the first 40 values
-                aNewData(:,i) = aNewData(:,i) / max(aNewData(40:end,i));
+                %again blank the first 25 values
+                aNewData(:,i) = aNewData(:,i) / max(aNewData(25:end,i));
             end
             aBeatData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats');
             aBeatData(oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1):...
@@ -830,23 +830,123 @@ classdef Unemap < BasePotential
             end
             aActivationTimes = transpose(aActivationTimes);
             
-            %Turn the coords into a 2 column matrix
-            aCoords = [0, 0];
+            aCoords = zeros(length(oUnemap.Electrodes),2);
             for j = 1:size(oUnemap.Electrodes,2)
                 %IDGF that this is not an efficient way to
                 %do this.
-                aCoords = [aCoords; oUnemap.Electrodes(j).Coords(1), oUnemap.Electrodes(j).Coords(2)];
+                aCoords(j,1) = oUnemap.Electrodes(j).Coords(1);
+                aCoords(j,2) = oUnemap.Electrodes(j).Coords(2);
                 if ~oUnemap.Electrodes(j).Accepted
                     aActivationTimes(j,:) = NaN; 
                 end
             end
-            aCoords = aCoords(2:end,:);
             oMapData = struct();
             oMapData.x = aCoords(:,1);
             oMapData.y = aCoords(:,2);
             oMapData.z = aActivationTimes;
             oMapData.AcceptedActivationTimes = aAcceptedActivations;
             oMapData.MaxActivationTime = dMaxAcceptedTime; 
+        end
+        
+        function oMapData = PreparePotentialMap(oUnemap, dInterpDim)
+            %Get the inputs for a mapping call for potential fields,
+            %returning a struct containing the x and y locations of the
+            %electrodes and the potential fields for each time point in each beat.
+            %This implements Hardy interpolation with an interpolation
+            %array of dInterPoints x dInterpDim
+            
+            oWaitbar = waitbar(0,'Please wait...');
+            
+            %get the accepted channels
+            aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
+            aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
+            
+            %Get the points array that will be used to solve for the interpolation
+            %coefficients
+            %First solve the inverse problem of ActTimes(p) = sum(ci * sqrt((p-pi)^2 + r2))
+            % I.e x = A^-1 * b where x is ci.
+            aPoints = zeros(length(aElectrodes),length(aElectrodes));
+            %...and turn the coords into a 2 column matrix
+            aCoords = zeros(length(aElectrodes),2);
+            
+            for m = 1:length(aElectrodes);
+                for i = 1:length(aElectrodes);
+                    %Calc the euclidean distance between each point and every other
+                    %point
+                    aPoints(m,i) =  (aElectrodes(m).Coords(1) - aElectrodes(i).Coords(1))^2 + ...
+                        (aElectrodes(m).Coords(2) - aElectrodes(i).Coords(2))^2;
+                end
+                %Save the coordinates
+                aCoords(m,1) = aElectrodes(m).Coords(1);
+                aCoords(m,2) = aElectrodes(m).Coords(2);
+            end
+            
+            %Get the interpolated points array
+            xlin = linspace(min(aCoords(:,1)), max(aCoords(:,1)), dInterpDim);
+            ylin = linspace(min(aCoords(:,2)), max(aCoords(:,2)), dInterpDim);
+            
+            %Also the indexes in the interpolation array of the points that are closest to
+            %the recording points - will use to calculate the error
+            xIndices = zeros(length(aElectrodes),1);
+            yIndices = zeros(length(aElectrodes),1);
+            %Make an array of arbitrarily large numbers to be replaced with minimums
+            aMinPoints = ones(1,length(aElectrodes))*2000;
+            aInterpPoints = zeros(dInterpDim*dInterpDim,length(aElectrodes));
+            
+            for i = 1:length(aElectrodes);
+                for m = 1:length(xlin)
+                    for n = 1:length(ylin)
+                        aInterpPoints((m-1)*length(ylin)+n,i) =  (xlin(m) - aElectrodes(i).Coords(1))^2 + ...
+                            (ylin(n) - aElectrodes(i).Coords(2))^2;
+                        if aInterpPoints((m-1)*length(xlin)+n,i) < aMinPoints(1,i)
+                            aMinPoints(1,i) = aInterpPoints((m-1)*length(xlin)+n,i);
+                            xIndices(i) = m;
+                            yIndices(i) = n;
+                        end
+                    end
+                end
+            end
+            
+            %Initialise the map data struct
+            oMapData = struct('x', xlin, 'y', ylin, 'r2', 0.005);
+            %Finish calculating the points array
+            oMapData.Points = sqrt(aPoints + oMapData.r2);
+            %Finish calculating the interpolation points array
+            oMapData.InterpPoints = sqrt(aInterpPoints + oMapData.r2);
+            oMapData.Beats = struct();    
+            %Get the potential data for all beats
+            aAllBeatPotentials = MultiLevelSubsRef(oUnemap.oDAL.oHelper,aElectrodes,'Processed','Beats');
+            %initialise an RMS array
+            aRMS = zeros(length(aElectrodes),1);
+            %Loop through the beats
+            for k = 1:size(aElectrodes(1).Processed.BeatIndexes,1)
+                %Get the potential fields for all time points during this
+                %beat
+                waitbar(k/size(aElectrodes(1).Processed.BeatIndexes,1),oWaitbar,sprintf('Please wait... Processing Beat %d',k));
+                aSingleBeatPotentials = aAllBeatPotentials(aElectrodes(1).Processed.BeatIndexes(k,1):aElectrodes(1).Processed.BeatIndexes(k,2),:);
+                %initialise the struct to hold all the interpolated fields
+                oFields = struct();
+                %Loop through time points in beat
+                for u = 1:size(aSingleBeatPotentials,1)
+                    oFields(u).Potential = aSingleBeatPotentials(u,:).';
+                    oFields(u).Coefs = linsolve(oMapData.Points,oFields(u).Potential);
+                    %Get the interpolated potentials via matrix multiplication
+                    oFields(u).Interpolated = oMapData.InterpPoints * oFields(u).Coefs;
+                    %Reconstruct field
+                    oFields(u).z = zeros(dInterpDim, dInterpDim);
+                    for m = 1:dInterpDim
+                        oFields(u).z(:,m) = oFields(u).Interpolated((m-1)*dInterpDim+1:m*dInterpDim,1);
+                    end
+                    %Calc the RMS error for this field
+                    for i = 1:length(aRMS)
+                        aRMS(i) =  (oFields(u).Potential(i) -  oFields(u).z(yIndices(i),xIndices(i)))^2;
+                    end
+                    oFields(u).RMS = sqrt(sum(aRMS)/length(aRMS));
+                    %Save the fields struct
+                    oMapData.Beats(k).Fields = oFields;
+                end
+            end
+            close(oWaitbar);
         end
         
         function oMapData = CalculateAverageActivationMap(oUnemap,oActivationData)

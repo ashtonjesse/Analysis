@@ -8,6 +8,7 @@ classdef AnalyseSignals < SubFigure
         SelectedChannel = 2;
         PreviousChannel = 1;
         SelectedBeat = 1;
+        SelectedTimePoint = 25;
         SubPlotXdim;
         SubPlotYdim;
         NumberofChannels;
@@ -19,26 +20,28 @@ classdef AnalyseSignals < SubFigure
     end
         
     events
-        SlideSelectionChange;
+        SlideSelectionChange; %selected beat
         ChannelSelected;
         FigureDeleted;
         EventMarkChange;
-        BeatIndexChange;
+        BeatIndexChange; %beat range
+        TimeSelectionChange;
     end
     
     methods
         function oFigure = AnalyseSignals(oParent)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'AnalyseSignals',@AnalyseSignals_OpeningFcn);
-            oSlideControl = SlideControl(oFigure,'Select Beat');
-            %Set up slider
+            
+            %Set up beat slider
+            oBeatSliderControl = SlideControl(oFigure,'Select Beat');
             iNumBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-            set(oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-                iNumBeats, 'Value', 1,'SliderStep',[1/iNumBeats  0.02]);
-            set(oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
-            set(oSlideControl.oGuiHandle.oSliderTxtRight,'string',iNumBeats);
-            set(oSlideControl.oGuiHandle.oSliderEdit,'string',1);
-            addlistener(oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
+            set(oBeatSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+                iNumBeats, 'Value', oFigure.SelectedTimePoint,'SliderStep',[1/iNumBeats  0.02]);
+            set(oBeatSliderControl.oGuiHandle.oSliderTxtLeft,'string',1);
+            set(oBeatSliderControl.oGuiHandle.oSliderTxtRight,'string',iNumBeats);
+            set(oBeatSliderControl.oGuiHandle.oSliderEdit,'string',oFigure.SelectedTimePoint);
+            addlistener(oBeatSliderControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             
             %Get constants
             oFigure.SubPlotXdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.xDim;
@@ -76,7 +79,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) KeyPress_fcn(oFigure, src, event));
             
-            
+            %Open a electrode map plot
             oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
             %Add a listener so that the figure knows when a user has
             %made a channel selection
@@ -88,6 +91,18 @@ classdef AnalyseSignals < SubFigure
             oBeatPlotFigure = BeatPlot(oFigure);
             addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
             addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.EventDeleted(src,event));
+            
+            %Open a time point slider
+            oTimeSliderControl = SlideControl(oFigure,'Select Time Point');
+            iBeatLength = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(1,2) - ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(1,1);
+            set(oTimeSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+                iBeatLength, 'Value', 1,'SliderStep',[1/iBeatLength  0.02]);
+            set(oTimeSliderControl.oGuiHandle.oSliderTxtLeft,'string',1);
+            set(oTimeSliderControl.oGuiHandle.oSliderTxtRight,'string',iBeatLength);
+            set(oTimeSliderControl.oGuiHandle.oSliderEdit,'string',1);
+            addlistener(oTimeSliderControl,'SlideValueChanged',@(src,event) oFigure.TimeSlideValueListener(src, event));
+            
             
             %set zoom callback
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
@@ -345,6 +360,14 @@ classdef AnalyseSignals < SubFigure
              notify(oFigure,'SlideSelectionChange');
              oFigure.Replot();
              
+         end
+         
+         function TimeSlideValueListener(oFigure, src, event)
+             %An event listener callback
+             %Is called when the user selects a new time point using the
+             %SlideControl
+             oFigure.SelectedTimePoint = event.Value;
+             notify(oFigure,'TimeSelectionChange');
          end
          
          %% Event Callbacks --------------------------------------

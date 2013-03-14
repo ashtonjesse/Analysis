@@ -22,6 +22,9 @@ classdef BeatPlot < SubFigure
             addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.SelectionListener(src, event));
+            %Add a listener so the figure knows when a user has made a time
+            %point selection
+            addlistener(oFigure.oParentFigure,'TimeSelectionChange',@(src,event) oFigure.TimeSelectionListener(src, event));
             %Add one so the figure knows when it's parent has been deleted
             addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) ParentFigureDeleted(oFigure,src, event));
             %Sets the figure close function. This lets the class know that
@@ -83,6 +86,12 @@ classdef BeatPlot < SubFigure
         
         function oFigure = Close_fcn(oFigure, src, event)
             deleteme(oFigure);
+        end
+        
+        function TimeSelectionListener(oFigure, src, event)
+            %An event listener callback
+            %Is called when the user selects a new time point
+            oFigure.PlotBeat();
         end
      end
      
@@ -314,7 +323,12 @@ classdef BeatPlot < SubFigure
              if oElectrode.Accepted
                  %If the signal is accepted then plot it as black
                  plot(oSignalPlot,aTime,aData,'-k');
-                 
+                 %plot a line that shows the currently selected timepoint
+                 oLine = line([aTime(oFigure.oParentFigure.SelectedTimePoint) ...
+                     aTime(oFigure.oParentFigure.SelectedTimePoint)], [SignalYMax, SignalYMin]);
+                 sLineTag = sprintf('TimeLine%d',oFigure.oParentFigure.SelectedChannel);
+                 set(oLine,'Tag',sLineTag,'color', 'k', 'parent',oSignalEventPlot, ...
+                     'linewidth',2);
                  if ~isempty(aEnvelope)
                      %Plot the envelope data
                      line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
