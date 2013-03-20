@@ -531,11 +531,13 @@ classdef AnalyseSignals < SubFigure
          function Replot(oFigure,varargin)
              %Make sure the current figure is AnalyseSignals
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+             tic;
              if isempty(varargin)
                  oFigure.PlotBeat();
              else
                  oFigure.PlotBeat(varargin);
              end
+             toc;
              oFigure.PlotWholeRecord();
              switch (oFigure.sECGAxesContent)
                  case 'ECG'
@@ -686,7 +688,9 @@ classdef AnalyseSignals < SubFigure
                      oElectrode.Processed.BeatIndexes(iBeat,1):...
                      oElectrode.Processed.BeatIndexes(iBeat,2)));
              end
-             
+             %Interpolate data depending on the number of plots to reduce
+             %the number of data points to plot
+
              %Get these values so that we can place text in the
              %right place
              TimeMax = max(aTime);

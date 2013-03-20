@@ -110,7 +110,7 @@ else
   scale='nonlinear';
 end
 
-clim=get(ax0,'clim');
+clim=v;%get(ax0,'clim');
 cmap=get(gcf,'colormap');
 
 % create nex axes if needed:

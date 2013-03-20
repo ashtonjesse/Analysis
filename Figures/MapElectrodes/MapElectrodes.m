@@ -5,8 +5,8 @@ classdef MapElectrodes < SubFigure
         SelectedChannels;
         Potential = [];
         Activation = [];
-        cmin;
-        cmax;
+        cbarmin;
+        cbarmax;
         PlotType; %A string specifying the currently selected type of plot
         PlotPosition; %An array that can be used to store the position of the oMapAxes 
     end
@@ -447,7 +447,7 @@ classdef MapElectrodes < SubFigure
              for i = 1:size(aPlotObjects,1)
                  delete(aPlotObjects(i));
              end
-             oFigure.PlotPotential(oFigure.cmin,oFigure.cmax);
+             oFigure.PlotPotential();
          end
          
          function  PlotActivation(oFigure)
@@ -528,15 +528,33 @@ classdef MapElectrodes < SubFigure
                      %Save axes limits
                      oXLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
                      oYLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
-                     %Assuming the potential field has been normalised.
-                     contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potential.x,oFigure.Potential.y,oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,0:0.1:1.1);
-                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     
                      %check if there is an existing colour bar
                      %get figure children
                      oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
                      oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
                      if oHandle < 0
-                         oColorBar = cbarf(oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,0:0.1:1.1);
+                         %Get a new min and max
+                         oFigure.cbarmax = 0; 
+                         oFigure.cbarmin = 2000; %arbitrary
+                         for i = 25:length(oFigure.Potential.Beats(iBeat).Fields)
+                             %Loop through the timepoint fields (not including the first 25 that cover the stimulus) for
+                             %this beat to find max and min
+                             dMin = min(min(oFigure.Potential.Beats(iBeat).Fields(i).z));
+                             dMax = max(max(oFigure.Potential.Beats(iBeat).Fields(i).z));
+                             if dMin < oFigure.cbarmin
+                                 oFigure.cbarmin = dMin;
+                             end
+                             if dMax > oFigure.cbarmax
+                                 oFigure.cbarmax = dMax;
+                             end
+                         end
+                     end
+                     %Assuming the potential field has been normalised.
+                     contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Potential.x,oFigure.Potential.y,oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     if oHandle < 0
+                         oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
                          set(oTitle,'units','pixels');
                          set(oTitle,'string','Time (ms)','position',[15 620]);
