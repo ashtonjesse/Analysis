@@ -686,6 +686,8 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',aBeatData);
             oUnemap.GetSlope('Beats');
         end
+        
+        
         %% Methods relating to Electrode Activation data
         function UpdateEventRange(oUnemap, iEventIndex, iBeat, aElectrodes, aRange)
             %Change the range for the specified event and beat and selected
