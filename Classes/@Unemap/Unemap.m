@@ -687,6 +687,107 @@ classdef Unemap < BasePotential
             oUnemap.GetSlope('Beats');
         end
         
+        function oOutData = GetDataForPlotting(oUnemap, iBeat, aSelectedChannels)
+            %This returns signal, slope and envelope data (if there is
+            %some) and decimates data to minimum of 20 data points if there
+            %is more than total 10,000 data points to plot.
+            
+            %Initialise the struct that will hold the data to plot
+            %Get the data for these electrodes
+            oElectrode = oUnemap.Electrodes(1); %just needed to define the beat range
+            aSelectedElectrodes = oUnemap.Electrodes(aSelectedChannels);
+            aData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,aSelectedElectrodes,'Processed','Data');
+            aSlope = MultiLevelSubsRef(oUnemap.oDAL.oHelper,aSelectedElectrodes,'Processed','Slope');
+            aEnvelope = MultiLevelSubsRef(oUnemap.oDAL.oHelper,aSelectedElectrodes,'Processed','CentralDifference');
+            %Select the data for this beat
+            aTime =  oUnemap.TimeSeries(...
+                oElectrode.Processed.BeatIndexes(iBeat,1):...
+                oElectrode.Processed.BeatIndexes(iBeat,2));
+            aData = aData(oElectrode.Processed.BeatIndexes(iBeat,1):...
+                oElectrode.Processed.BeatIndexes(iBeat,2),:);
+            aSlope = aSlope(oElectrode.Processed.BeatIndexes(iBeat,1):...
+                oElectrode.Processed.BeatIndexes(iBeat,2),:);
+            %Record the total length of this data - used to check if
+            %we need to reduce this through interpolation for plotting
+            %purposes
+            iDataLength = size(aData,1)*size(aData,2) + size(aSlope,1)*size(aSlope,2);
+            if ~isempty(aEnvelope)
+                % If there was aEnvelope data stored then get the data
+                % for this beat
+                aEnvelope = abs(aEnvelope(oElectrode.Processed.BeatIndexes(iBeat,1):...
+                    oElectrode.Processed.BeatIndexes(iBeat,2),:));
+                iDataLength = iDataLength + size(aEnvelope,1)*size(aEnvelope,2) ;
+            end
+            %Reduce the size of the data arrays depending on the
+            %number of plots to make
+            if iDataLength > 10000
+                iLeftover = iDataLength - 10000;
+                dLengthToShortenTo = max(20,size(aTime,2) - floor(iLeftover / length(aSelectedElectrodes)));
+                %Calc the interpolated time array
+                aTimeToPlot = linspace(min(aTime),max(aTime),dLengthToShortenTo).';
+                %Initialise arrays to hold interpolated data
+                aDataToPlot = zeros(dLengthToShortenTo,size(aSelectedElectrodes,2));
+                aSlopeToPlot = zeros(dLengthToShortenTo,size(aSelectedElectrodes,2));
+                aEnvelopeToPlot =  zeros(dLengthToShortenTo,size(aSelectedElectrodes,2));
+                %Shorten data for all selected electroes
+                for i = 1:size(aSelectedElectrodes,2);
+                    aDataToPlot(:,i) = interp1(aTime,aData(:,i),aTimeToPlot);
+                    aSlopeToPlot(:,i) = interp1(aTime,aSlope(:,i),aTimeToPlot);
+                    if ~isempty(aEnvelope)
+                        aEnvelopeToPlot(:,i) = interp1(aTime,aEnvelope(:,i),aTimeToPlot);
+                    end
+                end
+            else
+                %No need for interpolation
+                aTimeToPlot = aTime;
+                aDataToPlot = aData;
+                aSlopeToPlot = aSlope;
+                aEnvelopeToPlot = aEnvelope;
+            end
+            %assign to output struct
+            aCellArray = mat2cell(aDataToPlot,size(aDataToPlot,1),ones(1,size(aDataToPlot,2)));
+            oOutData= struct('Data',aCellArray);
+            aCellArray = mat2cell(aSlopeToPlot,size(aSlopeToPlot,1),ones(1,size(aSlopeToPlot,2)));
+            [oOutData(:).Slope] = aCellArray{:};
+            [oOutData(:).Time] = deal(aTimeToPlot);
+            if ~isempty(aEnvelope)
+                aCellArray = mat2cell(aEnvelopeToPlot,size(aEnvelopeToPlot,1),ones(1,size(aEnvelopeToPlot,2)));
+                [oOutData(:).Envelope] = aCellArray{:};
+            else
+                [oOutData(:).Envelope] = deal([]);
+            end
+        end
+        
+        function oPlotLimits = GetPlotLimits(oUnemap, oDataToPlot, aSelectedChannels)
+            %Calculate the plotting limits
+            
+            %Initialise the oPlotLimits struct that will hold the limits
+            oPlotLimits = [];
+            %Get the indices of the accepted electrodes in the list
+            [rowIndexes, colIndexes, vector] = find(cell2mat({oUnemap.Electrodes(aSelectedChannels).Accepted}));
+            %Select the accepted channels if there are any
+            if ~isempty(colIndexes)
+                aAcceptedElectrodes = colIndexes;
+            else
+                aAcceptedElectrodes = aSelectedChannels;
+            end
+           
+            oPlotLimits.Time = [min(oDataToPlot(1).Time),max(oDataToPlot(1).Time)]; %All time arrays are the same...
+            oPlotLimits.Data = [min(min(cell2mat({oDataToPlot(aAcceptedElectrodes).Data}))), ...
+                max(max(cell2mat({oDataToPlot(aAcceptedElectrodes).Data})))];
+            oPlotLimits.Data = [(1-sign(oPlotLimits.Data(1))*0.1)*oPlotLimits.Data(1), (1+sign(oPlotLimits.Data(2))*0.1)*oPlotLimits.Data(2)];
+            oPlotLimits.Slope = [min(min(cell2mat({oDataToPlot(aAcceptedElectrodes).Slope}))), ...
+                max(max(cell2mat({oDataToPlot(aAcceptedElectrodes).Slope})))];
+            oPlotLimits.Slope = [(1-sign(oPlotLimits.Slope(1))*0.1)*oPlotLimits.Slope(1), (1+sign(oPlotLimits.Slope(2))*0.1)*oPlotLimits.Slope(2)];
+            if ~isempty(oDataToPlot(aAcceptedElectrodes(1)).Envelope)
+                oPlotLimits.Envelope = [min(min(cell2mat({oDataToPlot(aAcceptedElectrodes).Envelope}))), ...
+                    max(max(cell2mat({oDataToPlot(aAcceptedElectrodes).Envelope})))];
+                oPlotLimits.Envelope = [(1-sign(oPlotLimits.Envelope(1))*0.1)*oPlotLimits.Envelope(1), ...
+                    (1+sign(oPlotLimits.Envelope(2))*0.1)*oPlotLimits.Envelope(2)];
+            else
+                oPlotLimits.Envelope = [];
+            end
+        end
         
         %% Methods relating to Electrode Activation data
         function UpdateEventRange(oUnemap, iEventIndex, iBeat, aElectrodes, aRange)

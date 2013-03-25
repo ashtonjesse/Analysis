@@ -17,7 +17,8 @@ classdef AnalyseSignals < SubFigure
         CurrentEventLine;
         sECGAxesContent = 'ECG';
         Plots = [];
-        PlotHandles;
+        OldPlots = [];
+        PlotLimits = [];
     end
         
     events
@@ -531,9 +532,9 @@ classdef AnalyseSignals < SubFigure
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              tic;
              if isempty(varargin)
-                 oFigure.PlotBeat();
+                 oFigure.PlotBeatOrElectrode();
              else
-                 oFigure.PlotBeat(varargin);
+                 oFigure.PlotBeatOrElectrode(varargin);
              end
              toc;
              oFigure.PlotWholeRecord();
@@ -556,10 +557,15 @@ classdef AnalyseSignals < SubFigure
              end
          end
          
-         function CreateSubPlot(oFigure,aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits)
+         function PlotBeat(oFigure)
              %Create the space for the subplot that will contain all the
              %signals
-
+             
+             %Get the plot data
+             oDataToPlot = oFigure.oParentFigure.oGuiHandle.oUnemap.GetDataForPlotting(oFigure.SelectedBeat, oFigure.SelectedChannels);
+             %Get the plotting limits from this data
+             oFigure.PlotLimits = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPlotLimits(oDataToPlot, oFigure.SelectedChannels);
+             
              %Find the bounds of the selected area
              iMinChannel = min(oFigure.SelectedChannels);
              iMaxChannel = max(oFigure.SelectedChannels);
@@ -571,366 +577,306 @@ classdef AnalyseSignals < SubFigure
              yDiv = 1/(iMaxCol-iMinCol+1);
              
              %Set number of plots per channel
-             if ~isempty(aEnvelopeLimits)
+             if ~isempty(oFigure.PlotLimits.Envelope)
                  iNumberOfPlots = 4;
              else
                  iNumberOfPlots = 3;
              end
-             
-             %Initialise the plot handles array
-             oFigure.PlotHandles = cell(length(oFigure.SelectedChannels)*iNumberOfPlots,2);
-             %Get the array of handles to the plot objects
-             aPlotObjects = get(oFigure.oGuiHandle.pnSignals,'children');
-             %if it's the first time through then make all new subplots
-             if isempty(aPlotObjects)
-                 for i = 1:size(oFigure.SelectedChannels,2);
-                     %Create new axes
-                     oFigure.SetAxes(1, i, iMinRow, iMinCol, xDiv, yDiv, aPlotObjects, iNumberOfPlots, ...
-                         aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits);
+             %Get details for old channels if there are any
+             if ~isempty(oFigure.OldPlots)
+                 aOldChannels = MultiLevelSubsRef(oFigure.oDAL.oHelper, oFigure.OldPlots, 'Channel');
+                 iOldBeat = oFigure.OldPlots(1).Beat;
+                 %find the old plots that will not be needed
+                 [~ , ~, aPlotIndexes] = setxorwithduplicates(oFigure.SelectedChannels, aOldChannels);
+                 if ~isempty(aPlotIndexes)
+                    for j = 1:length(aPlotIndexes)
+                        set(oFigure.OldPlots(aPlotIndexes(j)).Handle,'visible','off');
+                        set(oFigure.OldPlots(aPlotIndexes(j)).Children,'visible','off');
+                    end
                  end
-             else
-                 %Check number of plots
-                 if length(aPlotObjects) > length(oFigure.SelectedChannels)*iNumberOfPlots
-                     %Loop through list and delete what is not needed
-                     for i = length(aPlotObjects):-1:(length(oFigure.SelectedChannels)*iNumberOfPlots + 1)
-                         delete(aPlotObjects(i));
-                     end
-                     %Reduce the size of the plots and plothandles arrays
-                     oFigure.Plots = oFigure.Plots(1:length(oFigure.SelectedChannels));
-                     %Loop through the plots and reset location
-                     for i = 1:length(oFigure.SelectedChannels)
-                         %Set old axes
-                         oFigure.SetAxes(0, i, iMinRow, iMinCol, xDiv, yDiv, aPlotObjects, iNumberOfPlots, ...
-                             aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits);
-                     end
+             end
+             
+             for i = 1:size(oFigure.SelectedChannels,2);
+                 iChannel = oFigure.SelectedChannels(i);
+                 [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iChannel);
+                 %Normalise the row and columns to the minimum.
+                 iRow = iRow - iMinRow;
+                 iCol = iCol - iMinCol;
+                 %Create the position vector for the next plot
+                 aPosition = [iCol*yDiv, iRow*xDiv, yDiv, xDiv];%[left bottom width height]
+                 %check if this is the first time through
+                 if isempty(oFigure.OldPlots)
+                     %Create new axes
+                     aIndices = oFigure.ArrangeSubPlots(1, iChannel, aPosition, [], oDataToPlot(i), i, iNumberOfPlots);
                  else
-                     %Initialise plot count
-                     iPlotCount = 0;
-                     %Use the old and make new plots as needed
-                     for i = 1:length(oFigure.SelectedChannels)
-                         if iPlotCount >= length(aPlotObjects)
-                             %Create new axes
-                             oFigure.SetAxes(1, i, iMinRow, iMinCol, xDiv, yDiv, aPlotObjects, iNumberOfPlots, ...
-                                 aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits);
-                         else
-                             %Set old axes
-                             oFigure.SetAxes(0, i, iMinRow, iMinCol, xDiv, yDiv, aPlotObjects, iNumberOfPlots, ...
-                                 aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits);
-                         end
-                         %Increment the plot count
-                         iPlotCount = iPlotCount + iNumberOfPlots;
+                     %Use those that have been created already and add more
+                     %where necessary
+                     aIndices = logical(aOldChannels==oFigure.SelectedChannels(i));
+                     %check if this returned anything (there is overlap
+                     %with the old selection).
+                     if max(aIndices) > 0
+                         %This channel already has associated plots
+                         oPlotHandles = cell2mat({oFigure.OldPlots(aIndices).Handle});
+                         aIndices = oFigure.ArrangeSubPlots(0, iChannel, aPosition, oPlotHandles, oDataToPlot(i), i, iNumberOfPlots);
+                     else
+                         %Arrange the plot
+                         aIndices = oFigure.ArrangeSubPlots(1, iChannel, aPosition, [], oDataToPlot(i), i, iNumberOfPlots);
                      end
+                 end
+                 %Plot the electrode
+                 oFigure.Plots(aIndices) = oFigure.PlotElectrode(oFigure.SelectedChannels(i),0,oFigure.Plots(aIndices));
+             end
+             
+             if isempty(oFigure.OldPlots)
+                 %Save the plots
+                 oFigure.OldPlots = oFigure.Plots;
+             else
+                 if length(oFigure.OldPlots) < length(oFigure.Plots)
+                     oFigure.OldPlots = oFigure.Plots;
                  end
              end
          end
          
-         function SetAxes(oFigure, bCreateNewAxes, iChannelIndex, iMinRow, iMinCol, xDiv, yDiv, aPlotObjects, iNumberOfPlots, ...
-                 aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits)
-             i = iChannelIndex;
-             [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(oFigure.SelectedChannels(i));
-             %Normalise the row and columns to the minimum.
-             iRow = iRow - iMinRow;
-             iCol = iCol - iMinCol;
-             %Create the position vector for the next plot
-             aPosition = [iCol*yDiv, iRow*xDiv, yDiv, xDiv];%[left bottom width height]
+         function aPlotNumbers = ArrangeSubPlots(oFigure, bCreateNewAxes, iChannelIndex, aPosition, aHandles, oDataToPlot, iIndex, iNumberOfPlots)
+             %Initialise output
+             aPlotNumbers = zeros(4,1);
+             %Check if new axes have to be created
+             aPlotNumbers(1,1) = (iIndex-1)*iNumberOfPlots+1;
+             aPlotNumbers(2,1) = (iIndex-1)*iNumberOfPlots+2;
+             if bCreateNewAxes
+                 %create the data plot
+                 oFigure.SetAxes(iChannelIndex, aPosition, sprintf('Signal%d',iChannelIndex), 0, oDataToPlot.Time, oDataToPlot.Data, ...
+                     oFigure.PlotLimits.Time, oFigure.PlotLimits.Data, (iIndex-1)*iNumberOfPlots+1);
+                 %create the slope plot
+                 oFigure.SetAxes(iChannelIndex, aPosition, sprintf('Slope%d',iChannelIndex), 0, oDataToPlot.Time, oDataToPlot.Slope, ...
+                     oFigure.PlotLimits.Time, oFigure.PlotLimits.Slope, (iIndex-1)*iNumberOfPlots+2);
+                 if ~isempty(oFigure.PlotLimits.Envelope)
+                     %create the envelope plot
+                     oFigure.SetAxes(iChannelIndex, aPosition, sprintf('Envelope%d',iChannelIndex), 0, oDataToPlot.Time, oDataToPlot.Envelope, ...
+                         oFigure.PlotLimits.Time, oFigure.PlotLimits.Envelope, (iIndex-1)*iNumberOfPlots+3);
+                     aPlotNumbers(3,1) = (iIndex-1)*iNumberOfPlots+3;
+                     %create the signalevent plot
+                     oFigure.SetAxes(iChannelIndex, aPosition, sprintf('SignalEventPlot%d',iChannelIndex), 0, [], [], ...
+                         oFigure.PlotLimits.Time, oFigure.PlotLimits.Data, (iIndex-1)*iNumberOfPlots+4);
+                     aPlotNumbers(4,1) = (iIndex-1)*iNumberOfPlots+4;
+                 else
+                     %create the signalevent plot
+                     oFigure.SetAxes(iChannelIndex, aPosition, sprintf('SignalEventPlot%d',iChannelIndex), 0, [], [], ...
+                         oFigure.PlotLimits.Time, oFigure.PlotLimits.Data, (iIndex-1)*iNumberOfPlots+3);
+                     aPlotNumbers(3,1) = (iIndex-1)*iNumberOfPlots+3;
+                     aPlotNumbers = aPlotNumbers(1:3,1);
+                 end
+             else
+                 %use the handles specified in aHandles
+                 oFigure.SetAxes(iChannelIndex, aPosition, sprintf('Signal%d',iChannelIndex), aHandles(1), oDataToPlot.Time, oDataToPlot.Data, ...
+                     oFigure.PlotLimits.Time, oFigure.PlotLimits.Data, (iIndex-1)*iNumberOfPlots+1);
+                 %create the slope plot
+                 oFigure.SetAxes(iChannelIndex, aPosition, sprintf('Slope%d',iChannelIndex), aHandles(2), oDataToPlot.Time, oDataToPlot.Slope, ...
+                     oFigure.PlotLimits.Time, oFigure.PlotLimits.Slope, (iIndex-1)*iNumberOfPlots+2);
+                 if ~isempty(oFigure.PlotLimits.Envelope)
+                     %create the envelope plot
+                     oFigure.SetAxes(iChannelIndex, aPosition, sprintf('Envelope%d',iChannelIndex), aHandles(3), oDataToPlot.Time, oDataToPlot.Envelope, ...
+                         oFigure.PlotLimits.Time, oFigure.PlotLimits.Envelope, (iIndex-1)*iNumberOfPlots+3);
+                     aPlotNumbers(3,1) = (iIndex-1)*iNumberOfPlots+3;
+                     %create the signalevent plot
+                     oFigure.SetAxes(iChannelIndex, aPosition, sprintf('SignalEventPlot%d',iChannelIndex), aHandles(4), [], [], ...
+                         oFigure.PlotLimits.Time, oFigure.PlotLimits.Data, (iIndex-1)*iNumberOfPlots+4);
+                     aPlotNumbers(4,1) = (iIndex-1)*iNumberOfPlots+4;
+                 else
+                     %create the signalevent plot
+                     oFigure.SetAxes(iChannelIndex, aPosition, sprintf('SignalEventPlot%d',iChannelIndex), aHandles(3), [], [], ...
+                         oFigure.PlotLimits.Time, oFigure.PlotLimits.Data, (iIndex-1)*iNumberOfPlots+3);
+                     aPlotNumbers(3,1) = (iIndex-1)*iNumberOfPlots+3;
+                     aPlotNumbers = aPlotNumbers(1:3,1);
+                 end
+             end
+             
+         end
+         
+         function SetAxes(oFigure, iChannelIndex, aPosition, sTag, oHandle, xData, yData, xLim, yLim, iPlotNumber)
              %Create axes  in the position specified for Signal
              %data
-             
-             if bCreateNewAxes
-                 oSignalPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[], 'color','none', ...
-                     'Tag', sprintf('Signal%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aDataLimits(1))*0.1)*aDataLimits(1), (1+sign(aDataLimits(2))*0.1)*aDataLimits(2)]);
-                 %Create axes for slope data
-                 oSlopePlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                     'Tag', sprintf('Slope%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aSlopeLimits(1))*0.1)*aSlopeLimits(1), (1+sign(aSlopeLimits(2))*0.1)*aSlopeLimits(2)]);
-                 if ~isempty(aEnvelopeLimits)
-                     %Create axes for envelope data
-                     oEnvelopePlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                         'Tag', sprintf('Envelope%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aEnvelopeLimits(1))*0.1)*aEnvelopeLimits(1), (1+sign(aEnvelopeLimits(2))*0.1)*aEnvelopeLimits(2)]);
-                 end
-                 %Create axes for event lines
-                 oSignalEventPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                     'Tag', sprintf('SignalEventPlot%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aDataLimits(1))*0.1)*aDataLimits(1), (1+sign(aDataLimits(2))*0.1)*aDataLimits(2)]);
-             else
-                 
+             if oHandle > 0
                  %Use old ones
-                 set(aPlotObjects((i-1)*iNumberOfPlots+1),'Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none','Tag', ...
-                     sprintf('Signal%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aDataLimits(1))*0.1)*aDataLimits(1), (1+sign(aDataLimits(2))*0.1)*aDataLimits(2)]);
-                 oSignalPlot = aPlotObjects((i-1)*iNumberOfPlots+1);
-                 aChildren = get(aPlotObjects((i-1)*iNumberOfPlots+1),'children');
-                 delete(aChildren);
-                 %set axes for slope data
-                 set(aPlotObjects((i-1)*iNumberOfPlots+2),'Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                     'Tag', sprintf('Slope%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aSlopeLimits(1))*0.1)*aSlopeLimits(1), (1+sign(aSlopeLimits(2))*0.1)*aSlopeLimits(2)]);
-                 oSlopePlot = aPlotObjects((i-1)*iNumberOfPlots+2);
-                 aChildren = get(aPlotObjects((i-1)*iNumberOfPlots+2),'children');
-                 delete(aChildren);
-                 %set  axes for envelope data
-                 if ~isempty(aEnvelopeLimits)
-                     set(aPlotObjects((i-1)*iNumberOfPlots+3),'Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                         'Tag', sprintf('Envelope%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aEnvelopeLimits(1))*0.1)*aEnvelopeLimits(1), (1+sign(aEnvelopeLimits(2))*0.1)*aEnvelopeLimits(2)]);
-                     oEnvelopePlot = aPlotObjects((i-1)*iNumberOfPlots+3);
-                     aChildren = get(aPlotObjects((i-1)*iNumberOfPlots+3),'children');
-                     delete(aChildren);
-                     %set axes for event lines
-                     set(aPlotObjects((i-1)*iNumberOfPlots+4),'Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                         'Tag', sprintf('SignalEventPlot%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aDataLimits(1))*0.1)*aDataLimits(1), (1+sign(aDataLimits(2))*0.1)*aDataLimits(2)]);
-                     oSignalEventPlot = aPlotObjects((i-1)*iNumberOfPlots+4);
-                     aChildren = get(aPlotObjects((i-1)*iNumberOfPlots+4),'children');
-                     delete(aChildren);
-                 else
-                     %set axes for event lines
-                     set(aPlotObjects((i-1)*iNumberOfPlots+3),'Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none',...
-                         'Tag', sprintf('SignalEventPlot%d',oFigure.SelectedChannels(i)), 'xlim', aTimeLimits, 'ylim', [(1-sign(aDataLimits(1))*0.1)*aDataLimits(1), (1+sign(aDataLimits(2))*0.1)*aDataLimits(2)]);
-                     oSignalEventPlot = aPlotObjects((i-1)*iNumberOfPlots+3);
-                     aChildren = get(aPlotObjects((i-1)*iNumberOfPlots+3),'children');
-                     delete(aChildren);
+                 set(oHandle,'Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[],'color','none', ...
+                     'Tag', sTag, 'xlim', xLim, 'ylim', yLim);
+                 oFigure.Plots(iPlotNumber).Handle = oHandle;
+                 oFigure.Plots(iPlotNumber).Children = flipud(get(oHandle,'children'));
+                 set(oFigure.Plots(iPlotNumber).Handle,'visible','on');
+                 aChildren = {oFigure.Plots(iPlotNumber).Children};
+                 for m = 1:length(aChildren)
+                     if ~isempty(aChildren{m})
+                         set(aChildren{m},'visible','on');
+                     end
                  end
+             else
+                 oPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.pnSignals,'XTick',[],'YTick',[], 'color','none', ...
+                     'Tag', sTag, 'xlim', xLim, 'ylim', yLim);
+                 oFigure.Plots(iPlotNumber).Handle = oPlot;
+                 oFigure.Plots(iPlotNumber).Children = zeros(1,1);
              end
              
-             %Save the plot handles
-             oFigure.PlotHandles{(i-1)*iNumberOfPlots+1,1} = oSignalPlot;
-             oFigure.PlotHandles{(i-1)*iNumberOfPlots+2,1} = oSlopePlot;
-             if ~isempty(aEnvelopeLimits)
-                 oFigure.PlotHandles{(i-1)*iNumberOfPlots+3,1} = oEnvelopePlot;
-                 oFigure.PlotHandles{(i-1)*iNumberOfPlots+4,1} = oSignalEventPlot;
-                 oFigure.PlotHandles((i-1)*4+1:(i-1)*4+4,2) = {oFigure.SelectedChannels(i)};
-             else
-                 oFigure.PlotHandles{(i-1)*iNumberOfPlots+3,1} = oSignalEventPlot;
-                 oFigure.PlotHandles((i-1)*iNumberOfPlots+1:(i-1)*iNumberOfPlots+3,2) = {oFigure.SelectedChannels(i)};
-             end
+             %Save the plot data
+             oFigure.Plots(iPlotNumber).xData =  xData;
+             oFigure.Plots(iPlotNumber).yData =  yData;
+             oFigure.Plots(iPlotNumber).Channel =  iChannelIndex;
+             oFigure.Plots(iPlotNumber).Beat = oFigure.SelectedBeat; 
          end
          
-         function PlotBeat(oFigure,varargin)
+         function PlotBeatOrElectrode(oFigure,varargin)
              %Plot the beats for the selected channels in the subplot
-             
-             aSelectedElectrodes = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels);
-             %Get the current property values
-             iBeat = oFigure.SelectedBeat;
-             %Check if this is the first time PlotBeat is being called
-             %after creating a new set of subplots
-             if isempty(oFigure.Plots)
-                 %Get the data for these electrodes
-                 oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1); %just needed to define the beat range
-                 aData = MultiLevelSubsRef(oFigure.oDAL.oHelper,aSelectedElectrodes,'Processed','Data');
-                 aSlope = MultiLevelSubsRef(oFigure.oDAL.oHelper,aSelectedElectrodes,'Processed','Slope');
-                 aEnvelope = MultiLevelSubsRef(oFigure.oDAL.oHelper,aSelectedElectrodes,'Processed','CentralDifference');
-                 %Select the data for this beat
-                 aTime =  oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
-                     oElectrode.Processed.BeatIndexes(iBeat,1):...
-                     oElectrode.Processed.BeatIndexes(iBeat,2));
-                 aData = aData(oElectrode.Processed.BeatIndexes(iBeat,1):...
-                     oElectrode.Processed.BeatIndexes(iBeat,2),:);
-                 aSlope = aSlope(oElectrode.Processed.BeatIndexes(iBeat,1):...
-                     oElectrode.Processed.BeatIndexes(iBeat,2),:);
-                 %Record the total length of this data - used to check if
-                 %we need to reduce this through interpolation for plotting
-                 %purposes
-                 iDataLength = size(aData,1)*size(aData,2) + size(aSlope,1)*size(aSlope,2);
-                 if ~isempty(aEnvelope)
-                     % If there was aEnvelope data stored
-                     aEnvelope = abs(aEnvelope(oElectrode.Processed.BeatIndexes(iBeat,1):...
-                         oElectrode.Processed.BeatIndexes(iBeat,2),:));
-                     iDataLength = iDataLength + size(aEnvelope,1)*size(aEnvelope,2) ;
-                 end
-                 %Initialise the Plots array
-                 for i = 1:length(aSelectedElectrodes)
-                     %Set up the plots struct
-                     oFigure.Plots(i).ChannelIndex = oFigure.SelectedChannels(i);
-                 end
-                 %Reduce the size of the data arrays depending on the
-                 %number of plots to make
-                 if iDataLength > 10000
-                     iLeftover = iDataLength - 10000;
-                     dLengthToShortenTo = max(20,size(aTime,2) - floor(iLeftover / length(oFigure.SelectedChannels)));
-                     %Calc the interpolated time array
-                     aTimeToPlot = linspace(min(aTime),max(aTime),dLengthToShortenTo).';
-                     %Initialise arrays to hold interpolated data
-                     aDataToPlot = zeros(dLengthToShortenTo,size(aSelectedElectrodes,2));
-                     aSlopeToPlot = zeros(dLengthToShortenTo,size(aSelectedElectrodes,2));
-                     aEnvelopeToPlot =  zeros(dLengthToShortenTo,size(aSelectedElectrodes,2));
-                     %Shorten data for all selected electroes
-                     for i = 1:size(aSelectedElectrodes,2);
-                         aDataToPlot(:,i) = interp1(aTime,aData(:,i),aTimeToPlot);
-                         aSlopeToPlot(:,i) = interp1(aTime,aSlope(:,i),aTimeToPlot);
-                         if ~isempty(aEnvelope)
-                             aEnvelopeToPlot(:,i) = interp1(aTime,aEnvelope(:,i),aTimeToPlot);
-                         end
-                     end
-                     if isempty(aEnvelope)
-                         %Reset envelope to be empty if there is no
-                         %envelope data because above it was replaced with
-                         %an array of zeros.
-                         aEnvelopeToPlot = [];
-                     end
-                 else
-                     %No need for interpolation
-                     aTimeToPlot = aTime;
-                     aDataToPlot = aData;
-                     aSlopeToPlot = aSlope;
-                     aEnvelopeToPlot = aEnvelope;
-                 end
-                 %assign to plots struct
-                 [oFigure.Plots(:).Time] = deal(aTimeToPlot);
-                 aCellArray = mat2cell(aDataToPlot,size(aDataToPlot,1),ones(1,size(aDataToPlot,2)));
-                 [oFigure.Plots(:).Data] = aCellArray{:};
-                 aCellArray = mat2cell(aSlopeToPlot,size(aSlopeToPlot,1),ones(1,size(aSlopeToPlot,2)));
-                 [oFigure.Plots(:).Slope] = aCellArray{:};
-                 if ~isempty(aEnvelope)
-                     aCellArray = mat2cell(aEnvelopeToPlot,size(aEnvelopeToPlot,1),ones(1,size(aEnvelopeToPlot,2)));
-                     [oFigure.Plots(:).Envelope] = aCellArray{:};
-                 else
-                     [oFigure.Plots(:).Envelope] = deal([]);
-                 end
-             else
-                 %Get the data from the plots struct
-                 aTimeToPlot = oFigure.Plots(1).Time;
-                 aDataToPlot = cell2mat({oFigure.Plots(:).Data});
-                 aSlopeToPlot = cell2mat({oFigure.Plots(:).Slope});
-                 if ~isempty(oFigure.Plots(1).Envelope)
-                     aEnvelopeToPlot = cell2mat({oFigure.Plots(:).Envelope});
-                 else
-                     aEnvelopeToPlot = [];
-                 end
-             end
-             %Find the accepted channels within this subset
-             [rowIndexes, colIndexes, vector] = find(cell2mat({aSelectedElectrodes(:).Accepted}));
-             %Select the accepted channels if there are any
-             if ~isempty(colIndexes)
-                 aAcceptedElectrodes = colIndexes;
-             else
-                 aAcceptedElectrodes = 1:length(oFigure.SelectedChannels);
-             end
-             %Recalculate the limits
-             aTimeLimits = [min(aTimeToPlot),max(aTimeToPlot)];
-             aDataLimits = [min(min(aDataToPlot(:,aAcceptedElectrodes))), max(max(aDataToPlot(:,aAcceptedElectrodes)))];
-             aSlopeLimits = [min(min(aSlopeToPlot(:,aAcceptedElectrodes))), max(max(aSlopeToPlot(:,aAcceptedElectrodes)))];
-             if ~isempty(aEnvelopeToPlot)
-                 aEnvelopeLimits = [min(min(aEnvelopeToPlot(:,aAcceptedElectrodes))), max(max(aEnvelopeToPlot(:,aAcceptedElectrodes)))];
-             else
-                 aEnvelopeLimits = [];
-             end
              
              %Check if an electrode number was supplied
              if isempty(varargin)
                  %Arrange the plots
-                 oFigure.CreateSubPlot(aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits);
-                 %plot all electrodes for this beat 
-                 for i = 1:size(oFigure.SelectedChannels,2);
-                     iChannelIndex = oFigure.SelectedChannels(i);
-                     %Plot the electrode
-                     oFigure.PlotElectrode(iChannelIndex,iBeat,aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits,0);
-                 end
+                 oFigure.PlotBeat();
              elseif nargin == 2
                  %Replot the specified electrode and the previously
                  %selected electrode
                  iChannelIndex = varargin{1}{1}(1);
-                 oFigure.PlotElectrode(iChannelIndex,iBeat,aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits,1);
+                 aIndices = logical(cell2mat({oFigure.Plots(:).Channel})==iChannelIndex);
+                 oFigure.PlotElectrode(iChannelIndex,0,oFigure.Plots(aIndices));
                  if max(ismember(oFigure.SelectedChannels,oFigure.PreviousChannel))
                      %replot the previous channel as well
-                     oFigure.PlotElectrode(oFigure.PreviousChannel,iBeat,aTimeLimits,aDataLimits,aSlopeLimits,aEnvelopeLimits,1);
+                     aIndices = logical(cell2mat({oFigure.Plots(:).Channel})==oFigure.PreviousChannel);
+                     oFigure.PlotElectrode(oFigure.PreviousChannel,0,oFigure.Plots(aIndices));
                  end
              end
-                 
+             
          end
          
-         function PlotElectrode(oFigure,iChannelIndex,iBeat,aTimeLimits,aSignalLimits,aSlopeLimits,aEnvelopeLimits,bClearAxes)
+         function oOutPlots = PlotElectrode(oFigure,iChannelIndex,bClearAxes,oPlots)
              
              %Get these values so that we can place text in the
              %right place
-             dWidth = aTimeLimits(2) - aTimeLimits(1);
-             dHeight = aSignalLimits(2) - aSignalLimits(1);
-             
-             %Get the handles to the plots for this channel
-             aHandles = cell2mat(oFigure.PlotHandles(:,2));
-             aSubPlots = cell2mat(oFigure.PlotHandles(aHandles==iChannelIndex,1));
+             dWidth = oFigure.PlotLimits.Time(2) - oFigure.PlotLimits.Time(1);
+             dHeight = oFigure.PlotLimits.Data(2) - oFigure.PlotLimits.Data(1);
+             iBeat = oFigure.SelectedBeat;
              %Get the handle to current signal plot and rename it (the name
              %is not propagated)
-             oSignalPlot = aSubPlots(1);
-             set(oSignalPlot,'Tag',sprintf('Signal%d',iChannelIndex),'nextplot','replace');
+             set(oPlots(1).Handle,'Tag',sprintf('Signal%d',iChannelIndex),'nextplot','replace');
              %Repeat for the slope plot
-             oSlopePlot = aSubPlots(2);
-             set(oSlopePlot,'Tag', sprintf('Slope%d',iChannelIndex),'nextplot','replace');
-             if bClearAxes
-                 cla(oSignalPlot);
-                 cla(oSlopePlot);
-             end
+             set(oPlots(2).Handle,'Tag', sprintf('Slope%d',iChannelIndex),'nextplot','replace');
              
              %Get electrode
              oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelIndex);
-             %Get the corresponding plot
-             [iRow, iCol] = ind2sub(size(oFigure.SelectedChannels),find(oFigure.SelectedChannels==iChannelIndex));
-             oPlot = oFigure.Plots(iCol);
+             
              %Recall the other plots depending on if an envelopeplot has
              %been created/set
-             if ~isempty(aEnvelopeLimits)
-                 oEnvelopePlot = aSubPlots(3);
-                 set(oEnvelopePlot, 'Tag',sprintf('Envelope%d',iChannelIndex),'nextplot','replace');
-                 oSignalEventPlot = aSubPlots(4);
-                 set(oSignalEventPlot,'Tag', sprintf('SignalEventPlot%d',iChannelIndex),'nextplot','replace');
-                 if bClearAxes
-                     cla(oEnvelopePlot);
-                     cla(oSignalEventPlot);
-                 end
+             if ~isempty(oFigure.PlotLimits.Envelope)
+                 set(oPlots(3).Handle, 'Tag',sprintf('Envelope%d',iChannelIndex),'nextplot','replace');
+                 set(oPlots(4).Handle,'Tag', sprintf('SignalEventPlot%d',iChannelIndex),'nextplot','replace');
+                 oSignalEventPlot = oPlots(4);
              else
-                 oSignalEventPlot = aSubPlots(3);
-                 set(oSignalEventPlot,'Tag', sprintf('SignalEventPlot%d',iChannelIndex),'nextplot','replace');
-                 if bClearAxes
-                     cla(oSignalEventPlot);
-                 end
+                 set(oPlots(3).Handle,'Tag', sprintf('SignalEventPlot%d',iChannelIndex),'nextplot','replace');
+                 oSignalEventPlot = oPlots(3);
              end
-             
+             %Initialise signalevent index
+             j = 0;
              %Plot the data and slope
              if oElectrode.Accepted
                  %If the signal is accepted then plot it as black
-                 line(oPlot.Time,oPlot.Data,'color','k','parent',oSignalPlot);
-                 %Plot the slope data
-                 line(oPlot.Time,oPlot.Slope,'color','r','parent',oSlopePlot);
-                 if ~isempty(aEnvelopeLimits)
-                     %Plot the envelope data
-                     line(oPlot.Time,oPlot.Envelope,'color','b','parent',oEnvelopePlot);
+                 if oPlots(1).Children(1) > 0
+                     %replace the data for the line child
+                     set(oPlots(1).Children(1), 'XData', oPlots(1).xData, 'YData', oPlots(1).yData,'color','k','parent',oPlots(1).Handle, 'visible', 'on');
+                 else
+                     %The first child is the data line
+                     oPlots(1).Children(1) = line(oPlots(1).xData,oPlots(1).yData,'color','k','parent',oPlots(1).Handle);
                  end
+                 
+                 %Plot the slope data
+                 if oPlots(2).Children > 0
+                     %replace the data for the line child
+                     set(oPlots(2).Children(1), 'XData', oPlots(2).xData, 'YData', oPlots(2).yData,'color','r','parent',oPlots(2).Handle, 'visible', 'on');
+                 else
+                     %The first child is the slope line
+                     oPlots(2).Children(1) = line(oPlots(2).xData,oPlots(2).yData,'color','r','parent',oPlots(2).Handle);
+                 end
+                 
+                 if ~isempty(oFigure.PlotLimits.Envelope)
+                     %Plot the envelope data
+                     if oPlots(3).Children > 0
+                         %replace the data for the line child
+                         set(oPlots(3).Children(1), 'XData', oPlots(3).xData, 'YData', oPlots(3).yData,'color','b','parent',oPlots(3).Handle, 'visible', 'on');
+                     else
+                         oPlots(3).Children(1) = line(oPlots(3).xData,oPlots(3).yData,'color','b','parent',oPlots(3).Handle);
+                     end
+                 end
+                 
+                 %Plot the signal events if there are any
                  if isfield(oElectrode,'SignalEvent')
+                     %Initialise children array if needed
+                     if oSignalEventPlot.Children(1) <= 0
+                         %a line and a label per event plus a channel label
+                         oSignalEventPlot.Children = zeros(length(oElectrode.SignalEvent)*2 + 1,1);
+                     end
                      %Loop through events
                      for j = 1:length(oElectrode.SignalEvent)
                          %Mark the event times with a line
                          %Get the time index to use (closest to that
                          %recorded)
-                         aTimeDiff = abs(oPlot.Time - oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Processed.BeatIndexes(iBeat,1) + ...
+                         aTimeDiff = abs(oPlots(2).xData - oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Processed.BeatIndexes(iBeat,1) + ...
                              oElectrode.SignalEvent(j).Index(iBeat)-1));
                          [C iEventIndex] = min(aTimeDiff);
-                         oLine = line([oPlot.Time(iEventIndex) ...
-                             oPlot.Time(iEventIndex)], [aSignalLimits(2), aSignalLimits(1)]);
                          sLineTag = strcat(sprintf('SignalEventLine%d',iChannelIndex),'_',sprintf('%d',j));
-                         set(oLine,'Tag',sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot, ...
-                             'linewidth',2);
+                         %Check if there has been a handle created for the
+                         %line
+                         if oSignalEventPlot.Children((j-1)*2+1) > 0
+                             %already exists so just set properties
+                             set(oSignalEventPlot.Children((j-1)*2+1),'XData',[oPlots(2).xData(iEventIndex) ...
+                                 oPlots(2).xData(iEventIndex)], 'YData', [oFigure.PlotLimits.Data(2), oFigure.PlotLimits.Data(1)], ...
+                                 'Tag',sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot.Handle, 'linewidth',2, 'visible', 'on');
+                         else
+                             %create a line
+                             oSignalEventPlot.Children((j-1)*2+1) = line('XData', [oPlots(2).xData(iEventIndex) ...
+                                 oPlots(2).xData(iEventIndex)], 'YData', [oFigure.PlotLimits.Data(2), oFigure.PlotLimits.Data(1)], ...
+                                 'Tag', sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot.Handle, 'linewidth',2);
+                         end
                          %Label the line with the event time
-                         if oFigure.Annotate
-                             if isfield(oElectrode,'Pacing')
-                                 %This is a sequence of paced beats so express
-                                 %the time relative to the pacing index
-                                 sLabel = num2str((oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Processed.BeatIndexes(iBeat,1) + ...
-                                     oElectrode.SignalEvent(j).Index(iBeat)-1) - oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Pacing.Index(iBeat)))*1000,'% 10.2f');
-                             else
-                                 %Just express the time relative to the start
-                                 %of the recording
-                                 sLabel = num2str(oPlot.Time(iEventIndex),'% 10.4f');
-                             end
-                             oEventLabel = text(aTimeLimits(2)-dWidth*0.4, aSignalLimits(2) - dHeight*j*0.2, sLabel);
-                             set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
-                             set(oEventLabel,'FontSize',10);
-                             set(oEventLabel,'parent',oSignalEventPlot);
+                         if isfield(oElectrode,'Pacing')
+                             %This is a sequence of paced beats so express
+                             %the time relative to the pacing index
+                             sLabel = num2str((oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Processed.BeatIndexes(iBeat,1) + ...
+                                 oElectrode.SignalEvent(j).Index(iBeat)-1) - oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(oElectrode.Pacing.Index(iBeat)))*1000,'% 10.2f');
+                         else
+                             %Just express the time relative to the start
+                             %of the recording
+                             sLabel = num2str(oPlots(2).Time(iEventIndex),'% 10.4f');
+                         end
+                         %Check if there has been a handle created for the
+                         %label
+                         if oSignalEventPlot.Children((j-1)*2+2) > 0
+                             %already exists so just set the properties
+                             set(oSignalEventPlot.Children((j-1)*2+2), 'Position',[oFigure.PlotLimits.Time(2)-dWidth*0.4, oFigure.PlotLimits.Data(2) - dHeight*j*0.2], ...
+                                 'string', sLabel, 'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points', 'parent',oSignalEventPlot.Handle, ...
+                                 'visible', 'on');
+                         else
+                             %create new text label
+                             oSignalEventPlot.Children((j-1)*2+2) = text('Position',[oFigure.PlotLimits.Time(2)-dWidth*0.4, oFigure.PlotLimits.Data(2) - dHeight*j*0.2], ...
+                                 'string', sLabel, 'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points', 'parent',oSignalEventPlot.Handle);
+                         end
+                         set(oSignalEventPlot.Children((j-1)*2+2),'FontSize',10);
+                         if ~oFigure.Annotate
+                             %hide the labels
+                             set(oSignalEventPlot.Children((j-1)*2+2),'visible','off');
                          end
                      end
                  end
              else
                  %The signal is not accepted so plot it as red
                  %without gradient
-                 line(oPlot.Time,oPlot.Data,'color','r','parent',oSignalPlot);
+                 if oPlots(1).Children(1) > 0
+                     %replace the data for the line child
+                     set(oPlots(1).Children(1), 'XData', oPlots(1).xData, 'YData', oPlots(1).yData,'color','r','parent',oPlots(1).Handle);
+                 else
+                     %The first child is the data line
+                     oPlots(1).Children(1) = line(oPlots(1).xData,oPlots(1).yData,'color','r','parent',oPlots(1).Handle);
+                 end
              end
              
              %Set some callbacks for this subplot
-             set(oSignalEventPlot, 'buttondownfcn', @(src, event) oSignalEventPlot_Callback(oFigure, src, event));
-             
+             set(oSignalEventPlot.Handle, 'buttondownfcn', @(src, event) oSignalEventPlot_Callback(oFigure, src, event));
+                          
              if bClearAxes
                  %Set the axis on the subplot
                  if ~isempty(aEnvelopeLimits)
@@ -941,19 +887,40 @@ classdef AnalyseSignals < SubFigure
                  axis(oSignalEventPlot,[aTimeLimits(1), aTimeLimits(2), (1-sign(aSignalLimits(1))*0.1)*aSignalLimits(1), (1+sign(aSignalLimits(2))*0.1)*aSignalLimits(2)]);
              end
              
-             if oFigure.Annotate
-                 %Create a label that shows the channel name
-                 oLabel = text(aTimeLimits(1), aSignalLimits(2) - dHeight*0.1,char(oElectrode.Name));
-                 if iChannelIndex == oFigure.SelectedChannel;
-                     set(oLabel,'color','b','FontWeight','bold','FontUnits','points');
-                     set(oLabel,'FontSize',10);%0.2
-                 else
-                     set(oLabel,'color','k','FontWeight','normal','FontUnits','points');
-                     set(oLabel,'FontSize',10);%0.15
-                 end
-                 set(oLabel,'parent',oSignalEventPlot);
+             %Check if this is the selected channel
+             if iChannelIndex == oFigure.SelectedChannel
+                 sFontWeight = 'bold';
+                 sFontColour = 'b';
+             else
+                 sFontWeight = 'normal';
+                 sFontColour = 'k';
+             end
+             %Check if there has been a handle created for the
+             %label
+             if oSignalEventPlot.Children(j*2+1) > 0
+                 %already exists so just set the properties
+                 set(oSignalEventPlot.Children(j*2+1),'Position', [oFigure.PlotLimits.Time(1), oFigure.PlotLimits.Data(2) - dHeight*0.1], ...
+                     'string', char(oElectrode.Name), 'color',sFontColour,'FontWeight',sFontWeight,'FontUnits','points', ...
+                     'parent',oSignalEventPlot.Handle, 'visible', 'on');
+             else
+                 %create new text label
+                 oSignalEventPlot.Children(j*2+1) = text('Position', [oFigure.PlotLimits.Time(1), oFigure.PlotLimits.Data(2) - dHeight*0.1], ...
+                     'string', char(oElectrode.Name), 'color',sFontColour,'FontWeight',sFontWeight,'FontUnits','points', ...
+                     'parent',oSignalEventPlot.Handle);
+             end
+             set(oSignalEventPlot.Children(j*2+1),'FontSize',10);%0.2
+             if ~oFigure.Annotate
+                 set(oSignalEventPlot.Children(j*2+1),'visible','off');
              end
              
+             %store signal event data
+             if ~isempty(oFigure.PlotLimits.Envelope)
+                 oPlots(4) = oSignalEventPlot;
+             else
+                 oPlots(3) = oSignalEventPlot;
+             end
+             %output plot struct
+             oOutPlots = oPlots;
          end
                   
          function PlotWholeRecord(oFigure)
