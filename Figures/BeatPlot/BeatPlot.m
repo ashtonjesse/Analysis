@@ -5,6 +5,8 @@ classdef BeatPlot < SubFigure
         CurrentEventLine;
         Dragging;
         SelectedEventID = [];
+        ElectrodesForAction = [];
+        BeatsForAction = [];
     end
     
     events
@@ -31,8 +33,11 @@ classdef BeatPlot < SubFigure
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.oEventButtonGroup,  'SelectionChangeFcn', @(src,event) oFigure.EventSelectionChange_callback(src, event));
+            set(oFigure.oGuiHandle.oElectrodeButtonGroup,  'SelectionChangeFcn', @(src,event) oFigure.oElectrodeButtonGroup_SelectionChangeFcn(src, event));
+            set(oFigure.oGuiHandle.oBeatButtonGroup,  'SelectionChangeFcn', @(src,event) oFigure.BeatActionSelectionChange_SelectionChangeFcn(src, event));
             set(oFigure.oGuiHandle.btnDeleteEvent,  'callback', @(src,event) oFigure.btnDeleteEvent_callback(src, event));
             set(oFigure.oGuiHandle.btnEventRange,  'callback', @(src,event) oFigure.btnEventRange_callback(src, event));
+            set(oFigure.oGuiHandle.btnRefreshSignalEvent,  'callback', @(src,event) oFigure.btnRefreshSignalEvent_callback(src, event));
             
             %Set callbacks and other functions
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
@@ -40,6 +45,9 @@ classdef BeatPlot < SubFigure
             %Plot data
             oFigure.CreatePlots();
             oFigure.PlotBeat();
+            
+            oFigure.ElectrodesForAction = oFigure.oParentFigure.SelectedChannel;
+            oFigure.BeatsForAction = oFigure.oParentFigure.SelectedBeat;
             % --- Executes just before oFigure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -81,6 +89,7 @@ classdef BeatPlot < SubFigure
         function SelectionListener(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new channel or new beat
+            oFigure.UpdateActionSelections();
             oFigure.PlotBeat();
         end
         
@@ -105,6 +114,58 @@ classdef BeatPlot < SubFigure
              oFigure.SelectedEventID = oSelectedEvent.String;
          end
          
+          function oElectrodeButtonGroup_SelectionChangeFcn(oFigure, src, event)
+             %Update the ElectrodeAction holder
+             
+             %Get the selected checkbox
+             oSelectedObject = get(event.NewValue);
+             
+             switch (oSelectedObject.Tag)
+                 case 'rbThisElectrode'
+                     oFigure.ElectrodesForAction = oFigure.oParentFigure.SelectedChannel;
+                 case 'rbSelectedElectrodes'
+                     oFigure.ElectrodesForAction = oFigure.oParentFigure.SelectedChannels;
+                 case 'rbAllElectrodes'
+                     oFigure.ElectrodesForAction = 1:length(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
+             end
+          end
+         
+          function BeatActionSelectionChange_SelectionChangeFcn(oFigure, src, event)
+             %Update the BeatAction holder
+             
+             %Get the selected checkbox
+             oSelectedObject = get(event.NewValue);
+             switch (oSelectedObject.Tag)
+                 case 'rbThisBeat'
+                     oFigure.BeatsForAction = oFigure.oParentFigure.SelectedBeat;
+                 case 'rbAllBeats'
+                     oFigure.BeatsForAction = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+             end
+          end
+         
+          function UpdateActionSelections(oFigure)
+              %Update the ElectrodesForAction and BeatsForAction properties
+              %so that they reflect current selections
+              %get the selected objects first
+              oSelectedObject = get(oFigure.oGuiHandle.oElectrodeButtonGroup,'SelectedObject');
+              switch (get(oSelectedObject,'Tag'))
+                  case 'rbThisElectrode'
+                      oFigure.ElectrodesForAction = oFigure.oParentFigure.SelectedChannel;
+                  case 'rbSelectedElectrodes'
+                      oFigure.ElectrodesForAction = oFigure.oParentFigure.SelectedChannels;
+                  case 'rbAllElectrodes'
+                      oFigure.ElectrodesForAction = 1:length(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
+              end
+              
+              oSelectedObject = get(oFigure.oGuiHandle.oBeatButtonGroup,'SelectedObject');
+              switch (get(oSelectedObject,'Tag'))
+                 case 'rbThisBeat'
+                     oFigure.BeatsForAction = oFigure.oParentFigure.SelectedBeat;
+                 case 'rbAllBeats'
+                     oFigure.BeatsForAction = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+             end
+          end
+          
          function btnEventRange_callback(oFigure, src, event)
              %Check the button state
              ButtonState = get(oFigure.oGuiHandle.btnEventRange,'Value');
@@ -131,10 +192,9 @@ classdef BeatPlot < SubFigure
                      [row, colIndices] = find(brushedIdx);
                      if ~isempty(colIndices)
                          aEventRange = [colIndices(1) colIndices(end)];
-                         iBeat = oFigure.oParentFigure.SelectedBeat;
-                         aBeatIndexes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.oParentFigure.SelectedChannel).Processed.BeatIndexes(iBeat,:);
                          iEventIndex = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel,oFigure.SelectedEventID);
-                         oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEventIndex, iBeat, oFigure.oParentFigure.SelectedChannels, aEventRange + aBeatIndexes(1,1));
+                         %Update the event range
+                         oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEventIndex, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
                      else
                          error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
                      end
@@ -158,12 +218,39 @@ classdef BeatPlot < SubFigure
              if strcmp(oSelectedEvent.Visible,'on')
                  %Get the string id of the event
                  sEventID = oSelectedEvent.String;
-                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.DeleteEvent(sEventID, oFigure.oParentFigure.SelectedChannels);
+                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.DeleteEvent(sEventID, oFigure.ElectrodesForAction);
                  oFigure.SelectedEventID = [];
              end
              %Refresh the plot
              oFigure.PlotBeat();
              notify(oFigure,'SignalEventDeleted');
+         end
+         
+         function btnRefreshSignalEvent_callback(oFigure, src, event)
+             %Update the event mark as it is no longer accurate.
+             
+             
+             %get a local copy of the unemap struct
+             oUnemap = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap;
+             %Get the current event for this channel
+             iEvent = oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel, oFigure.SelectedEventID);
+             if length(oFigure.BeatsForAction) > 1
+                 %apply to all beats
+                 for i = 1:length(oFigure.ElectrodesForAction)
+                     oUnemap.MarkEvent(oFigure.ElectrodesForAction(i), iEvent);
+                 end
+             else
+                 %apply to the selected beat
+                 iBeat = oFigure.oParentFigure.SelectedBeat;
+                 for i = 1:length(oFigure.ElectrodesForAction)
+                     oUnemap.MarkEvent(oFigure.ElectrodesForAction(i), iEvent, iBeat);
+                 end
+             end
+             
+             %Notify listeners
+             notify(oFigure,'SignalEventRangeChange');
+             %Refresh the plot
+             oFigure.PlotBeat();
          end
          
          function ParentFigureDeleted(oFigure,src, event)
@@ -202,7 +289,8 @@ classdef BeatPlot < SubFigure
                 %Reset the range for this event to the beat indexes as the
                 %user is manually changing the event time
                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
-                    oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannelNumber).Processed.BeatIndexes(iBeat,:))
+                     [0 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2) - ...
+                     oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1)]);
                 %Update the signal event for this electrode and beat number
                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, iBeat, dXdata(1));
                 oFigure.oParentFigure.Replot(iChannelNumber);
@@ -231,7 +319,7 @@ classdef BeatPlot < SubFigure
                  delete(aPlotObjects(i));
              end
              %Create the position vector for the next plot
-             aPosition = [0, 0, 1, 1];%[left bottom width height]
+             aPosition = [0.1, 0.1, 0.9, 0.9];%[left bottom width height]
              %Create a subplot in the position specified for Signal
              %data
              oSignalPlot = axes('Position',aPosition,'parent', oFigure.oGuiHandle.oPanel, 'Tag', 'SignalPlot');
@@ -296,7 +384,7 @@ classdef BeatPlot < SubFigure
              oSignalPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'SignalPlot');
              %Rename it as this is deleted after each load and hide
              %ticks
-             set(oSignalPlot, 'XTick',[],'YTick',[],'Tag', 'SignalPlot', 'NextPlot', 'replacechildren');
+             set(oSignalPlot, 'Tag', 'SignalPlot', 'NextPlot', 'replacechildren');
              cla(oSignalPlot);
              
              %Get the handle to current envelope plot
@@ -336,7 +424,7 @@ classdef BeatPlot < SubFigure
                  end
                  
                  %Plot the slope data
-                 line(aTime,aSlope,'color','r','parent',oSlopePlot);
+                 plot(aTime,aSlope,'color','r','parent',oSlopePlot);
                  %Loop through events
                  if isfield(oElectrode, 'SignalEvent')
                      for j = 1:length(oElectrode.SignalEvent)

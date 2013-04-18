@@ -24,6 +24,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oDataCursorTool, 'oncallback', @(src, event) oDataCursorOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDataCursorTool, 'offcallback', @(src, event) oDataCursorOffTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) oToolMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oUpdateMenu, 'callback', @(src, event) oUpdateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oActScatterMenu, 'callback', @(src, event) oActScatterMenu_Callback(oFigure, src, event));
@@ -34,6 +35,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveMapMenu, 'callback', @(src, event) oSaveMapMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oRefreshActivationMenu, 'callback', @(src, event) oRefreshActivationMenu_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -151,6 +153,16 @@ classdef MapElectrodes < SubFigure
             
         end
         
+        function oRefreshActivationMenu_Callback(oFigure, src, event)
+            %Choose which routine to call.
+            if strcmpi(oFigure.PlotType,'Activation2DScatter')
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter');
+            elseif strcmpi(oFigure.PlotType,'Activation2DContour')
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour');
+            end
+            %Plot a 2D activation map
+            oFigure.PlotActivation();
+        end
         % -----------------------------------------------------------------
         function oUpdateMenu_Callback(oFigure, src, event)
             % Find the brushline object in the figure
@@ -292,12 +304,12 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotPotential();
         end
         
-        function oActScatterMenu_Callback(oFigure, src, event);
+        function oActScatterMenu_Callback(oFigure, src, event)
             %Generate activation map for the current beat
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter');
             end
             
             %Update the plot type
@@ -307,12 +319,12 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotActivation();
         end
         
-        function oActContourMenu_Callback(oFigure, src, event);
+        function oActContourMenu_Callback(oFigure, src, event)
             %Generate activation map for the current beat
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap();
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour');
             end
             
             %Update the plot type
@@ -390,7 +402,7 @@ classdef MapElectrodes < SubFigure
              %Get the number of channels
              [i NumChannels] = size(oElectrodes);
              %Loop through the electrodes plotting their locations
-             oWaitbar = waitbar(0,'Please wait...');
+%              oWaitbar = waitbar(0,'Please wait...');
              for i = 1:NumChannels;
                  %Plot the electrode point
                  hold(oFigure.oGuiHandle.oMapAxes,'on');
@@ -434,7 +446,7 @@ classdef MapElectrodes < SubFigure
                      set(oFigure.oGuiHandle.oMapAxes,'Position',oFigure.PlotPosition);
                  end
              end
-             close(oWaitbar);
+%              close(oWaitbar);
              hold(oFigure.oGuiHandle.oMapAxes,'off');
          end
          
@@ -459,32 +471,51 @@ classdef MapElectrodes < SubFigure
              %Which plot type to use
              switch (oFigure.PlotType)
                  case 'Activation2DContour'
-                     %Create the interpolation vectors needed for the gridfit
-                     xlin = linspace(min(oFigure.Activation.x(~isnan(oFigure.Activation.z(:,iBeat)))), ...
-                         max(oFigure.Activation.x(~isnan(oFigure.Activation.z(:,iBeat)))),length(oFigure.Activation.x(~isnan(oFigure.Activation.z(:,iBeat)))));
-                     ylin = linspace(min(oFigure.Activation.y(~isnan(oFigure.Activation.z(:,iBeat)))), ...
-                         max(oFigure.Activation.y(~isnan(oFigure.Activation.z(:,iBeat)))),length(oFigure.Activation.y(~isnan(oFigure.Activation.z(:,iBeat)))));
-                     [X, Y] = meshgrid(xlin, ylin);
-                     %Z = gridfit(oFigure.Activation.x, oFigure.Activation.y,oFigure.Activation.z(:,iBeat),X,Y,'cubic');
-                     Z = gridfit(oFigure.Activation.x, oFigure.Activation.y,oFigure.Activation.z(:,iBeat),xlin,ylin,'extend','never');
                      %Save axes limits
                      oXLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
                      oYLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
-                     contourf(oFigure.oGuiHandle.oMapAxes,X,Y,Z,0:0.25:ceil(oFigure.Activation.MaxActivationTime));
-                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     
                      %check if there is an existing colour bar
                      %get figure children
                      oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
                      oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
                      if oHandle < 0
-                         oColorBar = cbarf(Z,0:0.25:ceil(oFigure.Activation.MaxActivationTime));
+                         %Get a new min and max
+                         oFigure.cbarmax = 0; 
+                         oFigure.cbarmin = 2000; %arbitrary
+                         ibmax = 0;
+                         ibmin = 0;
+                         for i = 1:length(oFigure.Activation.Beats)
+                             %Loop through the beats to find max and min
+                             dMin = min(min(oFigure.Activation.Beats(i).z));
+                             dMax = max(max(oFigure.Activation.Beats(i).z));
+                             if dMin < oFigure.cbarmin
+                                 oFigure.cbarmin = dMin;
+                                 ibmin = i;
+                             end
+                             if dMax > oFigure.cbarmax
+                                 oFigure.cbarmax = dMax;
+                                 ibmax = i;
+                             end
+                         end
+                     end
+                     %Assuming the potential field has been normalised.
+                     contourf(oFigure.oGuiHandle.oMapAxes,oFigure.Activation.x,oFigure.Activation.y,oFigure.Activation.Beats(iBeat).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                     colormap(oFigure.oGuiHandle.oMapAxes, colormap(flipud(colormap(jet))));
+                     if oHandle < 0
+                         oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
                          set(oTitle,'units','pixels');
                          set(oTitle,'string','Time (ms)','position',[15 620]);
                      end
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
-                     %set(oFigure.oGuiHandle.oMapAxes,'XTick',[],'YTick',[]);
-
+                     iChannel = oFigure.oParentFigure.SelectedChannel;
+                     %Get the electrodes
+                     hold(oFigure.oGuiHandle.oMapAxes,'on');
+                     oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
+                     plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
+                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     hold(oFigure.oGuiHandle.oMapAxes,'off');
                  case 'Activation2DScatter' 
                      oXLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
                      oYLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
@@ -537,16 +568,20 @@ classdef MapElectrodes < SubFigure
                          %Get a new min and max
                          oFigure.cbarmax = 0; 
                          oFigure.cbarmin = 2000; %arbitrary
-                         for i = 25:length(oFigure.Potential.Beats(iBeat).Fields)
+                         ibmax = 0;
+                         ibmin = 0;
+                         for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
                              %Loop through the timepoint fields (not including the first 25 that cover the stimulus) for
                              %this beat to find max and min
                              dMin = min(min(oFigure.Potential.Beats(iBeat).Fields(i).z));
                              dMax = max(max(oFigure.Potential.Beats(iBeat).Fields(i).z));
                              if dMin < oFigure.cbarmin
                                  oFigure.cbarmin = dMin;
+                                 ibmin = i;
                              end
                              if dMax > oFigure.cbarmax
                                  oFigure.cbarmax = dMax;
+                                 ibmax = i;
                              end
                          end
                      end
@@ -564,8 +599,19 @@ classdef MapElectrodes < SubFigure
                      %Get the electrodes
                      hold(oFigure.oGuiHandle.oMapAxes,'on');
                      oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
-                     plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), '.', ...
+                     plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                          'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     
+                     for i = 1:length(oElectrodes)
+                         if (oElectrodes(i).Accepted) && (oElectrodes(i).SignalEvent(1).Index(iBeat) <= iTimeIndex)
+                             plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
+                                 'MarkerSize',20,'color','k');
+                         elseif ~oElectrodes(i).Accepted
+                             plot(oFigure.oGuiHandle.oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
+                                 'MarkerSize',20,'color','r');
+                         end
+                     end
+                     
                      hold(oFigure.oGuiHandle.oMapAxes,'off');
              end
          end

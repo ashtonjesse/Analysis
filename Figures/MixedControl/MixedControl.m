@@ -28,10 +28,11 @@ classdef MixedControl < SubFigure
                 % varargin   command line arguments to BaselineCorrection (see VARARGIN)
                 
                 %Set the popup menu items
-                set(handles.ppLeft, 'string', oPopUpData{1});
-                set(handles.ppMidLeft, 'string', oPopUpData{2});
-                set(handles.ppMidRight, 'string', oPopUpData{3});
-                set(handles.ppRight, 'string', oPopUpData{4});
+                set(handles.pp1, 'string', oPopUpData{1});
+                set(handles.pp2, 'string', oPopUpData{2});
+                set(handles.pp3, 'string', oPopUpData{3});
+                set(handles.pp4, 'string', oPopUpData{4});
+                set(handles.pp5, 'string', oPopUpData{5});
                 %Set the instructions
                 set(handles.txtInstructions,'string',sInstructions);
                 %Set the output attribute
@@ -70,11 +71,11 @@ classdef MixedControl < SubFigure
         function btnDone_Callback(oFigure, src, event)
             %Get the edit handles
             aValues = cell(4,1);
-            aValues{1} = oFigure.GetPopUpSelectionString('ppLeft');
-            aValues{2} = oFigure.GetPopUpSelectionString('ppMidLeft');
-            aValues{3} = oFigure.GetPopUpSelectionString('ppMidRight');
-            aValues{4} = oFigure.GetPopUpSelectionString('ppRight');
-            aValues{5} = get(oFigure.oGuiHandle.edt1,'string');
+            aValues{1} = oFigure.GetPopUpSelectionString('pp1');
+            aValues{2} = oFigure.GetPopUpSelectionString('pp2');
+            aValues{3} = oFigure.GetPopUpSelectionString('pp3');
+            aValues{4} = oFigure.GetPopUpSelectionString('pp4');
+            aValues{5} = oFigure.GetPopUpSelectionString('pp5');
             %Notify listeners and pass the selected value
             notify(oFigure,'ValuesEntered',EditValuesEnteredEvent(aValues));
         end

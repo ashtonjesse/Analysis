@@ -36,16 +36,16 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             if isempty(oFigure.oParentFigure.oGuiHandle.oPressure)
-                %Call built-in file dialog to select filename
-                %                 [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Pressure data',oFigure.DefaultPath);
-                %                 %Make sure the dialogs return char objects
-                %                 if (~ischar(sDataFileName) && ~ischar(sDataPathName))
-                %                     return
-                %                 end
-                %                 %Check the extension
-                %                 sLongDataFileName=strcat(sDataPathName,sDataFileName);
-                sLongDataFileName = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\baropacetest001_pressure.mat';
-                 [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
+                %                 Call built-in file dialog to select filename
+                [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Pressure data',oFigure.DefaultPath);
+                %Make sure the dialogs return char objects
+                if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                    return
+                end
+                %Check the extension
+                sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                %                 sLongDataFileName = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\pbaropacetest004_pressure.mat';
+                [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
                 switch (ext)
                     case '.txt'
                         oFigure.oParentFigure.oGuiHandle.oPressure =  GetPressureFromTXTFile(Pressure,sLongDataFileName);
@@ -53,20 +53,22 @@ classdef PressureAnalysis < SubFigure
                         oFigure.oParentFigure.oGuiHandle.oPressure = GetPressureFromMATFile(Pressure,sLongDataFileName);
                 end
                 
-                %                 [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Unemap signal data',oFigure.DefaultPath);
-                %                 %Make sure the dialogs return char objects
-                %                 if (~ischar(sDataFileName) && ~ischar(sDataPathName))
-                %                     return
-                %                 end
-                %                 %Check the extension
-                %                 sLongDataFileName=strcat(sDataPathName,sDataFileName);
-                %                 sLongDataFileName = 'D:\Users\jash042\Documents\DataLocal\TxtFiles\20130221\baropacetest001.txt';
+                if ~isfield(oFigure.oParentFigure.oGuiHandle.oPressure, 'oUnemap') && isempty(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap)
+                    [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Unemap signal data',oFigure.DefaultPath);
+                    %Make sure the dialogs return char objects
+                    if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                        return
+                    end
+                    %Check the extension
+                    sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                    
+                    %Get the unemap reference data
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                end
                 
-                %Get the unemap reference data
-                %                 oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
             end
-             %Turn zoom on for this figure
-            set(oFigure.oZoom,'enable','on'); 
+            %Turn zoom on for this figure
+            set(oFigure.oZoom,'enable','on');
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
             %Plot the data
@@ -225,6 +227,18 @@ classdef PressureAnalysis < SubFigure
             %replot
             oFigure.PlotPressure(oFigure.aPlots(1));
             oFigure.PlotRefSignal(oFigure.aPlots(2));
+            %Get the currently selected electrode
+            
+            %             oSelectDataFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),...
+            %                 oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,...
+            %                 {{'oInstructionText','string','Select a range of data to truncate.'} ; ...
+            %                 {'oBottomText','visible','off'} ; ...
+            %                 {'oBottomPopUp','visible','off'} ; ...
+            %                 {'oButton','string','Done'} ; ...
+            %                 {'oAxes','title','Pressure Data'}});
+            %             %Add a listener so that the figure knows when a user has
+            %             %selected the data to truncate
+            %             addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.TruncateData(src, event));
         end
         
          function TruncateData(oFigure, src, event)
@@ -252,7 +266,7 @@ classdef PressureAnalysis < SubFigure
         end
         
         function oHeartRateMenu_Callback(oFigure, src, event)
-            [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetBeats(...
+            [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetSinusBeats(...
                 oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
             aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.GetHeartRateData(dMaxPeaks);

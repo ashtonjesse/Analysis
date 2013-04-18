@@ -12,6 +12,13 @@ classdef WaveletAnalysis < SubFigure
     properties 
         NumberOfScales;
         Coefficients = [];
+        FilteredSignals = [];
+        aCurrentLimits = [];
+    end
+    
+    events
+        FigureDeleted;
+        SlideSelectionChange;
     end
     
     methods
@@ -20,20 +27,21 @@ classdef WaveletAnalysis < SubFigure
             oFigure = oFigure@SubFigure(oParent,'WaveletAnalysis',@WaveletAnalysis_OpeningFcn);
 
             %Initialise properties
-            oFigure.NumberOfScales = 15;
+            oFigure.NumberOfScales = 9;
             
-            %Set the callback functions to the controls
-            %set(oFigure.oGuiHandle.oSignalSlider, 'callback', @(src, event) oSignalSlider_Callback(oFigure, src, event));
-            aSliderTexts = [oFigure.oGuiHandle.oSliderText1,oFigure.oGuiHandle.oSliderText2];
-            sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', 'Select Channel'}, {'Min', 1, 'Max', ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels, 'Value', 1, ...
-                'Callback', @(src, event) oSlider_Callback(oFigure, src, event),'SliderStep',[0.005  0.1]},{},{},'%0.0f',...
-                oFigure.oGuiHandle.oSliderPanel, oFigure.oGuiHandle.oSlider,oFigure.oGuiHandle.oSliderEdit,aSliderTexts);
+            %Set up beat slider
+            oElectrodeSlider = SlideControl(oFigure,'Select Electrode');
+            iNumElectrodes = length(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
+            set(oElectrodeSlider.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+                iNumElectrodes, 'Value', 1 ,'SliderStep',[1/iNumElectrodes  0.02]);
+            set(oElectrodeSlider.oGuiHandle.oSliderTxtLeft,'string',1);
+            set(oElectrodeSlider.oGuiHandle.oSliderTxtRight,'string',iNumElectrodes);
+            set(oElectrodeSlider.oGuiHandle.oSliderEdit,'string',1);
+            addlistener(oElectrodeSlider,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oEditMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oCWTMenu, 'callback', @(src, event) oCWTMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
@@ -42,12 +50,14 @@ classdef WaveletAnalysis < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
             %Turn zoom on for this figure
-            set(oFigure.oZoom,'enable','on'); 
+            set(oFigure.oZoom,'enable','on');
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
-            %Plot the original and processed data of the first signal
+            %Plot the Potential and processed data of the first signal
             oFigure.CreateSubPlot();
-            oFigure.PlotOriginal(1);
-            
+            oFigure.PlotPotential(1);
+            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsKeepingScales(...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.Data, 0:oFigure.NumberOfScales);
+            oFigure.PlotScalogram();
             % --- Executes just before Figure is made visible.
             function WaveletAnalysis_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -71,6 +81,7 @@ classdef WaveletAnalysis < SubFigure
     methods (Access = protected)
          %% Protected methods inherited from superclass
         function deleteme(oFigure)
+            notify(oFigure,'FigureDeleted');
             deleteme@BaseFigure(oFigure);
         end
         
@@ -84,73 +95,48 @@ classdef WaveletAnalysis < SubFigure
     end
     
     methods
-        %% Ui control callbacks    
-        function oFigure = Close_fcn(oFigure, src, event)
-           deleteme(oFigure);
-        end
-        
         % --------------------------------------------------------------------
         function PostZoom_Callback(oFigure, src, event)
             %Synchronize the zoom of all the axes
             
             %Get the axes handles
             aPlotObjects = get(oFigure.oGuiHandle.oAxesPanel,'children');
-            %Get the handle for the scalogram axes
-            oScalogramAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, 'ScalogramAxes');
             %Get the current axes and selected limit
             oCurrentAxes = event.Axes;
             oLim = get(oCurrentAxes,'XLim');
-            %Get the maximum time series value
-            dMaxTime = max(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
-            iScalogramRes = size(oFigure.Coefficients,2);
-            oScalogramLim = oLim*(iScalogramRes/dMaxTime);
             %Loop through the axes and set the new x limits
             for i = 1:length(aPlotObjects)
-                if aPlotObjects(i) == oScalogramAxes
-                    %If the current axes is the scalogram axes adjust the
-                    %scale to suit the image resolution
-                    set(oScalogramAxes,'XLim',oScalogramLim);
-                else
                     set(aPlotObjects(i),'XLim',oLim);
-                end
             end
- 
-            
-        end
+            oFigure.aCurrentLimits = oLim;
+         end
         
         % --------------------------------------------------------------------
-        function oSlider_Callback(oFigure, src, event)
+        function SlideValueListener(oFigure, src, event)
            % Plot the data associated with this channel
-           iChannel = oFigure.GetSliderIntegerValue('oSlider');
-           oFigure.PlotOriginal(iChannel);
-           oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
-                1:oFigure.NumberOfScales,'gaus1');
+           iChannel = event.Value;
+           oFigure.PlotPotential(iChannel);
+           oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsKeepingScales(...
+               oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data, 1:oFigure.NumberOfScales); 
+           %            oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
+           %                 1:oFigure.NumberOfScales,'gaus1');
             oFigure.PlotScalogram();
         end
         
-               
         %% Menu Callbacks
         % -----------------------------------------------------------------
         function oFileMenu_Callback(oFigure, src, event)
 
         end
-                
-        % --------------------------------------------------------------------
-        function oEditMenu_Callback(oFigure, src, event)
-
-        end
-        
-        % --------------------------------------------------------------------
-        function oCWTMenu_Callback(oFigure, src, event)
-            %Calculate the CWT coefficients
-%             iChannel = oFigure.GetSliderIntegerValue('oSlider');
-            
-        end
-        
     end
     
     %% Private methods
     methods (Access = private)
+        %% Ui control callbacks    
+        function oFigure = Close_fcn(oFigure, src, event)
+           deleteme(oFigure);
+        end
+        
         function CreateSubPlot(oFigure)
              %Create the space for the subplot that will contain all the
              %graphs
@@ -166,7 +152,7 @@ classdef WaveletAnalysis < SubFigure
              %Define space
              iMinRow = 1;
              iMinCol = 1; 
-             iMaxRow = ((oFigure.NumberOfScales)/5)+4;
+             iMaxRow = oFigure.NumberOfScales + 1;
              iMaxCol = 1;
              %Divide up the space for the subplots
              xDiv = 1/(iMaxRow-iMinRow+1); 
@@ -174,12 +160,9 @@ classdef WaveletAnalysis < SubFigure
              %Create the signal subplot
              aPosition = [0, 1-xDiv, yDiv, xDiv];%[left bottom width height]
              subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oAxesPanel, 'Tag', 'SignalAxes');
-             %Update the position vector and create the scalogram subplot
-             iRow = 2;
-             aPosition = [0, 1-(iRow*xDiv), yDiv, xDiv];%[left bottom width height]
-             subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oAxesPanel, 'Tag', 'ScalogramAxes');
+             iRow = 1;
              %Loop through the scales
-             for i = 1:(((oFigure.NumberOfScales)/5)+2);
+             for i = 1:oFigure.NumberOfScales;
                  %Keep track of the row
                  iRow = iRow + 1;
                  %Create the position vector for the next plot
@@ -190,7 +173,7 @@ classdef WaveletAnalysis < SubFigure
              end
         end
          
-        function PlotOriginal(oFigure, iChannel)
+        function PlotPotential(oFigure, iChannel)
             %Get the array of handles to the plot objects
             aPlotObjects = get(oFigure.oGuiHandle.oAxesPanel,'children');
             oSignalPlot = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, 'SignalAxes');
@@ -198,55 +181,31 @@ classdef WaveletAnalysis < SubFigure
             %Plot the signal data for the currently selected channels
             plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
-            hold(oSignalPlot,'on');
-            plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,'-r');
-            hold(oSignalPlot,'off');
-            axis(oSignalPlot, 'tight');
+            if ~isempty(oFigure.aCurrentLimits)
+                set(oSignalPlot,'XLim',oFigure.aCurrentLimits);
+            else
+                axis(oSignalPlot,'tight');
+            end
+
         end
         
         function PlotScalogram(oFigure)
             %Get the array of handles to the plot objects
             aPlotObjects = get(oFigure.oGuiHandle.oAxesPanel,'children');
-            oAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, 'ScalogramAxes');
-            set(oAxes,'NextPlot','replacechildren');
-            %Check to see if some CWT coefficients have been calculated
-            if ~isempty(oFigure.Coefficients)
+            %Plot the scales
+            for i = 1:(oFigure.NumberOfScales);
+                oAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, sprintf('ScaleAxes%d',i));
                 %Set the current axes
                 set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oAxes);
-                %Plot the resulting scalogram
-                imagesc(real(oFigure.Coefficients)); 
-                colormap(oAxes,hot); 
-                axis(oAxes,'tight'); 
+                set(oAxes,'NextPlot','replacechildren');
+                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
                 
-                %Plot the scales
-                for i = 1:((oFigure.NumberOfScales)/5);
-                    oAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, sprintf('ScaleAxes%d',i));
-                    set(oAxes,'NextPlot','replacechildren');
-                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.Coefficients(i*5,:),'-r');
+                if ~isempty(oFigure.aCurrentLimits)
+                    set(oAxes,'XLim',oFigure.aCurrentLimits);
+                else
                     axis(oAxes,'tight');
                 end
                 
-                rnear = 0;
-                r0 = 0;
-                for i = 1:1:7,
-                    rnear = rnear + exp(-(((i - 1)^2)*0.061))*real(oFigure.Coefficients(i,:));
-                    r0 = r0 + exp(-(((i - 1)^2)*0.061));
-                end;
-                rnear = rnear/r0;
-                rfar = 0;
-                for i = 1:1:7,
-                    rfar = rfar + exp(-(((i - 1)^2)*0.061))*real(oFigure.Coefficients(end + 1 - i,:));
-                end;
-                rfar = rfar/r0;
-                oAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, sprintf('ScaleAxes%d',(((oFigure.NumberOfScales)/5)+1)));
-                set(oAxes,'NextPlot','replacechildren');
-                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, real(rnear),'-r');
-                axis(oAxes,'tight');
-                oAxes = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, sprintf('ScaleAxes%d',(((oFigure.NumberOfScales)/5)+2)));
-                set(oAxes,'NextPlot','replacechildren');
-                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, real(rfar));
-                axis(oAxes,'tight');
             end
             
         end

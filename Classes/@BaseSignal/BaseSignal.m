@@ -87,6 +87,15 @@ classdef BaseSignal < BaseEntity
                     OutData = sgolayfilt(aInData,iOrder,iWindowSize);
             end
         end
+        
+        function OutData = ComputeDWTFilteredSignalsKeepingScales(oBaseSignal, aInData, aScales)
+            % Compute the DWT filtered signal keeping the scales specified
+            % by iScales
+            OutData = zeros(length(aInData),length(aScales));
+            for i = 1:length(aScales)
+                OutData(:,i) = DWTFilterKeepScales(aInData,aScales(i));
+            end
+        end
     end
 end
 

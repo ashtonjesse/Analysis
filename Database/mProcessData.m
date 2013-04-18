@@ -11,7 +11,7 @@ sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\';
 
 
 %Get the full path names of all the .txt files in the signal directory
-aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'baropacetest*');
+aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'chemotest001*');
 %aSignalFileFull = fGetFileNamesOnly(sSavePath,'*.mat');
 fprintf('Running... \n');
 for k = 1:length(aSignalFileFull)
