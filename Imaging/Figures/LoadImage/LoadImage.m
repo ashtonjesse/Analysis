@@ -4,8 +4,14 @@ classdef LoadImage < BaseFigure
 
     properties
         DefaultPath = 'd:\Users\jash042\Documents\PhD\Analysis\Database\Images\Immuno\';
-        oSlideControl;
         CurrentZoomLimits = struct();
+        SelectedImageIndex = 1;
+        SlideControlCreated = false;
+    end
+    
+    events
+        SlideSelectionChange;
+        FigureDeleted;
     end
     
     methods
@@ -55,9 +61,7 @@ classdef LoadImage < BaseFigure
     methods (Access = protected)
         %% Protected methods that are inherited
         function deleteme(oFigure)
-            if ~isempty(oFigure.oSlideControl)
-                deletefigure(oFigure.oSlideControl);
-            end
+            notify(oFigure,'FigureDeleted');
             deleteme@BaseFigure(oFigure);
         end
     end
@@ -96,19 +100,20 @@ classdef LoadImage < BaseFigure
             oFigure.oGuiHandle.oStack =  oStack;
             
             %Create slider
-            if isempty(oFigure.oSlideControl)
-                oFigure.oSlideControl = SlideControl(oFigure,'Select Image');
+            if ~oFigure.SlideControlCreated
+                oSlideControl = SlideControl(oFigure,'Select Image');
+                oFigure.SlideControlCreated = true;
                 %Add a listener so that the figure knows when a user has
                 %made a beat selection
-                addlistener(oFigure.oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
+                addlistener(oSlideControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
             end
             %Set or reset the slider
             iNumImages = size(oFigure.oGuiHandle.oStack.oImages,2);
-            set(oFigure.oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+            set(oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumImages, 'Value', 1,'SliderStep',[1/iNumImages  0.02]);
-            set(oFigure.oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
-            set(oFigure.oSlideControl.oGuiHandle.oSliderTxtRight,'string',iNumImages);
-            set(oFigure.oSlideControl.oGuiHandle.oSliderEdit,'string',1);
+            set(oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
+            set(oSlideControl.oGuiHandle.oSliderTxtRight,'string',iNumImages);
+            set(oSlideControl.oGuiHandle.oSliderEdit,'string',1);
             
             %Plot the image
             oFigure.Replot();
@@ -136,6 +141,7 @@ classdef LoadImage < BaseFigure
             %An event listener callback
             %Is called when the user selects a new image using the
             %SlideControl
+            oFigure.SelectedImageIndex = event.Value;
             oFigure.CurrentZoomLimits.XLim = get(oFigure.oGuiHandle.oAxes,'XLim');
             oFigure.CurrentZoomLimits.YLim = get(oFigure.oGuiHandle.oAxes,'YLim');
             oFigure.Replot();
@@ -203,7 +209,7 @@ classdef LoadImage < BaseFigure
         end
         
         function Replot(oFigure)
-            iIndex = oFigure.oSlideControl.GetSliderIntegerValue('oSlider');
+            iIndex = oFigure.SelectedImageIndex;
             set(0,'currentfigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             
             switch (oFigure.oGuiHandle.oStack.oImages(iIndex).sClass)
@@ -211,25 +217,17 @@ classdef LoadImage < BaseFigure
                     image('cdata',oFigure.oGuiHandle.oStack.oImages(iIndex).Data*255,'Parent',...
                         oFigure.oGuiHandle.oAxes);
                     colormap(oFigure.oGuiHandle.oAxes, colormap(gray));
+                    set(oFigure.oGuiHandle.oAxes,'YDir','reverse');
                 otherwise
                     image('cdata',oFigure.oGuiHandle.oStack.oImages(iIndex).Data,'Parent',...
                         oFigure.oGuiHandle.oAxes);
+                    set(oFigure.oGuiHandle.oAxes,'YDir','reverse');
             end
             set(oFigure.oGuiHandle.oAxes,'XLim',[0 size(oFigure.oGuiHandle.oStack.oImages(iIndex).Data,2)]);
             set(oFigure.oGuiHandle.oAxes,'YLim',[0 size(oFigure.oGuiHandle.oStack.oImages(iIndex).Data,1)]);
+            set(oFigure.oGuiHandle.oAxes,'xtick',[],'ytick',[]); 
+            axis(oFigure.oGuiHandle.oAxes,'equal');
             set(oFigure.oGuiHandle.oAxes,'visible','on');
-        end
-        
-        function RelabelSlider(oFigure)
-            %Relabel the existing slider
-             if ~isempty(oFigure.oSlideControl)
-                iNumImages = size(oFigure.oGuiHandle.oStack.oImages,2);
-                set(oFigure.oSlideControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-                    iNumImages, 'Value', 1,'SliderStep',[1/iNumImages  0.02]);
-                set(oFigure.oSlideControl.oGuiHandle.oSliderTxtLeft,'string',1);
-                set(oFigure.oSlideControl.oGuiHandle.oSliderTxtRight,'string',iNumImages);
-                set(oFigure.oSlideControl.oGuiHandle.oSliderEdit,'string',1);
-             end
         end
     end
     

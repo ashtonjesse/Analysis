@@ -62,6 +62,26 @@ classdef BasePotential < BaseSignal
             end
         end
       
+        function DeleteBeat(oBasePotential, iBeat)
+            %Check if there is an electrodes field
+            if strcmpi(class(oBasePotential),'Unemap')
+                %Loop through the electrodes and delete the beat number
+                %iBeat
+                for i = 1:length(oBasePotential.Electrodes)
+                    oBasePotential.Electrodes(i).Processed.Beats(oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat,1): ...
+                        oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat,2)) = NaN;
+                    oBasePotential.Electrodes(i).Processed.BeatIndexes = vertcat(oBasePotential.Electrodes(i).Processed.BeatIndexes(1:iBeat-1,:), ...
+                        oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat+1:end,:));
+                end
+            else
+                %Just delete the beat and beatindexes
+                oBasePotential.Processed.Beats(oBasePotential.Processed.BeatIndexes(iBeat,1): ...
+                    oBasePotential.Processed.BeatIndexes(iBeat,2)) = NaN;
+                oBasePotential.Processed.BeatIndexes = vertcat(oBasePotential.Processed.BeatIndexes(1:iBeat-1,:), ...
+                    oBasePotential.Processed.BeatIndexes(iBeat+1:end,:));
+            end
+            
+        end
     end
     
 end

@@ -116,10 +116,12 @@ classdef WaveletAnalysis < SubFigure
            % Plot the data associated with this channel
            iChannel = event.Value;
            oFigure.PlotPotential(iChannel);
+            
            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsKeepingScales(...
                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data, 1:oFigure.NumberOfScales); 
            %            oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
            %                 1:oFigure.NumberOfScales,'gaus1');
+           
             oFigure.PlotScalogram();
         end
         
@@ -198,8 +200,21 @@ classdef WaveletAnalysis < SubFigure
                 %Set the current axes
                 set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oAxes);
                 set(oAxes,'NextPlot','replacechildren');
-                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
-                
+                if ismember(i,[3 4])
+                    [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),3*std(oFigure.FilteredSignals(:,i)));
+                    plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
+                    hold(oAxes,'on');
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
+                    hold(oAxes,'off');
+                elseif i == 2
+                    [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),2.5*std(oFigure.FilteredSignals(:,i)));
+                    plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
+                    hold(oAxes,'on');
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
+                    hold(oAxes,'off');
+                else
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
+                end
                 if ~isempty(oFigure.aCurrentLimits)
                     set(oAxes,'XLim',oFigure.aCurrentLimits);
                 else

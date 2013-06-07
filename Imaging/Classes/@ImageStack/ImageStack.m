@@ -35,8 +35,26 @@ classdef ImageStack < BaseEntity
             
             %   Load the mat file into the workspace
             oData = oStack.oDAL.GetEntityFromFile(sFile);
-            %   Reload all the properties 
-            oStack.oImages = oData.oEntity.oImages;
+            [a sFileName c] = fileparts(sFile);
+            %   Check if there is a oEntity field
+            if isfield(oData,'oEntity')
+                %this has been created using an Stack entity
+                %   Reload all the properties
+                oStack.oImages = oData.oEntity.oImages;
+            elseif isfield(oData,'aImageData')
+                %this has been created manually
+                %convert the data into Image entities
+                oStack = GetImageStackFromDataFile(oStack, sFile, 'aImageData');
+            elseif isfield(oData,'imvolffBW')
+                %this has been created using VasEx
+                %convert the data into Image entities
+                oStack = GetImageStackFromDataFile(oStack, sFile, 'imvolffBW');
+            elseif isfield(oData,sFileName)
+                oStack = GetImageStackFromDataFile(oStack, sFile, sFileName);
+            else
+                error('ImageStack.GetImageStackFromMATFile.VerifyInput:Incorrect', 'This stack is not recognised.')
+            end
+            
         end
         
         function oStack = GetImageStackFromDataFile(oStack, sFile, sName)

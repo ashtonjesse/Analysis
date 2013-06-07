@@ -237,7 +237,9 @@ classdef BeatPlot < SubFigure
              if length(oFigure.BeatsForAction) > 1
                  %apply to all beats
                  for i = 1:length(oFigure.ElectrodesForAction)
-                     oUnemap.MarkEvent(oFigure.ElectrodesForAction(i), iEvent);
+                     for j = 1:length(oFigure.BeatsForAction)
+                         oUnemap.MarkEvent(oFigure.ElectrodesForAction(i), iEvent, j);
+                     end
                  end
              else
                  %apply to the selected beat

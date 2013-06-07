@@ -96,6 +96,15 @@ classdef BaseSignal < BaseEntity
                 OutData(:,i) = DWTFilterKeepScales(aInData,aScales(i));
             end
         end
+        
+        function OutData = ComputeDWTFilteredSignalsRemovingScales(oBaseSignal, aInData, aScales)
+            % Compute the DWT filtered signal removing the scales specified
+            % by iScales
+            OutData = zeros(length(aInData),length(aScales));
+            for i = 1:length(aScales)
+                OutData(:,i) = DWTFilterRemoveScales(aInData, aScales(i),aScales(i));
+            end
+        end
     end
 end
 

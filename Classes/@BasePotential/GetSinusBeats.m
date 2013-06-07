@@ -17,39 +17,52 @@ iFirstIndex = 1;
 iCurrentPeak = iFirstPeak;
 iLastPeak = 0;
 iOldLastPeak = 1;
+iPeakCount = 1;
 aBeats = NaN(1,q);
 aBeatIndices = zeros(1,2);
 aMaxPeaks = zeros(1,1);
+iBlank = 50;
 %Loop through the peaks
 for j = 2:n;
     %If the next peak is greater than 150 more than the current
     %peak then the next group of peaks must be reached so save
     %the first and last peaks of the last group in aBeats.
-    if aPeaks(2,j) < (iCurrentPeak + 50)
+    if aPeaks(2,j) < (iCurrentPeak + 100)
         iLastPeak = aPeaks(2,j);
+        iPeakCount = iPeakCount + 1;
     else
-        %must have found the end of a beat
-        aThisBeat = aInData(iFirstPeak:iLastPeak,:);
-        aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
-        aBeats = [aBeats ; aThisGap ; aThisBeat];
-        aBeatIndices = [aBeatIndices ; iFirstPeak, iLastPeak];
-        %Get the index of the maximum peak in this block
-        [Val, iIndex] = max(aPeaks(1,iFirstIndex:j-1));
-        %Insert this index + the first index into the MaxPeaks array
-        aMaxPeaks = [aMaxPeaks ; aPeaks(2,iFirstIndex+iIndex-1)];
+        if iPeakCount > 3
+            %must have found the end of a beat
+            %Add some padding to the beginning and end 
+            iLastPeak = iLastPeak + iBlank;
+            iFirstPeak = iFirstPeak - iBlank/2;
+            aThisBeat = aInData(iFirstPeak:iLastPeak,:);
+            aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
+            aBeats = [aBeats ; aThisGap ; aThisBeat];
+            aBeatIndices = [aBeatIndices ; iFirstPeak, iLastPeak];
+            %Get the index of the maximum peak in this block
+            [Val, iIndex] = max(aPeaks(1,iFirstIndex:j-1));
+            %Insert this index + the first index into the MaxPeaks array
+            aMaxPeaks = [aMaxPeaks ; aPeaks(2,iFirstIndex+iIndex-1)];
+            iOldLastPeak = iLastPeak;
+        end
         iFirstPeak = aPeaks(2,j);
         iFirstIndex = j;
-        iOldLastPeak = iLastPeak;
+        iPeakCount = 1;
     end
     iCurrentPeak = aPeaks(2,j);
 end
 %Run for the last beat
-aThisBeat = aInData(iFirstPeak:iLastPeak,:);
-aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
-aBeats = [aBeats ; aThisGap ; aThisBeat];
-aBeatIndices = [aBeatIndices ; iFirstPeak, iLastPeak];
-[Val, iIndex] = max(aPeaks(1,iFirstIndex:j));
-aMaxPeaks = [aMaxPeaks ; aPeaks(2,iFirstIndex+iIndex-1)];
+if iPeakCount > 3
+    iLastPeak = iLastPeak + iBlank;
+    iFirstPeak = iFirstPeak - iBlank/2;
+    aThisBeat = aInData(iFirstPeak:iLastPeak,:);
+    aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
+    aBeats = [aBeats ; aThisGap ; aThisBeat];
+    aBeatIndices = [aBeatIndices ; iFirstPeak, iLastPeak];
+    [Val, iIndex] = max(aPeaks(1,iFirstIndex:j));
+    aMaxPeaks = [aMaxPeaks ; aPeaks(2,iFirstIndex+iIndex-1)];
+end
 %Fill in the end of the vector with NaNs if required
 if size(aBeats,1) < p
     aBeats = [aBeats ; NaN(p - size(aBeats,1),q)];

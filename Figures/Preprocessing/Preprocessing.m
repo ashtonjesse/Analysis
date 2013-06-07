@@ -60,7 +60,7 @@ classdef Preprocessing < SubFigure
                 
                 %Set ui control creation attributes 
                 set(handles.oCheckBoxBaseline, 'string', 'Fit Polynomial')
-                set(handles.oCheckBoxSpline, 'string', 'Spline Smooth');
+                set(handles.oCheckBoxWavelet, 'string', 'Keep Wavelet Scales');
                 set(handles.oCheckBoxFilter, 'string', 'Filter');
                 set(handles.oCheckBoxDeprocess, 'string', 'Delete Processed Data');
                 set(handles.oCheckBoxBeats, 'string', 'Plot beats');
@@ -343,7 +343,7 @@ classdef Preprocessing < SubFigure
                 aInOptions(i).Procedure = 'ClearData';
             else
                 bBaseline = get(oFigure.oGuiHandle.oCheckBoxBaseline,'Value');
-                bSpline = get(oFigure.oGuiHandle.oCheckBoxSpline,'Value');
+                bWavelet = get(oFigure.oGuiHandle.oCheckBoxWavelet,'Value');
                 bFilter = get(oFigure.oGuiHandle.oCheckBoxFilter,'Value');
                 
                 if bBaseline
@@ -353,10 +353,10 @@ classdef Preprocessing < SubFigure
                     i = i + 1;
                 end
                 
-                if bSpline
-                    iSplineOrder = oFigure.GetEditInputDouble('edtSplineOrder');
-                    aInOptions(i).Procedure = 'SplineSmoothData';
-                    aInOptions(i).Inputs = iSplineOrder;
+                if bWavelet
+                    iScalesToKeep = oFigure.GetEditInputDouble('edtWaveletScales');
+                    aInOptions(i).Procedure = 'KeepWaveletScales';
+                    aInOptions(i).Inputs = iScalesToKeep;
                     i = i + 1;
                 end
                 
@@ -365,8 +365,8 @@ classdef Preprocessing < SubFigure
                     iWindowSize = oFigure.GetEditInputDouble('edtWindowSize');
                     aInOptions(i).Procedure = 'FilterData';
                     aInOptions(i).Inputs = {'SovitzkyGolay',iOrder,iWindowSize};
-                    
                 end
+                
             end
         end
     end

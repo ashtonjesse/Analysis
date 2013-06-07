@@ -9,7 +9,7 @@ classdef BeatDetection < SubFigure
     %   each beat.
     
     properties
-        
+        SelectedBeat = [];
     end
     
     methods
@@ -27,10 +27,11 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oBeatSelectionMenu, 'callback', @(src, event) oBeatSelectionMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDetectPacedBeatsMenu, 'callback', @(src, event) oDetectPacedBeatsMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDeleteSelectedBeatMenu, 'callback', @(src, event) oDeleteSelectedBeatMenu_Callback(oFigure, src, event));
              
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
             set(oFigure.oGuiHandle.oBottomAxes,'Visible','off');
-            zoom on;
+            
             
             %Calculate Vrms
             oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateVrms();
@@ -186,6 +187,16 @@ classdef BeatDetection < SubFigure
             addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.BeatsSelected(src, event));
         end
         
+        function oDeleteSelectedBeatMenu_Callback(oFigure, src, event)
+            %Delete the currently selected beat
+            if ~isempty(oFigure.SelectedBeat)
+                oFigure.oParentFigure.oGuiHandle.oUnemap.DeleteBeat(oFigure.SelectedBeat);
+                oFigure.oParentFigure.oGuiHandle.oECG.DeleteBeat(oFigure.SelectedBeat);
+            end
+            oFigure.SelectedBeat = [];
+            %replot
+            oFigure.PlotECG('DetectBeats');
+        end
         
         function oCurvatureMenu_Callback(oFigure, src, event)
             
@@ -236,6 +247,16 @@ classdef BeatDetection < SubFigure
         function RemoveInterBeatVariation(oFigure,src,event)
             %Take the calculated fit and apply it to the electrode data
             oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveInterBeatVariation(event.Y2Data);
+        end
+        
+        function oBottomAxes_Callback(oFigure, src, event)
+             oPoint = get(src,'currentpoint');
+             xDim = oPoint(1,1);
+             iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(1,xDim);
+             %Delete the selected beat
+             oFigure.SelectedBeat = iBeatIndexes{1,1};
+             
+             oFigure.PlotECG('DetectBeats');
         end
     end
     
@@ -306,10 +327,22 @@ classdef BeatDetection < SubFigure
                     plot(oFigure.oGuiHandle.oBottomAxes, ...
                         oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries, ...
                         transpose(oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats),'-g');
+                    if ~isempty(oFigure.SelectedBeat)
+                        %Get the currently selected beat
+                        aSelectedBeat = oFigure.oParentFigure.oGuiHandle.oECG.Processed.Beats(...
+                            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes(oFigure.SelectedBeat,1):...
+                            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes(oFigure.SelectedBeat,2));
+                        aSelectedTime = oFigure.oParentFigure.oGuiHandle.oECG.TimeSeries(...
+                            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes(oFigure.SelectedBeat,1):...
+                            oFigure.oParentFigure.oGuiHandle.oECG.Processed.BeatIndexes(oFigure.SelectedBeat,2));
+                        plot(oFigure.oGuiHandle.oBottomAxes,aSelectedTime,aSelectedBeat,'-b');
+                    end
+                    hold(oFigure.oGuiHandle.oBottomAxes, 'off');
                 otherwise
                     
             end
             title(oFigure.oGuiHandle.oBottomAxes,'ECG');
+            set(oFigure.oGuiHandle.oBottomAxes, 'buttondownfcn', @(src, event)  oBottomAxes_Callback(oFigure, src, event));
         end
     end
 end

@@ -122,12 +122,19 @@ classdef MapElectrodes < SubFigure
             if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
+            iBeat = oFigure.oParentFigure.SelectedBeat;
+            for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
+                %Get the full file name and save it to string attribute
+                sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+                oFigure.oParentFigure.SelectedTimePoint = i;
+                oFigure.PlotPotential();
+                drawnow; pause(.2);
+                oFigure.PrintFigureToFile(sLongDataFileName);
+            end
             
-            %Get the full file name and save it to string attribute
-            sLongDataFileName=strcat(sPathName,sFilename);
-            oFigure.PrintFigureToFile(sLongDataFileName);
             %end
         end
+        
         
         % -----------------------------------------------------------------
         function oReplotMenu_Callback(oFigure, src, event)

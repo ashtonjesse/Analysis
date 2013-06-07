@@ -108,6 +108,7 @@ classdef PotentialDAL < BaseDAL
                 %Trim extra zeros
                 oElectrodes = oElectrodes(1:iElectrodeCount-1);
             end
+            fclose(fid);
         end
         
         function GetDataFromSignalFile(oPotentialDAL,oUnemap,sFile)

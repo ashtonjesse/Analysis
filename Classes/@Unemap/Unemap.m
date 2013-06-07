@@ -233,7 +233,6 @@ classdef Unemap < BasePotential
                         oUnemap.MarkEvent(i, j, iBeat);
                     end
                 end
-                
                 waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
             end
             close(oWaitbar);
@@ -275,6 +274,11 @@ classdef Unemap < BasePotential
                          iOrder = aInOptions(j).Inputs;
                          oUnemap.Electrodes(iChannel).Processed.Data = ...
                              oUnemap.SplineSmoothData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iOrder);
+                         oUnemap.FinishProcessing(iChannel);
+                     case 'KeepWaveletScales'
+                         iScalesToKeep = aInOptions(j).Inputs;
+                         oUnemap.Electrodes(iChannel).Processed.Data = ...
+                             oUnemap.ComputeDWTFilteredSignalsKeepingScales(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iScalesToKeep);
                          oUnemap.FinishProcessing(iChannel);
                      case 'FilterData'
                          if strcmp(aInOptions(j).Inputs{1,1},'50HzNotch')
@@ -392,8 +396,8 @@ classdef Unemap < BasePotential
         function [row, col] = GetRowColIndexesForElectrode(oUnemap, iElectrodeNumber)
             %Convert the channel number (1...288) into a row and column
             %index in terms of the whole array
-            iNumberOfChannels = oUnemap.oExperiment.Unemap.NumberOfChannels;
-            iYdim = oUnemap.oExperiment.Plot.Electrodes.yDim; %Actually named the wrong dimension...
+            iNumberOfChannels = 288; %oUnemap.oExperiment.Unemap.NumberOfChannels;
+            iYdim = 8;%oUnemap.oExperiment.Plot.Electrodes.yDim; %Actually named the wrong dimension...
             row = ceil((iElectrodeNumber - floor(iElectrodeNumber/((iNumberOfChannels/2) + 1)) * (iNumberOfChannels/2))/iYdim);
             col = iElectrodeNumber + floor(iElectrodeNumber/((iNumberOfChannels/2)+1)) * iYdim - (ceil(iElectrodeNumber/iYdim)-1) * iYdim;
         end
