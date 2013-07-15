@@ -36,6 +36,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oSaveMapMenu, 'callback', @(src, event) oSaveMapMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRefreshActivationMenu, 'callback', @(src, event) oRefreshActivationMenu_Callback(oFigure, src, event));
+           
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -123,14 +124,16 @@ classdef MapElectrodes < SubFigure
                 return
             end
             iBeat = oFigure.oParentFigure.SelectedBeat;
-            for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
-                %Get the full file name and save it to string attribute
-                sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-                oFigure.oParentFigure.SelectedTimePoint = i;
-                oFigure.PlotPotential();
-                drawnow; pause(.2);
-                oFigure.PrintFigureToFile(sLongDataFileName);
-            end
+            sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
+            oFigure.PrintFigureToFile(sLongDataFileName);
+            %             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
+            %                 %Get the full file name and save it to string attribute
+            %                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+            %                 oFigure.oParentFigure.SelectedTimePoint = i;
+            %                 oFigure.PlotPotential();
+            %                 drawnow; pause(.2);
+            %                 oFigure.PrintFigureToFile(sLongDataFileName);
+            %             end
             
             %end
         end

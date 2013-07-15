@@ -73,7 +73,8 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPlotPressureMenu, 'callback', @(src, event) oPlotPressureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oNormaliseBeatMenu, 'callback', @(src, event) oNormaliseBeatMenu_Callback(oFigure, src, event));
-            
+            set(oFigure.oGuiHandle.oPrintFigureMenu, 'callback', @(src, event) oPrintFigureMenu_Callback(oFigure, src, event));
+             
             set(oFigure.oGuiHandle.bNextGroup, 'callback', @(src, event) bNextGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bPreviousGroup, 'callback', @(src, event) bPreviousGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
@@ -521,6 +522,17 @@ classdef AnalyseSignals < SubFigure
              oFigure.Replot();
          end
          
+         function oPrintFigureMenu_Callback(oFigure, src, event)
+             %Get the save file path
+             %Call built-in file dialog to select filename
+             [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
+             %Make sure the dialogs return char objects
+             if (~ischar(sFilename) && ~ischar(sPathName))
+                 return
+             end
+             sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
+             oFigure.PrintFigureToFile(sLongDataFileName);
+         end
          %% Misc
          function iEventNumber = GetEventNumberFromTag(oFigure, sTag)
              %Find the event number specified by the input handle tag

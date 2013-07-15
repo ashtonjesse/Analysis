@@ -41,15 +41,17 @@ classdef Preprocessing < SubFigure
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) ThisKeyPressFcn(oFigure, src, event));
             
             %Turn zoom on for this figure
-            set(oFigure.oZoom,'enable','on'); 
-            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
+%             set(oFigure.oZoom,'enable','on'); 
+%             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
             %Plot the original and processed data of the first signal
             oFigure.PlotOriginal(1);
             oFigure.PlotProcessed(1);
-                       
+            
+            
             % --- Executes just before the figure is made visible.
             function Preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -100,8 +102,34 @@ classdef Preprocessing < SubFigure
         end
     end
     
-    methods
-        %% Ui control callbacks    
+    methods (Access = public)
+        %% Ui control callbacks
+        function ThisKeyPressFcn(oFigure, src, event)
+            %Handles key press events
+            switch event.Key
+                case 'a'
+                    set(oFigure.oGuiHandle.oCheckBoxReject,'Value',1);
+                    oCheckBoxReject_Callback(oFigure, oFigure.oGuiHandle.oCheckBoxReject, []);
+                case 'r'
+                    set(oFigure.oGuiHandle.oCheckBoxReject,'Value',0);
+                    oCheckBoxReject_Callback(oFigure, oFigure.oGuiHandle.oCheckBoxReject, []);
+                case 'rightarrow'
+                    iChannel = str2num(get(oFigure.oGuiHandle.oSliderEdit,'string'));
+                    if iChannel + 1 <= oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Unemap.NumberOfChannels
+                        set(oFigure.oGuiHandle.oSliderEdit,'string',num2str(iChannel + 1));
+                        set(oFigure.oGuiHandle.oSlider,'value',iChannel + 1);
+                        oSlider_Callback(oFigure, oFigure.oGuiHandle.oSlider, [])
+                    end
+                case 'leftarrow'
+                    iChannel = str2num(get(oFigure.oGuiHandle.oSliderEdit,'string'));
+                    if iChannel - 1 >= 1
+                        set(oFigure.oGuiHandle.oSliderEdit,'string',num2str(iChannel - 1));
+                        set(oFigure.oGuiHandle.oSlider,'value',iChannel - 1);
+                        oSlider_Callback(oFigure, oFigure.oGuiHandle.oSlider, [])
+                    end
+            end
+        end
+        
         function oFigure = Close_fcn(oFigure, src, event)
            deleteme(oFigure);
         end
@@ -370,5 +398,6 @@ classdef Preprocessing < SubFigure
             end
         end
     end
-        
+ 
 end
+

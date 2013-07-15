@@ -38,7 +38,8 @@ classdef BeatPlot < SubFigure
             set(oFigure.oGuiHandle.btnDeleteEvent,  'callback', @(src,event) oFigure.btnDeleteEvent_callback(src, event));
             set(oFigure.oGuiHandle.btnEventRange,  'callback', @(src,event) oFigure.btnEventRange_callback(src, event));
             set(oFigure.oGuiHandle.btnRefreshSignalEvent,  'callback', @(src,event) oFigure.btnRefreshSignalEvent_callback(src, event));
-            
+            set(oFigure.oGuiHandle.oFileMenu,  'callback', @(src,event) oFigure.oUnused_Callback(src, event));
+            set(oFigure.oGuiHandle.oPrintMenu,  'callback', @(src,event) oFigure.oPrintMenu_Callback(src, event));
             %Set callbacks and other functions
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
@@ -84,7 +85,18 @@ classdef BeatPlot < SubFigure
         function oUnused_Callback(oFigure, src, event)
 
         end
-                
+        
+        function oPrintMenu_Callback(oFigure, src, event)
+            [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
+            %Make sure the dialogs return char objects
+            if (~ischar(sFilename) && ~ischar(sPathName))
+                return
+            end
+            
+            sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
+            oFigure.PrintFigureToFile(sLongDataFileName);
+        end
+        
         %% Callbacks
         function SelectionListener(oFigure,src,event)
             %An event listener callback

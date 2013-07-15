@@ -81,7 +81,7 @@ classdef BaseFigure < handle
         
         function PrintFigureToFile(oFigure, sFilePath)
             %print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dpng','-r500',sFilePath);
-            print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dbmp','-r150',sFilePath)
+            print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dbmp','-r125',sFilePath)
         end
         
         function nValue = GetSliderIntegerValue(oFigure, sSliderTag)

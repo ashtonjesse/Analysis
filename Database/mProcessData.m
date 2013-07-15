@@ -5,13 +5,13 @@ close all;
 clear all;
 
 %Specify paths
-sSignalsPath = 'D:\Users\jash042\Documents\DataLocal\TxtFiles\20130221\';
+sSignalsPath = 'D:\Users\jash042\Documents\DataLocal\TxtFiles\20130619\';
 % sSavePath = 'H:/Data/Database/20111124';
-sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\';
+sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\20130619\';
 
 
 %Get the full path names of all the .txt files in the signal directory
-aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'chemotest001*');
+aSignalFileFull = fGetFileNamesOnly(sSignalsPath,'*.txt');
 %aSignalFileFull = fGetFileNamesOnly(sSavePath,'*.mat');
 fprintf('Running... \n');
 for k = 1:length(aSignalFileFull)
