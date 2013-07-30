@@ -36,6 +36,7 @@ classdef PotentialDAL < BaseDAL
             %iNumberOfElectrodes > 0 and iSpecificElectrode = 0
             %If you want just a specific electrode then specify
             %iSpecificElectrode > 0
+                      
             %Intitialise the struct
             oElectrodes = struct('Name', zeros(iNumberOfElectrodes,1));
             iElectrodeCount = 0;
@@ -91,11 +92,27 @@ classdef PotentialDAL < BaseDAL
                             sYInfo  = strtrim(char(splitstring(1,2)));
                             %Split the sXInfo on the =
                             [~,~,~,~,~,~,splitstring] = regexpi(sXInfo,'=');
-                            iXPos = str2double(strtrim(char(splitstring(1,2))));
+                            dXPos = str2double(strtrim(char(splitstring(1,2))));
                             %Split the sYInfo on the =
                             [~,~,~,~,~,~,splitstring] = regexpi(sYInfo,'=');
-                            iYPos = str2double(strtrim(char(splitstring(1,2))));
-                            oElectrodes(iElectrodeCount).Coords = [iXPos iYPos];
+                            dYPos = str2double(strtrim(char(splitstring(1,2))));
+                            %Get the appropriate position for this
+                            %electrode in terms of a row and column index
+                            oElectrodes(iElectrodeCount).Coords = [dXPos ; dYPos];
+                        end
+                    case 'location'
+                        if iSpecificElectrode == 0
+                            %Split the oValue on the ,
+                            [~,~,~,~,~,~,splitstring] = regexpi(oValue,',');
+                            sXInfo = strtrim(char(splitstring(1,1)));
+                            sYInfo  = strtrim(char(splitstring(1,2)));
+                            %Split the sXInfo on the =
+                            [~,~,~,~,~,~,splitstring] = regexpi(sXInfo,'=');
+                            iXLoc = str2double(strtrim(char(splitstring(1,2))));
+                            %Split the sYInfo on the =
+                            [~,~,~,~,~,~,splitstring] = regexpi(sYInfo,'=');
+                            iYLoc = str2double(strtrim(char(splitstring(1,2))));
+                            oElectrodes(iElectrodeCount).Location = [iYLoc ; iXLoc];
                         end
                     case 'channel'
                         if iSpecificElectrode == 0

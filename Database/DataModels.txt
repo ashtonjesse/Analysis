@@ -20,6 +20,7 @@ Electrodes(i).Name
 Electrodes(i).Status
 Electrodes(i).Potential.Data
 Electrodes(i).Coords
+Electrodes(i).Location
 Electrodes(i).SignalEvent(j).Index
 Electrodes(i).SignalEvent(j).Range
 Electrodes(i).SignalEvent(j).Method
@@ -31,9 +32,6 @@ Electrodes(i).Processed.Envelope
 Electrodes(i).Processed.CentralDifference
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
-Electrodes(i).Processed.BaselinePolyOrder
-Electrodes(i).Processed.BaselinePoly
-Electrodes(i).Processed.SplineOrder
 Electrodes(i).Processed.Beats %%An array containing just the processed data between each of the two beat indexes and nans everywhere else
 Electrodes(i).Processed.BeatIndexes %%A 2 column array that contains the start and end indexes of Processed.Data for each beat. Is stored for each electrode but actually is the same for all electrodes
 Electrodes(i).Pacing.Index
@@ -68,6 +66,9 @@ oExperiment.ECG.Amp.LowFilter
 oExperiment.ECG.Amp.LineFilter
 oExperiment.Plot.Electrodes.xDim
 oExperiment.Plot.Electrodes.yDim
+oExperiment.Array.Bounds
+oExperiment.Array.XSpacing
+oExperiment.Array.YSpacing
 
 ECG: (BasePotential)
 oECG.oExperiment;

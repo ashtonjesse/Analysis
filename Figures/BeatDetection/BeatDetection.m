@@ -10,6 +10,7 @@ classdef BeatDetection < SubFigure
     
     properties
         SelectedBeat = [];
+        CurrentZoomLimits = [];
     end
     
     methods
@@ -38,6 +39,9 @@ classdef BeatDetection < SubFigure
                             
             %Plot the computed Vrms
             oFigure.PlotVRMS('Values');
+            %Turn zoom on for this figure
+            set(oFigure.oZoom,'enable','on');
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
             function BeatDetection_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -74,6 +78,21 @@ classdef BeatDetection < SubFigure
     end
     
     methods
+        % --------------------------------------------------------------------
+        function PostZoom_Callback(oFigure, src, event)
+            %Synchronize the zoom of all the axes
+            
+            %Get the current axes and selected limit
+            oCurrentAxes = event.Axes;
+            oXLim = get(oCurrentAxes,'XLim');
+            oYLim = get(oCurrentAxes,'YLim');
+            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
+            %Apply to axes
+            set(oFigure.oGuiHandle.oTopAxes,'XLim',oXLim);
+            set(oFigure.oGuiHandle.oMiddleAxes,'XLim',oXLim);
+            set(oFigure.oGuiHandle.oBottomAxes,'XLim',oXLim);
+        end
+        
         %% Ui control callbacks    
         function oFigure = Close_fcn(oFigure, src, event)
            deleteme(oFigure);
@@ -241,7 +260,7 @@ classdef BeatDetection < SubFigure
             %Save the peak values and locations
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks = [aPeaks ; aLocations];
             oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Threshold = dThreshold;
-            
+            oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.SDMultiplier = dSelection;
         end
         
         function RemoveInterBeatVariation(oFigure,src,event)
@@ -343,6 +362,11 @@ classdef BeatDetection < SubFigure
             end
             title(oFigure.oGuiHandle.oBottomAxes,'ECG');
             set(oFigure.oGuiHandle.oBottomAxes, 'buttondownfcn', @(src, event)  oBottomAxes_Callback(oFigure, src, event));
+            if ~isempty(oFigure.CurrentZoomLimits)
+                set(oFigure.oGuiHandle.oTopAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+                set(oFigure.oGuiHandle.oMiddleAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+                set(oFigure.oGuiHandle.oBottomAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+            end
         end
     end
 end

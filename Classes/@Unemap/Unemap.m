@@ -132,7 +132,7 @@ classdef Unemap < BasePotential
                 oWaitbar = waitbar(0,'Please wait...');
                 for i = 1:iLength
                     oUnemap.Electrodes(i).Processed.Slope = ...
-                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,20,3);
+                        oUnemap.CalculateSlope(oUnemap.Electrodes(i).Processed.Data,5,3);
                     waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                 end
                 close(oWaitbar);
@@ -279,17 +279,22 @@ classdef Unemap < BasePotential
                          iScalesToKeep = aInOptions(j).Inputs;
                          oUnemap.Electrodes(iChannel).Processed.Data = ...
                              oUnemap.ComputeDWTFilteredSignalsKeepingScales(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,iScalesToKeep);
+                         oUnemap.Electrodes(iChannel).Processed.WaveletScalesKept= iScalesToKeep;
                          oUnemap.FinishProcessing(iChannel);
                      case 'FilterData'
                          if strcmp(aInOptions(j).Inputs{1,1},'50HzNotch')
                              dSamplingFreq = aInOptions(j).Inputs{1,2};
                              oUnemap.Electrodes(iChannel).Processed.Data = ...
                                  oUnemap.FilterData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,'50HzNotch',dSamplingFreq);
+                             oUnemap.Electrodes(iChannel).Processed.Filter = '50HzNotch';
                          elseif strcmp(aInOptions(j).Inputs{1,1},'SovitzkyGolay')
                              iOrder = aInOptions(j).Inputs{1,2};
                              iWindowSize = aInOptions(j).Inputs{1,3};
                              oUnemap.Electrodes(iChannel).Processed.Data = ...
                                  oUnemap.FilterData(oUnemap.Electrodes(iChannel).(oUnemap.Electrodes(iChannel).Status).Data,'SovitzkyGolay',iOrder,iWindowSize);
+                             oUnemap.Electrodes(iChannel).Processed.Filter = 'SovitzkyGolay';
+                             oUnemap.Electrodes(iChannel).Processed.WindowSize = iWindowSize;
+                             oUnemap.Electrodes(iChannel).Processed.iOrder = iOrder;
                          end
                          oUnemap.FinishProcessing(iChannel);
                      case 'RemoveLinearInterpolation'
@@ -400,6 +405,7 @@ classdef Unemap < BasePotential
             iYdim = 8;%oUnemap.oExperiment.Plot.Electrodes.yDim; %Actually named the wrong dimension...
             row = ceil((iElectrodeNumber - floor(iElectrodeNumber/((iNumberOfChannels/2) + 1)) * (iNumberOfChannels/2))/iYdim);
             col = iElectrodeNumber + floor(iElectrodeNumber/((iNumberOfChannels/2)+1)) * iYdim - (ceil(iElectrodeNumber/iYdim)-1) * iYdim;
+            
         end
                
         function ApplyNeighbourhoodAverage(oUnemap, aInOptions)
@@ -1338,7 +1344,8 @@ classdef Unemap < BasePotential
             end
             % Get the electrodes 
             oUnemap.Electrodes = oUnemap.oDAL.GetElectrodesFromConfigFile(...
-                oUnemap.oExperiment.Unemap.NumberOfChannels, char(aFileFull(1)),0);
+                oUnemap.oExperiment.Unemap.NumberOfChannels, char(aFileFull(1)), 0);
+                       
             % Get the electrode data
             oUnemap.oDAL.GetDataFromSignalFile(oUnemap,sFile);
         end

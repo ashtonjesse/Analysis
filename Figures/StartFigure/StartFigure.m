@@ -154,11 +154,9 @@ classdef StartFigure < BaseFigure
         function oFigure = bAnalyseSignals_Callback(oFigure, src, event)
             %Open the AnalyseSignals figure passing this figure as the
             %parent
-            try
+            
                 AnalyseSignals(oFigure);
-            catch
-                disp('problem');
-            end
+            
         end
         
         function oFigure = bPressure_Callback(oFigure, src, event)

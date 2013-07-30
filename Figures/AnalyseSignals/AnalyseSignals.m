@@ -587,14 +587,16 @@ classdef AnalyseSignals < SubFigure
              oFigure.PlotLimits = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPlotLimits(oDataToPlot, oFigure.SelectedChannels);
              
              %Find the bounds of the selected area
-             iMinChannel = min(oFigure.SelectedChannels);
-             iMaxChannel = max(oFigure.SelectedChannels);
+             %Get the list of locations
+             aLocations = MultiLevelSubsRef(oFigure.oDAL.oHelper,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels),'Location');
+             [C, iMinChannel] = min(sum(aLocations,1));
+             [C, iMaxChannel] = max(sum(aLocations,1));
              %Convert into row and col indices
-             [iMinRow iMinCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMinChannel);
-             [iMaxRow iMaxCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iMaxChannel);
+             aMinLocation = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels(iMinChannel)).Location;
+             aMaxLocation = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels(iMaxChannel)).Location;
              %Divide up the space for the subplots
-             xDiv = 1/(iMaxRow-iMinRow+1);
-             yDiv = 1/(iMaxCol-iMinCol+1);
+             xDiv = 1/(aMaxLocation(1)-aMinLocation(1)+1);
+             yDiv = 1/(aMaxLocation(2)-aMinLocation(2)+1);
              
              %Set number of plots per channel
              if ~isempty(oFigure.PlotLimits.Envelope)
@@ -611,10 +613,11 @@ classdef AnalyseSignals < SubFigure
              aTimeSeries = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries;
              for i = 1:size(oFigure.SelectedChannels,2);
                  iChannel = oFigure.SelectedChannels(i);
-                 [iRow iCol] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetRowColIndexesForElectrode(iChannel);
+                 iRow = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Location(1);
+                 iCol = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Location(2);
                  %Normalise the row and columns to the minimum.
-                 iRow = iRow - iMinRow;
-                 iCol = iCol - iMinCol;
+                 iRow = iRow - aMinLocation(1);
+                 iCol = iCol - aMinLocation(2);
                  %Create the position vector for the next plot
                  aPosition = [iCol*yDiv, iRow*xDiv, yDiv, xDiv];%[left bottom width height]
                  %check if this is the first time through

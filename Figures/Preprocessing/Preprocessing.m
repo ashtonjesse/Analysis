@@ -278,7 +278,7 @@ classdef Preprocessing < SubFigure
         function PlotOriginal(oFigure, iChannel)
             oAxes = oFigure.oGuiHandle.oTopAxes;
             cla(oAxes);
-            sTitle = sprintf('Original Signal for Channel %d',iChannel);
+            sTitle = sprintf('Original Signal for Channel %s',oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Name);
             if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
                 plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
                     oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
@@ -338,7 +338,7 @@ classdef Preprocessing < SubFigure
                     set(oAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
                     set(oAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
                 end
-                sTitle = sprintf('Processed Signal for Channel %d', iChannel);
+                sTitle = sprintf('Processed Signal for Channel %s', oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Name);
                 title(oAxes,sTitle);
             else
                 %Else hide the axes

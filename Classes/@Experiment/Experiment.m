@@ -10,6 +10,7 @@ classdef Experiment < BaseEntity
         Phrenic;
         ECG;
         Plot;
+        Array;
     end
         
     methods
@@ -26,6 +27,9 @@ classdef Experiment < BaseEntity
                     oExperiment.Phrenic = oExperimentStruct.Phrenic;
                     oExperiment.ECG = oExperimentStruct.ECG;
                     oExperiment.Plot = oExperimentStruct.Plot;
+                    if isfield(oExperimentStruct,'Array')
+                        oExperiment.Array = oExperimentStruct.Array;
+                    end
                 end
             end
         end

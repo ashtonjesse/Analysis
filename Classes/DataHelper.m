@@ -31,7 +31,32 @@ classdef DataHelper
 %                 If it does contain numeric digits then convert the
 %                 strings to doubles
                 if ~isempty(matchstart)
-                    oValue = str2double(oValue);
+                    %Check if it is an array variable (assumes only a 2 x 2
+                    %structure)
+                    [matchstart,~,~,~,~,~,splitstring] = regexp(oValue,'[');
+                    if ~isempty(matchstart)
+                        % Get the array contents
+                        oValue  = strtrim(char(splitstring(1,2)));
+                        % Split the rows
+                        [~,~,~,~,~,~,splitstring] = regexp(oValue,';');
+                        aFirstRow = strtrim(char(splitstring(1,1)));
+                        aSecondRow = strtrim(char(splitstring(1,2)));
+                        %Remove the last bracket
+                        [~,~,~,~,~,~,splitstring] = regexp(aSecondRow,']');
+                        aSecondRow = strtrim(char(splitstring(1,1)));
+                        %Split the contents of each row
+                        [~,~,~,~,~,~,splitstring] = regexp(aFirstRow,',');
+                        dOneOne = strtrim(char(splitstring(1,1)));
+                        dOneTwo = strtrim(char(splitstring(1,2)));
+                        [~,~,~,~,~,~,splitstring] = regexp(aSecondRow,',');
+                        dTwoOne = strtrim(char(splitstring(1,1)));
+                        dTwoTwo = strtrim(char(splitstring(1,2)));
+                        %Reconstruct the array
+                        oValue = [dOneOne, dOneTwo; dTwoOne, dTwoTwo];
+                    else
+                        %Is just a numeric digit
+                        oValue = str2double(oValue);
+                    end
                 end
 %                 See if this string contains more than one level of
 %                 structured array
