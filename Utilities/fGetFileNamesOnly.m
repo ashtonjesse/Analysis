@@ -2,9 +2,9 @@
 %extension (sSearchTag) in the specified directory (sDir).
 
 function aFileFull = fGetFileNamesOnly(sDir,sSearchTag)
-    cd(sDir);
+    
     %Get an array of files with the extension sSearchTag
-    aFiles = dir(sSearchTag);
+    aFiles = dir(strcat(sDir,'\',sSearchTag));
     %Get the number of files
     iNumFiles = length(aFiles);
     %Initialise a cell array to contain the full file names

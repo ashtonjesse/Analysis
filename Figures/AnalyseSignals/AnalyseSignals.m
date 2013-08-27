@@ -74,6 +74,7 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oPlotPressureMenu, 'callback', @(src, event) oPlotPressureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oNormaliseBeatMenu, 'callback', @(src, event) oNormaliseBeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPrintFigureMenu, 'callback', @(src, event) oPrintFigureMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oPlotSinusRateMenu, 'callback', @(src, event) oPlotSinusRateMenu_Callback(oFigure, src, event));
              
             set(oFigure.oGuiHandle.bNextGroup, 'callback', @(src, event) bNextGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bPreviousGroup, 'callback', @(src, event) bPreviousGroup_Callback(oFigure, src, event));
@@ -164,18 +165,27 @@ classdef AnalyseSignals < SubFigure
              %Synchronize the zoom of electrode and ECG axes
              
              %Get the current axes and selected limit
-             oCurrentAxes = event.Axes;
-             oXLim = get(oCurrentAxes,'XLim');
-             oYLim = get(oCurrentAxes,'YLim');
-             oFigure.CurrentZoomLimits = [oXLim ; oYLim];
-             oFigure.ApplyZoomLimits();
+             oFigure.GetZoomLimits(event.Axes);
+             oFigure.ApplyZoomLimits('XLim');
+             oFigure.ApplyZoomLimits('YLim');
          end
          
-         function ApplyZoomLimits(oFigure)
+         function ApplyZoomLimits(oFigure,sAxis)
              %Apply to axes
-             set(oFigure.oGuiHandle.oElectrodeAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
-             set(oFigure.oGuiHandle.oECGAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
-             set(oFigure.oGuiHandle.oECGAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
+             switch (sAxis)
+                 case 'XLim'
+                     set(oFigure.oGuiHandle.oElectrodeAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+                     set(oFigure.oGuiHandle.oECGAxes,'XLim',oFigure.CurrentZoomLimits(1,:));
+                 case 'YLim'
+                     set(oFigure.oGuiHandle.oECGAxes,'YLim',oFigure.CurrentZoomLimits(2,:));
+             end
+         end
+         
+         function GetZoomLimits(oFigure, oAxes)
+             %Get the zoom limits for the specified axes
+             oXLim = get(oAxes,'XLim');
+             oYLim = get(oAxes,'YLim');
+             oFigure.CurrentZoomLimits = [oXLim ; oYLim];
          end
          
          function StartDrag(oFigure, src, event)
@@ -281,12 +291,17 @@ classdef AnalyseSignals < SubFigure
          end
          
          function bNextGroup_Callback(oFigure, src, event)
+             %-------Not implemented right now as no way of easily
+             %selecting channels based on location
+             
              %Select the next group of channels - where group is
              %defined by the x and y dimensions specified in the experiment
              %metadata
              
              %Find the max channel currently selected
-             iCornerChannel = max(oFigure.SelectedChannels);
+             aLocations = MultiLevelSubsRef(oFigure.oDAL.oHelper,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels),'Location');
+             [C iMaxIndex] = max(sum(aLocations,1));
+             iCornerChannel = oFigure.SelectedChannels(iMaxIndex);
              if iCornerChannel > (oFigure.NumberofChannels - oFigure.SubPlotXdim*oFigure.SubPlotYdim)
                  %Go back to the start
                  oFigure.SelectedChannels = 1:oFigure.SubPlotXdim*oFigure.SubPlotYdim;
@@ -299,6 +314,9 @@ classdef AnalyseSignals < SubFigure
          end
          
          function bPreviousGroup_Callback(oFigure, src, event)
+             %-------Not implemented right now as no way of easily
+             %selecting channels based on location
+             
              %Select the previous group of channels - where group is
              %defined by the x and y dimensions specified in the experiment
              %metadata
@@ -514,7 +532,18 @@ classdef AnalyseSignals < SubFigure
              %Plot pressure on the ECG axes
              oFigure.sECGAxesContent = 'Pressure';
              oFigure.PlotPressure();
+             oFigure.GetZoomLimits(oFigure.oGuiHandle.oElectrodeAxes);
+             oFigure.ApplyZoomLimits('XLim');
          end
+         
+         function oPlotSinusRateMenu_Callback(oFigure, src, event)
+             %Plot pressure on the ECG axes
+             oFigure.sECGAxesContent = 'SinusRate';
+             oFigure.PlotSinusRate();
+             oFigure.GetZoomLimits(oFigure.oGuiHandle.oElectrodeAxes);
+             oFigure.ApplyZoomLimits('XLim');
+         end
+         
          
          function oNormaliseBeatMenu_Callback(oFigure, src, event)
              %Carry out normalisation of the potential values of the selected beat
@@ -563,6 +592,8 @@ classdef AnalyseSignals < SubFigure
                  case 'Pressure'
                      oFigure.PlotPressure();
              end
+             oFigure.GetZoomLimits(oFigure.oGuiHandle.oElectrodeAxes);
+             oFigure.ApplyZoomLimits('XLim');
              oFigure.CheckRejectToggleButton();
 %              close(oWaitbar);
          end
@@ -1024,6 +1055,20 @@ classdef AnalyseSignals < SubFigure
              plot(oFigure.oGuiHandle.oECGAxes, ...
                  oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
                  oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,'k');
+             axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
+             oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
+             set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
+         end
+         
+         function PlotSinusRate(oFigure)
+             %Clear axes and set to be visible
+             cla(oFigure.oGuiHandle.oECGAxes);
+             aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRate(oFigure.SelectedChannel);
+             plot(oFigure.oGuiHandle.oECGAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, aRateData,'k');
+             TimeMin = min(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
+             TimeMax = max(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
+             YMin = min(aRateData);
+             YMax = max(aRateData);
              axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
              oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
              set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);

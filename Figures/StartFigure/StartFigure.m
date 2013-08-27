@@ -70,7 +70,7 @@ classdef StartFigure < BaseFigure
             %This function opens a file dialog and loads 2 mat files (containing signal data and ECG data) 
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing a Unemap entity',oFigure.DefaultPath);
+            [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing a Unemap entity or data from which one can be created',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                 return
@@ -78,19 +78,26 @@ classdef StartFigure < BaseFigure
             
             %Get the full file name and save it to string attribute
             sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
             set(oFigure.oGuiHandle.ePath,'String',sLongDataFileName);
             
             %Load the selected file
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             set(gcf,'pointer','watch');
             drawnow;
-            oUnemap = GetUnemapFromMATFile(Unemap,sLongDataFileName);
+            switch (ext)
+                case '.txt'
+                    oUnemap = GetUnemapFromTXTFile(Unemap,sLongDataFileName);
+                case '.mat'
+                    oUnemap = GetUnemapFromMATFile(Unemap,sLongDataFileName);
+            end
+            
             %load the Entity into gui handles
             oFigure.oGuiHandle.oUnemap =  oUnemap;
             set(gcf,'pointer','arrow');
             
             %Call built-in file dialog to select filename
-            [sDataFileName,sDataPathName]=uigetfile('*.mat','Select .mat containing an ECG entity',oFigure.DefaultPath);
+            [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing an ECG entity or data from which one can be created',oFigure.DefaultPath);
             %Make sure the dialogs return char objects
             if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                 return
@@ -98,11 +105,17 @@ classdef StartFigure < BaseFigure
             
             %Get the full file name and save it to string attribute
             sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
             %Load the selected file
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             set(gcf,'pointer','watch');
             drawnow;
-            oECG = GetECGFromMATFile(ECG,sLongDataFileName);
+            switch (ext)
+                case '.txt'
+                    oECG = GetAverageECGFromTXTFile(ECG,sLongDataFileName);
+                case '.mat'
+                    oECG = GetECGFromMATFile(ECG,sLongDataFileName);
+            end
             %Save the Entity to gui handles of the parent figure
             oFigure.oGuiHandle.oECG =  oECG;
             set(gcf,'pointer','arrow');

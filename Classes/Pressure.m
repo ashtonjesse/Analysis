@@ -5,11 +5,11 @@ classdef Pressure < BaseSignal
     
     properties
         oExperiment;
-        Original;
-        TimeSeries;
-        RefSignal;
-        Processed;
-        Phrenic;
+        Original = [];
+        TimeSeries = [];
+        RefSignal = [];
+        Processed = [];
+        Phrenic = [];
         Status = 'Original';
         oUnemap;
     end
@@ -93,14 +93,26 @@ classdef Pressure < BaseSignal
                 %   Get the Experiment entity
                 oPressure.oExperiment = GetExperimentFromTxtFile(Experiment, char(aFileFull(1)));
             end
+            
             %   Load the data from the txt file
             aFileContents = oPressure.oDAL.LoadFromFile(sFile);
             %   Set the Original and TimeSeries Structured arrays
-            oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
-            oPressure.TimeSeries.Original = aFileContents(:,1);
-            oPressure.RefSignal.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
-            oPressure.RefSignal.Name = oPressure.oExperiment.PerfusionPressure.RefSignalName;
-            oPressure.Phrenic.Original = aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn);
+            % check if there is already data loaded
+            if isfield(oPressure.Original, 'Data')
+                %append to existing data
+                oPressure.Original.Data = [oPressure.Original.Data ; aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn)];
+                oPressure.TimeSeries.Original = [oPressure.TimeSeries.Original ; oPressure.TimeSeries.Original(end) + aFileContents(:,1)];
+                oPressure.RefSignal.Original = [oPressure.RefSignal.Original ; aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn)];
+                oPressure.Phrenic.Original = [oPressure.Phrenic.Original ; aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn)];
+            else
+                %load it for the first time
+                oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
+                oPressure.TimeSeries.Original = aFileContents(:,1);
+                oPressure.RefSignal.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
+                oPressure.RefSignal.Name = oPressure.oExperiment.PerfusionPressure.RefSignalName;
+                oPressure.Phrenic.Original = aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn);
+            end
+            
         end       
         
     end

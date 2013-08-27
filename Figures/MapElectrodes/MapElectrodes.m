@@ -123,14 +123,27 @@ classdef MapElectrodes < SubFigure
             if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
+            %Save individual beat activation time
             iBeat = oFigure.oParentFigure.SelectedBeat;
             sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
             oFigure.PrintFigureToFile(sLongDataFileName);
+
+            %Save series of potential fields
             %             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
             %                 %Get the full file name and save it to string attribute
             %                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
             %                 oFigure.oParentFigure.SelectedTimePoint = i;
             %                 oFigure.PlotPotential();
+            %                 drawnow; pause(.2);
+            %                 oFigure.PrintFigureToFile(sLongDataFileName);
+            %             end
+            
+            %Save series of activation maps
+            %             for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+            %                 Get the full file name and save it to string attribute
+            %                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+            %                 oFigure.oParentFigure.SelectedBeat = i;
+            %                 oFigure.PlotActivation();
             %                 drawnow; pause(.2);
             %                 oFigure.PrintFigureToFile(sLongDataFileName);
             %             end

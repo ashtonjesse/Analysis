@@ -27,7 +27,7 @@ classdef WaveletAnalysis < SubFigure
             oFigure = oFigure@SubFigure(oParent,'WaveletAnalysis',@WaveletAnalysis_OpeningFcn);
 
             %Initialise properties
-            oFigure.NumberOfScales = 9;
+            oFigure.NumberOfScales = 10;
             
             %Set up beat slider
             oElectrodeSlider = SlideControl(oFigure,'Select Electrode');

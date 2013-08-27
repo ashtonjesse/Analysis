@@ -1,12 +1,19 @@
 clear all;
 
 disp('loading unemap...');
-oUnemap = ...
-GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130724\baroreflex003\pabaroreflex003_unemap_1.mat');
+oUnemap1 = ...
+GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130724\baroreflex004_unemap.mat');
+oUnemap2 = ...
+GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\barotestpostatropine\pa_barotestpostatropine_unemap.mat');
 disp('done loading');
 
-for i = 1:length(oUnemap.Electrodes)
-    oUnemap.Electrodes(i).Location = [oUnemap.Electrodes(i).Location(2) ; oUnemap.Electrodes(i).Location(1)];
+for i = 1:length(oUnemap2.Electrodes)
+    for j = 1:length(oUnemap1.Electrodes)
+        if strcmp(oUnemap2.Electrodes(i).Name, oUnemap1.Electrodes(j).Name)
+            oUnemap2.Electrodes(i).Location = oUnemap1.Electrodes(j).Location;
+        end
+    end
+    
 %     switch (oUnemap.Electrodes(i).Name)
 %         case {'22-20','23-01','23-06','23-11','23-16','23-21','24-02','24-07','24-12','24-17','24-22','25-03','25-08','25-13','25-18','25-23','26-04','26-09','26-14'}
 %             if isfield(oUnemap.Electrodes(i),'SignalEvent')
@@ -32,4 +39,4 @@ end
 sLongDataFileName=strcat(sDataPathName,sDataFileName);
 
 %Save
-oUnemap.Save(sLongDataFileName);
+oUnemap2.Save(sLongDataFileName);

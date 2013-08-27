@@ -89,4 +89,7 @@ oPressure.TimeSeries.Original
 oPressure.TimeSeries.Processed
 oPressure.RefSignal.Original
 oPressure.RefSignal.Processed
+oPressure.Phrenic.Original
+oPressure.Phrenic.Processed
+oPressure.Phrenic.Integral
 oPressure.oUnemap

@@ -672,9 +672,26 @@ classdef Unemap < BasePotential
             end
         end
         
+        function aRateData = CalculateSinusRate(oUnemap, iElectrodeNumber)
+            %Get the peaks associated with the beat data from this
+            %electrode and make call to GetHeartRateData
+            dPeaks = zeros(size(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
+            %Loop through the beats and find max curvature
+            for i = 1:size(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1);
+                aInData = oUnemap.Electrodes(iElectrodeNumber).Processed.Data...
+                    (oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
+                aCurvature = oUnemap.CalculateCurvature(aInData, 20, 5);
+                [val, loc] = max(aCurvature);
+                %Add the first index of this beat
+                dPeaks(i,1) = loc + oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
+            end
+            aRateData = oUnemap.GetHeartRateData(dPeaks);
+        end
+        
         function aRateData = GetHeartRateData(oUnemap,dPeaks)
-            %Take the peaks supplied and create an array of
+            %Take the peaks  supplied and create an array of
             %discrete heart rates
+            
             aTimes = oUnemap.TimeSeries(dPeaks);
             %Put peaks in pairs
             dPeaks = dPeaks';
