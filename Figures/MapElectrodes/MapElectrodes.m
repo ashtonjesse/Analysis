@@ -45,7 +45,7 @@ classdef MapElectrodes < SubFigure
             
             %Add a listener so that the figure knows when a user has
             %made a beat selection
-            addlistener(oFigure.oParentFigure,'SlideSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'BeatSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
             %Add one so the figure knows when it's parent has been deleted
             addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
             %Add a listener so the figure knows when a new time point has

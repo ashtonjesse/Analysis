@@ -22,12 +22,12 @@ classdef AnalyseSignals < SubFigure
     end
         
     events
-        SlideSelectionChange; %selected beat
         ChannelSelected;
         FigureDeleted;
         EventMarkChange;
         BeatIndexChange; %beat range
         TimeSelectionChange;
+        BeatSelectionChange;
         SignalEventSelectionChange;
     end
     
@@ -38,14 +38,14 @@ classdef AnalyseSignals < SubFigure
             oFigure = oFigure@SubFigure(oParent,'AnalyseSignals',@AnalyseSignals_OpeningFcn);
             
             %Set up beat slider
-            oBeatSliderControl = SlideControl(oFigure,'Select Beat');
+            oBeatSliderControl = SlideControl(oFigure,'Select Beat', 'BeatSelectionChange');
             iNumBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
             set(oBeatSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumBeats, 'Value', 1 ,'SliderStep',[1/iNumBeats  0.02]);
             set(oBeatSliderControl.oGuiHandle.oSliderTxtLeft,'string',1);
             set(oBeatSliderControl.oGuiHandle.oSliderTxtRight,'string',iNumBeats);
             set(oBeatSliderControl.oGuiHandle.oSliderEdit,'string',1);
-            addlistener(oBeatSliderControl,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
+            addlistener(oBeatSliderControl,'SlideValueChanged',@(src,event) oFigure.BeatSlideValueListener(src, event));
             
             %Get constants
             oFigure.SubPlotXdim = oFigure.oParentFigure.oGuiHandle.oUnemap.oExperiment.Plot.Electrodes.xDim;
@@ -259,7 +259,7 @@ classdef AnalyseSignals < SubFigure
              %Notify listeners so that the selected beat can be propagated
              %and update the Slide Control
              oFigure.SelectedBeat = iBeatIndexes{1,1};
-             notify(oFigure,'SlideSelectionChange',DataPassingEvent([],iBeatIndexes{1,1}));
+             notify(oFigure,'BeatSelectionChange',DataPassingEvent([],iBeatIndexes{1,1}));
              oFigure.Replot();
          end
          
@@ -363,12 +363,12 @@ classdef AnalyseSignals < SubFigure
              notify(oFigure,'SignalEventSelectionChange',DataPassingEvent([],event.Value));
          end
          
-         function SlideValueListener(oFigure,src,event)
+         function BeatSlideValueListener(oFigure,src,event)
              %An event listener callback
              %Is called when the user selects a new beat using the
              %SlideControl
              oFigure.SelectedBeat = event.Value;
-             notify(oFigure,'SlideSelectionChange',DataPassingEvent([],oFigure.SelectedBeat));
+             notify(oFigure,'BeatSelectionChange',DataPassingEvent([],oFigure.SelectedBeat));
              oFigure.Replot();
              
          end
@@ -419,7 +419,7 @@ classdef AnalyseSignals < SubFigure
                      end
              end
              oFigure.Replot();
-             notify(oFigure,'SlideSelectionChange');
+             notify(oFigure,'BeatSelectionChange');
          end
          
          function bUpdateBeat_Callback(oFigure, src, event)
@@ -470,7 +470,7 @@ classdef AnalyseSignals < SubFigure
             addlistener(oBeatPlotFigure,'SignalEventSelected',@(src,event) oFigure.SignalEventSelected(src,event));
             
             %Open a time point slider
-            oTimeSliderControl = SlideControl(oFigure,'Select Time Point');
+            oTimeSliderControl = SlideControl(oFigure,'Select Time Point','TimeSelectionChange');
             iBeatLength = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(1,2) - ...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(1,1);
             set(oTimeSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...

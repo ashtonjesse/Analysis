@@ -21,7 +21,7 @@ classdef BeatPlot < SubFigure
             oFigure = oFigure@SubFigure(oParent,'BeatPlot',@OpeningFcn);
             %Add a listener so that the figure knows when a user has
             %made a beat selection
-            addlistener(oFigure.oParentFigure,'SlideSelectionChange',@(src,event) oFigure.SelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'BeatSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.SelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.SelectionListener(src, event));
@@ -108,7 +108,7 @@ classdef BeatPlot < SubFigure
         end
         
         %% Callbacks
-        function SelectionListener(oFigure,src,event)
+        function BeatSelectionListener(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new channel or new beat
             oFigure.UpdateActionSelections();

@@ -7,7 +7,7 @@ classdef SlideControl < SubFigure
     
     methods
         %% Constructor
-        function oFigure = SlideControl(oParent,sTitle)
+        function oFigure = SlideControl(oParent,sTitle,sEvent)
             oFigure = oFigure@SubFigure(oParent,'SlideControl',@SlideControl_OpeningFcn);
             
             %set up slider
@@ -20,8 +20,8 @@ classdef SlideControl < SubFigure
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             %Add one so the figure knows when it's parent has been deleted
-            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
-            addlistener(oFigure.oParentFigure,'SlideSelectionChange',@(src,event) oFigure.SlideSelectionChange(src, event));
+            addlistener(oFigure.oParentFigure, 'FigureDeleted', @(src,event) oFigure.ParentFigureDeleted(src, event));
+            addlistener(oFigure.oParentFigure, sEvent, @(src,event) oFigure.SlideSelectionChange(src, event));
             
             % --- Executes just before BaselineCorrection is made visible.
             function SlideControl_OpeningFcn(hObject, eventdata, handles, varargin)
