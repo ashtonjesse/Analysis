@@ -54,6 +54,9 @@ classdef MapElectrodes < SubFigure
             %Add a listener so the figure knows when a new channel has been
             %selected
             addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.ChannelSelectionListener(src, event));
+            %Add a listener so the figure knows when a signal event
+            %selection change has been made
+            addlistener(oFigure.oParentFigure,'SignalEventSelectionChange',@(src,event) oFigure.SignalEventSelectionListener(src, event));
             %Set constants and plot 
             oFigure.PlotPosition = get(oFigure.oGuiHandle.oMapAxes,'Position');
             oFigure.PlotType = 'JustElectrodes';
@@ -62,7 +65,6 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotElectrodes();
             %Set default selection
             oFigure.SelectedChannels = 1:(Xdim*Ydim);
-
             % --- Executes just before BaselineCorrection is made visible.
             function MapElectrodes_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -123,42 +125,38 @@ classdef MapElectrodes < SubFigure
             if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
-            %Save individual beat activation time
-            iBeat = oFigure.oParentFigure.SelectedBeat;
-            sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
-            oFigure.PrintFigureToFile(sLongDataFileName);
-
-            %Save series of potential fields
-            %             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
-            %                 %Get the full file name and save it to string attribute
-            %                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-            %                 oFigure.oParentFigure.SelectedTimePoint = i;
-            %                 oFigure.PlotPotential();
-            %                 drawnow; pause(.2);
-            %                 oFigure.PrintFigureToFile(sLongDataFileName);
-            %             end
+            %             %Save individual beat activation time
+            %             iBeat = oFigure.oParentFigure.SelectedBeat;
+            %             sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
+            %             oFigure.PrintFigureToFile(sLongDataFileName);
             
-            %Save series of activation maps
-            %             for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-            %                 Get the full file name and save it to string attribute
-            %                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-            %                 oFigure.oParentFigure.SelectedBeat = i;
-            %                 oFigure.PlotActivation();
-            %                 drawnow; pause(.2);
-            %                 oFigure.PrintFigureToFile(sLongDataFileName);
-            %             end
+%             %Save series of potential fields
+%             iBeat = oFigure.oParentFigure.SelectedBeat;
+%             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
+%                 %Get the full file name and save it to string attribute
+%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+%                 oFigure.oParentFigure.SelectedTimePoint = i;
+%                 oFigure.PlotPotential();
+%                 drawnow; pause(.2);
+%                 oFigure.PrintFigureToFile(sLongDataFileName);
+%             end
+            
+            %             %Save series of activation maps
+            for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+                %Get the full file name and save it to string attribute
+                sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+                oFigure.oParentFigure.SelectedBeat = i;
+                oFigure.PlotActivation();
+                drawnow; pause(.2);
+                oFigure.PrintFigureToFile(sLongDataFileName);
+            end
             
             %end
         end
         
-        
         % -----------------------------------------------------------------
         function oReplotMenu_Callback(oFigure, src, event)
-            cla(oFigure.oGuiHandle.oMapAxes);
-            oFigure.PlotType = 'JustElectrodes';
-            oTitle = get(oFigure.oGuiHandle.oMapAxes,'Title');
-            set(oTitle,'String','');
-            oFigure.PlotElectrodes();
+            oFigure.ReplotElectrodes();
         end
         
         % -----------------------------------------------------------------
@@ -177,14 +175,8 @@ classdef MapElectrodes < SubFigure
         end
         
         function oRefreshActivationMenu_Callback(oFigure, src, event)
-            %Choose which routine to call.
-            if strcmpi(oFigure.PlotType,'Activation2DScatter')
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter');
-            elseif strcmpi(oFigure.PlotType,'Activation2DContour')
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour');
-            end
-            %Plot a 2D activation map
-            oFigure.PlotActivation();
+            %Refresh the data
+            oFigure.RefreshActivationData();
         end
         % -----------------------------------------------------------------
         function oUpdateMenu_Callback(oFigure, src, event)
@@ -237,67 +229,7 @@ classdef MapElectrodes < SubFigure
             oPlotData.XLim = get(oFigure.oGuiHandle.oMapAxes,'xlim');
             oPlotData.YLim = get(oFigure.oGuiHandle.oMapAxes,'ylim');
             AxesControl(oFigure,'Activation2DScatter','2DDuringStim',oPlotData);
-%            %During stim singleton
-%             oPlotData.z = oAverageData.Stim.z;
-%             AxesControl(oFigure,'2DScatter','2DStimAverage',oPlotData);
-%             %Post stim
-%             oPlotData.z = oAverageData.PostStim.z;
-%             AxesControl(oFigure,'2DScatter','2DPostStimAverage',oPlotData);
-            %Difference maps
-%             %Pre minus during 
-%             oPlotData.z = oAverageData.PreStim.z - oAverageData.Stim.z;
-%             oPlotData.MaxZLim = max(oPlotData(1).z);
-%             oPlotData.MaxCLim = max(oPlotData(1).z);
-%             oPlotData.MinZLim = min(oPlotData(1).z);
-%             oPlotData.MinCLim = min(oPlotData(1).z);
-%             AxesControl(oFigure,'2DContour','2DPreMinusDuringDiff',oPlotData);
-%             %Post minus during
-%             oPlotData.z = oAverageData.PostStim.z - oAverageData.Stim.z;
-%             oPlotData.MaxZLim = max(oPlotData(1).z);
-%             oPlotData.MaxCLim = max(oPlotData(1).z);
-%             oPlotData.MinZLim = min(oPlotData(1).z);
-%             oPlotData.MinCLim = min(oPlotData(1).z);
-%             AxesControl(oFigure,'2DContour','2DPostMinusDuringDiff',oPlotData);
-%             %Pre minus Post
-%             oPlotData.z = oAverageData.PreStim.z - oAverageData.PostStim.z;
-%             oPlotData.MaxZLim = max(oPlotData(1).z);
-%             oPlotData.MaxCLim = max(oPlotData(1).z);
-%             oPlotData.MinZLim = min(oPlotData(1).z);
-%             oPlotData.MinCLim = min(oPlotData(1).z);
-%             AxesControl(oFigure,'2DContour','2DPostMinusPreDiff',oPlotData);
-%             %3D
-%             oPlotData = struct();
-%             oPlotData(1).x = oAverageData.x;
-%             oPlotData(1).y = oAverageData.y;
-%             oPlotData(1).MaxZLim = 0;
-%             oPlotData(1).MaxCLim = 0;
-%             oPlotData(1).MinZLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));
-%             oPlotData(1).MinCLim = -ceil(max(max(max(oAverageData.PreStim.z),max(oAverageData.Stim.z)),max(oAverageData.PostStim.z)));;
-%             %Prestim
-%             oPlotData(1).z = -oAverageData.PreStim.z;
-%             %AxesControl(oFigure,'3DTriSurf','3DPreStimAverage',oPlotData);
-%             %During stim
-%             oPlotData(1).z = -oAverageData.Stim.z;
-%             %AxesControl(oFigure,'3DTriSurf','3DStimAverage',oPlotData);            
-%             %Poststim
-%             oPlotData(1).z = -oAverageData.PostStim.z;
-%             %AxesControl(oFigure,'3DTriSurf','3DPostStimAverage',oPlotData);
-%             %Double plots
-%             oPlotData(2).x = oAverageData.x;
-%             oPlotData(2).y = oAverageData.y;
-%             %Pre vs During
-%             oPlotData(1).z = -oAverageData.PreStim.z;
-%             oPlotData(2).z = -oAverageData.Stim.z;
-% %             AxesControl(oFigure,'3DTriSurf','3DPreVsDuringStimAverage',oPlotData);
-%             %Post vs During
-%             oPlotData(1).z = -oAverageData.Stim.z;
-%             oPlotData(2).z = -oAverageData.PostStim.z;
-%             %AxesControl(oFigure,'3DTriSurf','3DPostVsDuringStimAverage',oPlotData);
-%             %Pre Vs Post
-%             oPlotData(1).z = -oAverageData.PreStim.z;
-%             oPlotData(2).z = -oAverageData.PostStim.z;
-%             %AxesControl(oFigure,'3DTriSurf','3DPreVsPostStimAverage',oPlotData);
-            
+          
         end
         
         function oDataCursorOnTool_Callback(oFigure, src, event)
@@ -332,7 +264,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter');
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID);
             end
             
             %Update the plot type
@@ -347,7 +279,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour');
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour', oFigure.oParentFigure.SelectedEventID);
             end
             
             %Update the plot type
@@ -406,9 +338,38 @@ classdef MapElectrodes < SubFigure
             
            
         end
+        
+        function SignalEventSelectionListener(oFigure, src, event)
+            %Change the map according to the new signalevent selection
+            if isempty(event.Value)
+                oFigure.ReplotElectrodes();
+            else
+                oFigure.RefreshActivationData();
+            end
+            
+        end
      end
      
      methods (Access = private)
+         function ReplotElectrodes(oFigure)
+             cla(oFigure.oGuiHandle.oMapAxes);
+             oFigure.PlotType = 'JustElectrodes';
+             oTitle = get(oFigure.oGuiHandle.oMapAxes,'Title');
+             set(oTitle,'String','');
+             oFigure.PlotElectrodes();
+         end
+         
+         function RefreshActivationData(oFigure)
+             %Choose which routine to call.
+             if strcmpi(oFigure.PlotType,'Activation2DScatter')
+                 oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID);
+             elseif strcmpi(oFigure.PlotType,'Activation2DContour')
+                 oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour',oFigure.oParentFigure.SelectedEventID);
+             end
+             %Plot a 2D activation map
+             oFigure.PlotActivation();
+         end
+         
          function ParentFigureDeleted(oFigure,src, event)
              deleteme(oFigure);
          end
@@ -615,7 +576,7 @@ classdef MapElectrodes < SubFigure
                          oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
                          set(oTitle,'units','pixels');
-                         set(oTitle,'string','Time (ms)','position',[15 620]);
+                         set(oTitle,'string','Potential (V)','position',[15 620]);
                      end
                      set(oFigure.oGuiHandle.oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      iChannel = oFigure.oParentFigure.SelectedChannel;

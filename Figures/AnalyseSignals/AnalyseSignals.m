@@ -18,6 +18,7 @@ classdef AnalyseSignals < SubFigure
         sECGAxesContent = 'ECG';
         Plots = [];
         PlotLimits = [];
+        SelectedEventID;
     end
         
     events
@@ -27,6 +28,7 @@ classdef AnalyseSignals < SubFigure
         EventMarkChange;
         BeatIndexChange; %beat range
         TimeSelectionChange;
+        SignalEventSelectionChange;
     end
     
     methods
@@ -75,7 +77,8 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oNormaliseBeatMenu, 'callback', @(src, event) oNormaliseBeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPrintFigureMenu, 'callback', @(src, event) oPrintFigureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPlotSinusRateMenu, 'callback', @(src, event) oPlotSinusRateMenu_Callback(oFigure, src, event));
-             
+            set(oFigure.oGuiHandle.oDeleteBeatMenu, 'callback', @(src, event) oDeleteBeatMenu_Callback(oFigure, src, event));
+            
             set(oFigure.oGuiHandle.bNextGroup, 'callback', @(src, event) bNextGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bPreviousGroup, 'callback', @(src, event) bPreviousGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
@@ -350,8 +353,14 @@ classdef AnalyseSignals < SubFigure
              oFigure.Replot();
          end
          
-         function EventDeleted(oFigure,src,event)
+         function SignalEventDeleted(oFigure,src,event)
              oFigure.Replot();
+         end
+         
+         function SignalEventSelected(oFigure, src, event)
+             %Pass on notification
+             oFigure.SelectedEventID = event.Value;
+             notify(oFigure,'SignalEventSelectionChange',DataPassingEvent([],event.Value));
          end
          
          function SlideValueListener(oFigure,src,event)
@@ -457,7 +466,8 @@ classdef AnalyseSignals < SubFigure
             %Open a beat plot
             oBeatPlotFigure = BeatPlot(oFigure);
             addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
-            addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.EventDeleted(src,event));
+            addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.SignalEventDeleted(src,event));
+            addlistener(oBeatPlotFigure,'SignalEventSelected',@(src,event) oFigure.SignalEventSelected(src,event));
             
             %Open a time point slider
             oTimeSliderControl = SlideControl(oFigure,'Select Time Point');
@@ -544,6 +554,14 @@ classdef AnalyseSignals < SubFigure
              oFigure.ApplyZoomLimits('XLim');
          end
          
+         function oDeleteBeatMenu_Callback(oFigure, src, event)
+             %Delete the currently selected beat
+             oFigure.oParentFigure.oGuiHandle.oUnemap.DeleteBeat(oFigure.SelectedBeat);
+             oFigure.oParentFigure.oGuiHandle.oECG.DeleteBeat(oFigure.SelectedBeat);
+             oFigure.SelectedBeat = 1;
+             oFigure.Replot();
+             notify(oFigure,'BeatIndexChange');
+         end
          
          function oNormaliseBeatMenu_Callback(oFigure, src, event)
              %Carry out normalisation of the potential values of the selected beat
@@ -845,7 +863,7 @@ classdef AnalyseSignals < SubFigure
              end
              
              %Plot the signal events if there are any
-             if isfield(oElectrode,'SignalEvent') && ~isempty(oElectrode.SignalEvent)
+             if isfield(oElectrode,'SignalEvent')
                  %Initialise children array if needed
                  if length(oSignalEventPlot.Children) == 1
                      if oSignalEventPlot.Children(1) > 0
@@ -858,6 +876,15 @@ classdef AnalyseSignals < SubFigure
                      %a line and a label per event plus a channel label
                      oSignalEventPlot.Children = zeros(length(oElectrode.SignalEvent)*2 + 1,1);
                      oSignalEventPlot.Children(1) = oHandle;
+                 elseif (length(oSignalEventPlot.Children)) < (length(oElectrode.SignalEvent)*2 + 1)
+                     %Another event has been created so add a line and a label per event 
+                     oSignalEventPlot.Children = [oSignalEventPlot.Children ; 0 ; 0];
+                 elseif (length(oSignalEventPlot.Children)) > (length(oElectrode.SignalEvent)*2 + 1)
+                     %Events have been deleted so loop through and hide
+                     %children not required
+                     for m = (length(oElectrode.SignalEvent)*2 + 1):length(oSignalEventPlot.Children)
+                         set(oSignalEventPlot.Children(m),'visible','off');
+                     end
                  end
                  %Loop through events
                  for j = 1:length(oElectrode.SignalEvent)

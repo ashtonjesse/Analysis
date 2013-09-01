@@ -4,7 +4,7 @@ classdef BeatPlot < SubFigure
     properties
         CurrentEventLine;
         Dragging;
-        SelectedEventID = [];
+        SelectedEventID;
         ElectrodesForAction = [];
         BeatsForAction = [];
     end
@@ -12,6 +12,7 @@ classdef BeatPlot < SubFigure
     events
         SignalEventRangeChange;
         SignalEventDeleted;
+        SignalEventSelected;
     end
     
     methods
@@ -49,6 +50,7 @@ classdef BeatPlot < SubFigure
             
             oFigure.ElectrodesForAction = oFigure.oParentFigure.SelectedChannel;
             oFigure.BeatsForAction = oFigure.oParentFigure.SelectedBeat;
+            oFigure.SelectedEventID = oFigure.oParentFigure.SelectedEventID;
             % --- Executes just before oFigure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -72,12 +74,20 @@ classdef BeatPlot < SubFigure
         end
     end
     
-     methods (Access = protected)
-         %% Protected methods inherited from superclass
+    methods 
+        %% Property set methods
+        function set.SelectedEventID(oFigure,Value)
+            oFigure.SelectedEventID = Value;
+            notify(oFigure,'SignalEventSelected',DataPassingEvent([],oFigure.SelectedEventID));
+        end
+    end
+    
+    methods (Access = protected)
+        %% Protected methods inherited from superclass
         function deleteme(oFigure)
             deleteme@BaseFigure(oFigure);
         end
-     end
+    end
     
      methods (Access = public)
          %% Menu Callbacks
@@ -122,8 +132,8 @@ classdef BeatPlot < SubFigure
              
              %Get the selected event
              oSelectedEvent = get(event.NewValue);
-             %Save the string property
-             oFigure.SelectedEventID = oSelectedEvent.String;
+             %Convert the string into an integer index and set property
+             oFigure.SelectedEventID = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel,oSelectedEvent.String);
          end
          
           function oElectrodeButtonGroup_SelectionChangeFcn(oFigure, src, event)
@@ -204,7 +214,7 @@ classdef BeatPlot < SubFigure
                      [row, colIndices] = find(brushedIdx);
                      if ~isempty(colIndices)
                          aEventRange = [colIndices(1) colIndices(end)];
-                         iEventIndex = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel,oFigure.SelectedEventID);
+                         iEventIndex = oFigure.SelectedEventID;
                          %Update the event range
                          oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEventIndex, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
                      else
@@ -245,7 +255,7 @@ classdef BeatPlot < SubFigure
              %get a local copy of the unemap struct
              oUnemap = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap;
              %Get the current event for this channel
-             iEvent = oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel, oFigure.SelectedEventID);
+             iEvent = oFigure.SelectedEventID;
              if length(oFigure.BeatsForAction) > 1
                  %apply to all beats
                  for i = 1:length(oFigure.ElectrodesForAction)
@@ -469,7 +479,7 @@ classdef BeatPlot < SubFigure
                      end
                      if isempty(oFigure.SelectedEventID) && ~isempty(oElectrode.SignalEvent)
                          set(oFigure.oGuiHandle.oEventButtonGroup,'SelectedObject',oFigure.oGuiHandle.rbtnEvent1);
-                         oFigure.SelectedEventID = get(oFigure.oGuiHandle.rbtnEvent1,'string');
+                         oFigure.SelectedEventID = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetEventIndex(oFigure.oParentFigure.SelectedChannel,get(oFigure.oGuiHandle.rbtnEvent1,'string'));
                      end
                  end
              else

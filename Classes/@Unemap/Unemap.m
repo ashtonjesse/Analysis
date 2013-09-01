@@ -713,24 +713,23 @@ classdef Unemap < BasePotential
             %and the most positive value 1.
             
             %Get the electrode processed data
-            aProcessedData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Data');
+            aProcessedData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Slope');
             aBeatData = aProcessedData(oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1):...
                 oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2),:);
             %Blank the first 25 values to ignore the stimulus artifact
-            aMinValues = min(aBeatData(25:end,:), [], 1);
+            aMinValues = min(aBeatData, [], 1);
             aNewData = zeros(size(aBeatData));
             for i = 1:size(aBeatData,2)
                 %Loop through the electrodes
                 aNewData(:,i) = -sign(aMinValues(i))*abs(aMinValues(i)) + aBeatData(:,i);
-                %again blank the first 25 values
-                aNewData(:,i) = aNewData(:,i) / max(aNewData(25:end,i));
+                
+                aNewData(:,i) = aNewData(:,i) / max(aNewData(:,i));
             end
             aBeatData = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats');
             aBeatData(oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1):...
                 oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2),:) = aNewData;
             %Reload the beat data
-            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',aBeatData);
-            oUnemap.GetSlope('Beats');
+            oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Slope',aBeatData);
         end
         
         function oOutData = GetDataForPlotting(oUnemap, iBeat, aSelectedChannels)
@@ -951,23 +950,31 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Index(iBeat) = iIndex; 
         end
         
-        function oMapData = PrepareActivationMap(oUnemap, dInterpDim, sPlotType)
+        function oMapData = PrepareActivationMap(oUnemap, dInterpDim, sPlotType, iEventID)
             %Get the inputs for a mapping call for activation times,
             %returning a struct containing the x and y locations of the
             %electrodes and the activation times for each.
             
             oWaitbar = waitbar(0,'Please wait...');
+            %If no eventID has been specified then default to 1
+            if isempty(iEventID)
+                iEventID = 1;
+            end
+            
             switch (sPlotType)
                 case 'Scatter'
                     %Get the electrode processed data
-                    aActivationIndexes = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'SignalEvent','Index');
+                    aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(oUnemap.Electrodes));
+                    for m = 1:length(oUnemap.Electrodes)
+                        aActivationIndexes(:,m) = oUnemap.Electrodes(m).SignalEvent(iEventID).Index;
+                    end
                     aActivationTimes = zeros(size(aActivationIndexes,1),size(aActivationIndexes,2));
                     %Make the activation indexes absolute, normalise them and
                     %convert to ms
                     aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
                     dMaxAcceptedTime = 0;
                     %dVals = [1];
-                    for i = 1:size(oUnemap.Electrodes(1).SignalEvent.Index,1);%length(dVals)%
+                    for i = 1:size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1);%length(dVals)%
                         %i = dVals(k);
                         waitbar(i/size(oUnemap.Electrodes(1).SignalEvent.Index,1),oWaitbar,sprintf('Please wait... Processing Beat %d',i));
                         aActivationIndexes(i,:) = aActivationIndexes(i,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(i,1);
@@ -1064,8 +1071,11 @@ classdef Unemap < BasePotential
                     %Finish calculating the interpolation points array
                     oMapData.InterpPoints = sqrt(aInterpPoints + oMapData.r2);
                     oMapData.Beats = struct();
-                    %Get the activation data for all beats
-                    aActivationIndexes = MultiLevelSubsRef(oUnemap.oDAL.oHelper,aElectrodes,'SignalEvent','Index');
+                    %Get the electrode processed data
+                    aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(aElectrodes));
+                    for m = 1:length(aElectrodes)
+                        aActivationIndexes(:,m) = aElectrodes(m).SignalEvent(iEventID).Index;
+                    end
                     aActivationTimes = zeros(size(aActivationIndexes));
                     %initialise an RMS array
                     aRMS = zeros(length(aElectrodes),1);
@@ -1234,7 +1244,8 @@ classdef Unemap < BasePotential
             elseif isfield(oUnemap.Electrodes(iElectrodeNumber).SignalEvent,'ID')
                 %Check the event ID
                 aEventIDs = {oUnemap.Electrodes(iElectrodeNumber).SignalEvent(:).ID};
-                [sLeftover iIndex iIsPresent] = setxor(aEventIDs, char(varargin{4}));
+                sThisEvent = oUnemap.MakeEventID(char(varargin{1}), char(varargin{2}), char(varargin{3}));
+                [sLeftover iIndex iIsPresent] = setxor(aEventIDs, sThisEvent);
                 if isempty(sLeftover)
                     %There is only one event and it is the current one
                     iEvent = 1;
@@ -1255,24 +1266,30 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Type = char(varargin{2});
             oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Method = char(varargin{3});
             %initialise and build ID
-            sID = lower(strcat(char(varargin{1}),oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Type(1)));
-            switch (oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Method)
-                case 'SteepestPositiveSlope'
-                    sID = strcat(sID,'sps');
-                case 'SteepestNegativeSlope'
-                    sID = strcat(sID,'sns');
-                case 'CentralDifference'
-                    sID = strcat(sID,'cd');
-                case 'MaxSignalMagnitude'
-                    sID = strcat(sID,'msm');
-            end
-            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).ID = sID;
+            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).ID = oUnemap.MakeEventID(char(varargin{1}), ...
+                oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Type(1),oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Method);
             if size(varargin,2) == 4
                 %A beat number has been specified so mark event just
                 %for this beat (otherwise all beats)
                 oUnemap.MarkEvent(iElectrodeNumber, iEvent,[varargin{5}]);
             else
                 oUnemap.MarkEvent(iElectrodeNumber, iEvent);
+            end
+            
+        end
+        
+        function sEventID = MakeEventID(oUnemap, sColour, sEventType, sMethod)
+            %Create an eventid from the inputs
+            sEventID = strcat(sColour(1),lower(sEventType(1)));
+            switch (sMethod)
+                case 'SteepestPositiveSlope'
+                    sEventID = strcat(sEventID,'sps');
+                case 'SteepestNegativeSlope'
+                    sEventID = strcat(sEventID,'sns');
+                case 'CentralDifference'
+                    sEventID = strcat(sEventID,'cd');
+                case 'MaxSignalMagnitude'
+                    sEventID = strcat(sEventID,'msm');
             end
             
         end
