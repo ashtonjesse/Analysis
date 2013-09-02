@@ -857,6 +857,22 @@ classdef Unemap < BasePotential
             end
             aSpatialLimits = [dXMin, dXMax ; dYMin, dYMax];
         end
+        
+        function iElectrodeNumber = GetNearestElectrodeID(oUnemap, xLoc, yLoc)
+            %Get the electrode whose coordinates are closest to those
+            %specified in xLoc and yLoc (I wish this was a spatially
+            %indexed database..)
+            
+            %Get coordinate array and calculate distance between each
+            %electrode and specified location
+            aCoords = oUnemap.oDAL.oHelper.MultiLevelSubsRef(oUnemap.Electrodes,'Coords');
+            aXArray = aCoords(1,:) - xLoc;
+            aYArray = aCoords(2,:) - yLoc;
+            aDistance = sqrt(aXArray.^2 + aYArray.^2);
+            %Return the index of the electrode with the minimum distance
+            [C iElectrodeNumber] = min(aDistance);
+        end
+            
         %% Methods relating to Electrode Activation data
         function UpdateEventRange(oUnemap, iEventIndex, aBeats, aElectrodes, aRange)
             %Change the range for the specified event and beat and selected

@@ -15,7 +15,8 @@ classdef MapElectrodes < SubFigure
     end
     
     events
-        ChannelSelection;
+        ChannelGroupSelection;
+        ElectrodeSelected;
     end
     
     methods
@@ -179,7 +180,7 @@ classdef MapElectrodes < SubFigure
             if ~isempty(colIndices)
                 oFigure.SelectedChannels = colIndices;
                 %Notify listeners
-                notify(oFigure,'ChannelSelection',DataPassingEvent(colIndices,[]));
+                notify(oFigure,'ChannelGroupSelection',DataPassingEvent(colIndices,[]));
             else
                 error('MapElectrodes.oUpdateMenu_Callback:NoSelectedChannels', 'You need to select at least 1 channel');
             end
@@ -317,6 +318,9 @@ classdef MapElectrodes < SubFigure
             oPoint = get(src,'currentpoint');
             xLoc = oPoint(1,1);
             yLoc = oPoint(1,2);
+            iChannel = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetNearestElectrodeID(xLoc, yLoc);
+            %Notify listeners about the new electrode selection
+            notify(oFigure, 'ElectrodeSelected', DataPassingEvent([],iChannel));
         end
      end
      
@@ -326,7 +330,7 @@ classdef MapElectrodes < SubFigure
              
              %Create a subplot in the position specified
              oMapPlot = axes('Position',oFigure.PlotPosition,'Tag', 'MapPlot');
-             oHiddenPlot = axes('Position',oFigure.PlotPosition,'Tag', 'HiddenPlot','color','none');
+             oHiddenPlot = axes('Position',oFigure.PlotPosition,'xtick',[],'ytick',[],'Tag', 'HiddenPlot','color','none');
          end
          
          function PlotData(oFigure)
@@ -361,10 +365,15 @@ classdef MapElectrodes < SubFigure
                          oFigure.PlotElectrodes(oMapPlot);
                      end
              end
-             set(oMapPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
+             %Reset the hiddenplot position in case mapplot has moved
+             set(oHiddenPlot,'Position',get(oMapPlot,'Position'));
+             %Set the axis limits
              axis(oMapPlot, 'equal');
-             set(oHiddenPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
+             set(oMapPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
              axis(oHiddenPlot, 'equal');
+             set(oHiddenPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
+             %Refocus on HiddenPlot has this needs to be on the top to
+             %receive user clicks.
              axes(oHiddenPlot);
          end
          
@@ -491,10 +500,10 @@ classdef MapElectrodes < SubFigure
                      if oHandle < 0
                          oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
-                         set(oTitle,'units','pixels');
-                         set(oTitle,'string','Time (ms)','position',[15 620]);
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                      end
-                     
+                     text
                      iChannel = oFigure.oParentFigure.SelectedChannel;
                      %Get the electrodes
                      hold(oMapAxes,'on');
@@ -512,8 +521,8 @@ classdef MapElectrodes < SubFigure
                      if oHandle < 0
                          oHandle = cbarf(oFigure.Activation.z(:,iBeat),ceil(0:oFigure.Activation.MaxActivationTime/20):ceil(oFigure.Activation.MaxActivationTime));
                          oTitle = get(oHandle, 'title');
-                         set(oTitle,'units','pixels');
-                         set(oTitle,'string','Time (ms)','position',[15 620]);
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                      end
                      
                  case 'Activation3DSurface'
@@ -575,8 +584,8 @@ classdef MapElectrodes < SubFigure
                      if oHandle < 0
                          oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
-                         set(oTitle,'units','pixels');
-                         set(oTitle,'string','Potential (V)','position',[15 620]);
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
                      end
                      %Reset the axes limits
                      set(oMapAxes,'XLim',oXLim,'YLim',oYLim);

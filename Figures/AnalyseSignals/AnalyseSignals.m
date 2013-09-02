@@ -349,6 +349,13 @@ classdef AnalyseSignals < SubFigure
              
          end
          
+         function ElectrodeSelected(oFigure, src, event)
+             oFigure.PreviousChannel = oFigure.SelectedChannel;
+             oFigure.SelectedChannel = event.Value;
+             notify(oFigure,'ChannelSelected',DataPassingEvent([],oFigure.SelectedChannel));
+             oFigure.Replot(oFigure.SelectedChannel);
+         end
+         
          function SignalEventRangeListener(oFigure,src, event)
              oFigure.Replot();
          end
@@ -465,7 +472,8 @@ classdef AnalyseSignals < SubFigure
             oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
             %Add a listener so that the figure knows when a user has
             %made a channel selection
-            addlistener(oMapElectrodesFigure,'ChannelSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
+            addlistener(oMapElectrodesFigure,'ChannelGroupSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
+            addlistener(oMapElectrodesFigure,'ElectrodeSelected',@(src,event) oFigure.ElectrodeSelected(src, event));
          end
          
          function oBeatWindowMenu_Callback(oFigure, src, event)
