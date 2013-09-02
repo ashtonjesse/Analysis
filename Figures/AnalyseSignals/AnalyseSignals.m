@@ -363,6 +363,11 @@ classdef AnalyseSignals < SubFigure
              notify(oFigure,'SignalEventSelectionChange',DataPassingEvent([],event.Value));
          end
          
+         function SignalEventMarkChange(oFigure, src, event)
+             %Replot just the specified channel
+             oFigure.Replot(event.Value);
+         end
+         
          function BeatSlideValueListener(oFigure,src,event)
              %An event listener callback
              %Is called when the user selects a new beat using the
@@ -377,8 +382,9 @@ classdef AnalyseSignals < SubFigure
              %An event listener callback
              %Is called when the user selects a new time point using the
              %SlideControl
+             %Save the value and pass on the event notification
              oFigure.SelectedTimePoint = event.Value;
-             notify(oFigure,'TimeSelectionChange');
+             notify(oFigure,'TimeSelectionChange', DataPassingEvent([],oFigure.SelectedTimePoint));
          end
          
          %% Event Callbacks --------------------------------------
@@ -468,6 +474,8 @@ classdef AnalyseSignals < SubFigure
             addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
             addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.SignalEventDeleted(src,event));
             addlistener(oBeatPlotFigure,'SignalEventSelected',@(src,event) oFigure.SignalEventSelected(src,event));
+            addlistener(oBeatPlotFigure,'SignalEventMarkChange',@(src,event) oFigure.SignalEventMarkChange(src,event));
+            addlistener(oBeatPlotFigure,'TimePointChange',@(src,event) oFigure.TimeSlideValueListener(src,event));
             
             %Open a time point slider
             oTimeSliderControl = SlideControl(oFigure,'Select Time Point','TimeSelectionChange');

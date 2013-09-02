@@ -939,6 +939,14 @@ classdef Unemap < BasePotential
             end
         end
         
+        function iIndex = GetIndexFromTime(oUnemap, iElectrodeNumber, iBeat, dTime)
+            %Returns the index of the beat window corresponding to the
+            %specified time
+            iIndex = oUnemap.oDAL.oHelper.ConvertTimeToSeriesIndex(oUnemap.TimeSeries(...
+                oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,1):...
+                oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,2)), dTime);
+        end
+        
         function UpdateSignalEventMark(oUnemap, iElectrodeNumber, iEvent, iBeat, dTime)
             %Update the activation time index for the specified channel and
             %beat number

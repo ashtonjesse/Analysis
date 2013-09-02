@@ -2,7 +2,7 @@ classdef BeatPlot < SubFigure
     %   BeatPlot.    
     
     properties
-        CurrentEventLine;
+        CurrentPlotLine;
         Dragging;
         SelectedEventID;
         ElectrodesForAction = [];
@@ -13,6 +13,8 @@ classdef BeatPlot < SubFigure
         SignalEventRangeChange;
         SignalEventDeleted;
         SignalEventSelected;
+        SignalEventMarkChange;
+        TimePointChange;
     end
     
     methods
@@ -22,9 +24,9 @@ classdef BeatPlot < SubFigure
             %Add a listener so that the figure knows when a user has
             %made a beat selection
             addlistener(oFigure.oParentFigure,'BeatSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
-            addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.SelectionListener(src, event));
-            addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.SelectionListener(src, event));
-            addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.SelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.BeatSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.BeatSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.BeatSelectionListener(src, event));
             %Add a listener so the figure knows when a user has made a time
             %point selection
             addlistener(oFigure.oParentFigure,'TimeSelectionChange',@(src,event) oFigure.TimeSelectionListener(src, event));
@@ -285,7 +287,7 @@ classdef BeatPlot < SubFigure
             %The function that fires when a line on a subplot is dragged
             oFigure.Dragging = 1;
             oPlot = get(src,'Parent');
-            oFigure.CurrentEventLine = get(src,'tag');
+            oFigure.CurrentPlotLine = get(src,'tag');
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonMotionFcn', @(src,event) Drag(oFigure, src, DragEvent(oPlot)));
         end
         
@@ -304,20 +306,33 @@ classdef BeatPlot < SubFigure
                 oAxes = oFigure.oDAL.oHelper.GetHandle(oPanelChildren, 'SignalEventPlot');
                 %Get the handle to the line on these axes
                 oAxesChildren = get(oAxes,'children');
-                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
-                %Get the current event for this channel
-                iEvent = oFigure.oParentFigure.GetEventNumberFromTag(oFigure.CurrentEventLine);
+                oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentPlotLine);
                 %Get the xdata of this line and convert it into a timeseries
                 %index
                 dXdata = get(oLine, 'XData');
-                %Reset the range for this event to the beat indexes as the
-                %user is manually changing the event time
-                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
-                     [0 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2) - ...
-                     oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1)]);
-                %Update the signal event for this electrode and beat number
-                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, iBeat, dXdata(1));
-                oFigure.oParentFigure.Replot(iChannelNumber);
+                sTag = get(oLine,'Tag');
+                %Check if this is a time line or a line associated with an
+                %event
+                switch (sTag(1))
+                    case 'T'
+                        %TimeLine
+                        %Get the index associated with this time point
+                        iTimeIndex = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetIndexFromTime(iChannelNumber, iBeat, dXdata(1));
+                        notify(oFigure, 'TimePointChange',DataPassingEvent([],iTimeIndex));
+                    case 'S'
+                        %SignalEventLine
+                        %Get the current event for this channel
+                        iEvent = oFigure.oParentFigure.GetEventNumberFromTag(oFigure.CurrentPlotLine);
+                        
+                        %Reset the range for this event to the beat indexes as the
+                        %user is manually changing the event time
+                        oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
+                            [0 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,2) - ...
+                            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(iBeat,1)]);
+                        %Update the signal event for this electrode and beat number
+                        oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.UpdateSignalEventMark(iChannelNumber, iEvent, iBeat, dXdata(1));
+                        notify(oFigure, 'SignalEventMarkChange',DataPassingEvent([],iChannelNumber));
+                end
                 %Refresh the plot
                 oFigure.PlotBeat();
             end
@@ -327,7 +342,7 @@ classdef BeatPlot < SubFigure
             %The function that fires while a line on a subplot is being
             %dragged
             oAxesChildren = get(event.ParentAxesHandle,'children');
-            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentEventLine);
+            oLine = oFigure.oDAL.oHelper.GetHandle(oAxesChildren, oFigure.CurrentPlotLine);
             oPoint = get(event.ParentAxesHandle, 'CurrentPoint');
             set(oLine, 'XData', oPoint(1)*[1 1]);
         end
@@ -440,7 +455,7 @@ classdef BeatPlot < SubFigure
                      aTime(oFigure.oParentFigure.SelectedTimePoint)], [SignalYMax, SignalYMin]);
                  sLineTag = sprintf('TimeLine%d',oFigure.oParentFigure.SelectedChannel);
                  set(oLine,'Tag',sLineTag,'color', 'k', 'parent',oSignalEventPlot, ...
-                     'linewidth',2);
+                     'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                  if ~isempty(aEnvelope)
                      %Plot the envelope data
                      line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
