@@ -834,6 +834,29 @@ classdef Unemap < BasePotential
             end
         end
         
+        function aSpatialLimits = GetSpatialLimits(oUnemap)
+            %Loop through the electrodes and find the coordinates of the
+            %corners
+            dYMin = 9999;
+            dYMax = 0;
+            dXMin = 9999;
+            dXMax = 0;
+            
+            for i = 1:length(oUnemap.Electrodes)
+                if oUnemap.Electrodes(i).Coords(1) > dXMax
+                    dXMax = oUnemap.Electrodes(i).Coords(1);
+                elseif oUnemap.Electrodes(i).Coords(1) < dXMin
+                    dXMin = oUnemap.Electrodes(i).Coords(1);
+                end
+                
+                if oUnemap.Electrodes(i).Coords(2) > dYMax
+                    dYMax = oUnemap.Electrodes(i).Coords(2);
+                elseif oUnemap.Electrodes(i).Coords(2) < dYMin
+                    dYMin = oUnemap.Electrodes(i).Coords(2);
+                end
+            end
+            aSpatialLimits = [dXMin, dXMax ; dYMin, dYMax];
+        end
         %% Methods relating to Electrode Activation data
         function UpdateEventRange(oUnemap, iEventIndex, aBeats, aElectrodes, aRange)
             %Change the range for the specified event and beat and selected

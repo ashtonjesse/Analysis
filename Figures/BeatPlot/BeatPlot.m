@@ -374,7 +374,7 @@ classdef BeatPlot < SubFigure
              %Plots the currently selected beat for the currently selected
              %channel
              
-             %Make sure the current figure is MapElectrodes
+             %Make sure the current figure 
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              %Reset the visibility of the events
              set(oFigure.oGuiHandle.rbtnEvent1,'visible','off');
