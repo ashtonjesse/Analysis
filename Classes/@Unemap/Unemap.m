@@ -1072,7 +1072,7 @@ classdef Unemap < BasePotential
                     aPoints = zeros(length(aElectrodes),length(aElectrodes));
                     %...and turn the coords into a 2 column matrix
                     aCoords = zeros(length(aElectrodes),2);
-                    
+                   
                     for m = 1:length(aElectrodes);
                         for i = 1:length(aElectrodes);
                             %Calc the euclidean distance between each point and every other
@@ -1120,12 +1120,26 @@ classdef Unemap < BasePotential
                     oMapData.Beats = struct();
                     %Get the electrode processed data
                     aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(aElectrodes));
-                    for m = 1:length(aElectrodes)
-                        aActivationIndexes(:,m) = aElectrodes(m).SignalEvent(iEventID).Index;
+                    aOutActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(oUnemap.Electrodes));
+                    aOutActivationTimes = zeros(size(aOutActivationIndexes));
+                    %track the number of accepted electrodes
+                    m = 0;
+                    for p = 1:length(oUnemap.Electrodes)
+                        if oUnemap.Electrodes(p).Accepted
+                            m = m + 1;
+                            aActivationIndexes(:,m) = aElectrodes(m).SignalEvent(iEventID).Index;
+                            aOutActivationIndexes(:,p) =  aElectrodes(m).SignalEvent(iEventID).Index + oUnemap.Electrodes(p).Processed.BeatIndexes(:,1);
+                            aOutActivationTimes(:,p) = oUnemap.TimeSeries(aOutActivationIndexes(:,p));
+                            
+                        else
+                            %hold the unaccepted electrode places with inf
+                            aOutActivationTimes(:,p) =  Inf;
+                        end
                     end
                     aActivationTimes = zeros(size(aActivationIndexes));
                     %initialise an RMS array
                     aRMS = zeros(length(aElectrodes),1);
+                    
                     %Loop through the beats
                     for k = 1:size(aActivationIndexes,1)
                         %Get the activation time fields for all time points during this
@@ -1145,8 +1159,10 @@ classdef Unemap < BasePotential
                             %activation time relative to the earliest accepted
                             %activation
                             aActivationTimes(k,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(k,:)) - min(aAcceptedTimes));
+                            aOutActivationTimes(k,:) = 1000*(aOutActivationTimes(k,:) - min(aOutActivationTimes(k,:)));
                         end
                         
+                        oMapData.Beats(k).FullActivationTimes = aOutActivationTimes(k,:).';
                         oMapData.Beats(k).ActivationTimes = aActivationTimes(k,:).';
                         oMapData.Beats(k).Coefs = linsolve(oMapData.Points,oMapData.Beats(k).ActivationTimes);
                         %Get the interpolated data via matrix multiplication

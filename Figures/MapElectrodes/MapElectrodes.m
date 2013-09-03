@@ -126,26 +126,27 @@ classdef MapElectrodes < SubFigure
             %             sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
             %             oFigure.PrintFigureToFile(sLongDataFileName);
             
-%             %Save series of potential fields
-%             iBeat = oFigure.oParentFigure.SelectedBeat;
-%             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
-%                 %Get the full file name and save it to string attribute
-%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-%                 oFigure.oParentFigure.SelectedTimePoint = i;
-%                 oFigure.PlotPotential();
-%                 drawnow; pause(.2);
-%                 oFigure.PrintFigureToFile(sLongDataFileName);
-%             end
-            
-            %             %Save series of activation maps
-            for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+            %Save series of potential fields
+            iBeat = oFigure.oParentFigure.SelectedBeat;
+            oFigure.PlotType = 'Potential2DContour';
+            for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
                 %Get the full file name and save it to string attribute
                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-                oFigure.oParentFigure.SelectedBeat = i;
-                oFigure.PlotActivation();
+                oFigure.oParentFigure.SelectedTimePoint = i;
+                oFigure.PlotData();
                 drawnow; pause(.2);
                 oFigure.PrintFigureToFile(sLongDataFileName);
             end
+            
+%             %             %Save series of activation maps
+%             for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+%                 %Get the full file name and save it to string attribute
+%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+%                 oFigure.oParentFigure.SelectedBeat = i;
+%                 oFigure.PlotActivation();
+%                 drawnow; pause(.2);
+%                 oFigure.PrintFigureToFile(sLongDataFileName);
+%             end
             
             %end
         end
@@ -500,19 +501,25 @@ classdef MapElectrodes < SubFigure
                      if oHandle < 0
                          oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     else
+                         oTitle = get(oHandle, 'title');
                      end
-                     text
+                     set(oTitle,'units','normalized');
+                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                      iChannel = oFigure.oParentFigure.SelectedChannel;
-                     %Get the electrodes
+                     %Get the electrodes and plot the selected electrode
+                     %and the electrode with the earliest activation
                      hold(oMapAxes,'on');
                      oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
                      plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                          'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
+                     plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
+                         'MarkerSize',15,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','r');
                      hold(oMapAxes,'off');
                      
-                 case 'Activation2DScatter' 
+                 case 'Activation2DScatter'
+                     set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
                      scatter(oMapAxes, oFigure.Activation.x, oFigure.Activation.y, 100, oFigure.Activation.z(:,iBeat), 'filled');
                      
                      colormap(oMapAxes, colormap(flipud(colormap(jet))));
@@ -520,10 +527,10 @@ classdef MapElectrodes < SubFigure
                      oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
                      if oHandle < 0
                          oHandle = cbarf(oFigure.Activation.z(:,iBeat),ceil(0:oFigure.Activation.MaxActivationTime/20):ceil(oFigure.Activation.MaxActivationTime));
-                         oTitle = get(oHandle, 'title');
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                      end
+                     oTitle = get(oHandle, 'title');
+                     set(oTitle,'units','normalized');
+                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                      
                  case 'Activation3DSurface'
                      aTriangulatedMesh = delaunay(oFigure.Activation.x, oFigure.Activation.y);
@@ -579,14 +586,17 @@ classdef MapElectrodes < SubFigure
                          end
                      end
                      %Assuming the potential field has been normalised.
+                     set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
                      contourf(oMapAxes,oFigure.Potential.x,oFigure.Potential.y,oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                      colormap(oMapAxes, colormap(flipud(colormap(jet))));
                      if oHandle < 0
                          oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                          oTitle = get(oColorBar, 'title');
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
+                     else
+                         oTitle = get(oHandle, 'title');
                      end
+                     set(oTitle,'units','normalized');
+                     set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
                      %Reset the axes limits
                      set(oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      iChannel = oFigure.oParentFigure.SelectedChannel;
@@ -608,6 +618,8 @@ classdef MapElectrodes < SubFigure
                      
                      hold(oMapAxes,'off');
              end
+             title(oMapAxes,sprintf('Potential Field for time %5.5f s',oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
+                 oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,1)+iTimeIndex)));
          end
      end
 end
