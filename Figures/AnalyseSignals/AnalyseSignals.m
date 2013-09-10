@@ -444,23 +444,31 @@ classdef AnalyseSignals < SubFigure
              brushedData = get(hBrushLines, {'Xdata','Ydata'});
              % The data that has not been selected is labelled as NaN so get
              % rid of this
-             brushedIdx = ~isnan([brushedData{1,1}]);
-             [row, colIndices] = find(brushedIdx);
-             if ~isempty(colIndices)
-                 aBeatIndexes = [colIndices(1) colIndices(end)];
-                 dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
-                 aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
-                 oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
+             if ~isempty(brushedData)
+                 brushedIdx = ~isnan([brushedData{1,1}]);
+                 [row, colIndices] = find(brushedIdx);
+                 if ~isempty(colIndices)
+                     aBeatIndexes = [colIndices(1) colIndices(end)];
+                     dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
+                     aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
+                     oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
+                 else
+                     %Reset the gui
+                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                     set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+                     oFigure.Replot();
+                     notify(oFigure,'BeatIndexChange');
+                     error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+                 end
              else
+                 %Reset the gui
+                 brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                 set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+                 oFigure.Replot();
+                 notify(oFigure,'BeatIndexChange');
                  error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
              end
-             
-             %Reset the gui
-             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-             oFigure.Replot();
-             notify(oFigure,'BeatIndexChange');
-         end
+          end
          
          %% Menu Callbacks
          function oUnusedMenu_Callback(oFigure, src, event)
@@ -1045,7 +1053,7 @@ classdef AnalyseSignals < SubFigure
                  for j = 1:size(aBeatIndexes,1);
                      oBeatLabel = text(aTime(aBeatIndexes(j,1)),YMax, num2str(j));
                      set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','normalized');
-                     set(oBeatLabel,'FontSize',0.12);
+                     set(oBeatLabel,'FontSize',0.10);
                      set(oBeatLabel,'parent',oAxes);
                  end
                  hold(oAxes,'off');

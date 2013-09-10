@@ -27,10 +27,10 @@ classdef WaveletAnalysis < SubFigure
             oFigure = oFigure@SubFigure(oParent,'WaveletAnalysis',@WaveletAnalysis_OpeningFcn);
 
             %Initialise properties
-            oFigure.NumberOfScales = 10;
+            oFigure.NumberOfScales = 8;
             
             %Set up beat slider
-            oElectrodeSlider = SlideControl(oFigure,'Select Electrode');
+            oElectrodeSlider = SlideControl(oFigure,'Select Electrode','SlideSelectionChange');
             iNumElectrodes = length(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
             set(oElectrodeSlider.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumElectrodes, 'Value', 1 ,'SliderStep',[1/iNumElectrodes  0.02]);

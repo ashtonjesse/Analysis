@@ -4,6 +4,8 @@ classdef MapElectrodes < SubFigure
     properties
         SelectedChannels;
         Overlay = 0;
+        ElectrodeMarkerVisible = 1;
+        ColourBarVisible = 1;
         Potential = [];
         Activation = [];
         cbarmin;
@@ -40,6 +42,9 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oSaveMapMenu, 'callback', @(src, event) oSaveMapMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRefreshActivationMenu, 'callback', @(src, event) oRefreshActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oMontageMenu, 'callback', @(src, event) oMontageMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oToggleColourBarMenu, 'callback', @(src, event) oToggleColourBarMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oToggleElectrodeMarkerMenu, 'callback', @(src, event) oToggleElectrodeMarkerMenu_Callback(oFigure, src, event));
            
             
             %Sets the figure close function. This lets the class know that
@@ -121,34 +126,74 @@ classdef MapElectrodes < SubFigure
             if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
-            %             %Save individual beat activation time
-            %             iBeat = oFigure.oParentFigure.SelectedBeat;
-            %             sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
-            %             oFigure.PrintFigureToFile(sLongDataFileName);
+%                         %Save individual beat activation time
+%                         iBeat = oFigure.oParentFigure.SelectedBeat;
+%                         sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
+%                         oFigure.PrintFigureToFile(sLongDataFileName);
             
             %Save series of potential fields
-            iBeat = oFigure.oParentFigure.SelectedBeat;
-            oFigure.PlotType = 'Potential2DContour';
-            for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
+%             iBeat = oFigure.oParentFigure.SelectedBeat;
+%             oFigure.PlotType = 'Potential2DContour';
+%             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
+%                 %Get the full file name and save it to string attribute
+%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+%                 oFigure.oParentFigure.SelectedTimePoint = i;
+%                 oFigure.PlotData();
+%                 drawnow; pause(.2);
+%                 oFigure.PrintFigureToFile(sLongDataFileName);
+%             end
+            
+            %             %Save series of activation maps
+            oFigure.PlotType = 'Activation2DContour';
+            for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
                 %Get the full file name and save it to string attribute
                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-                oFigure.oParentFigure.SelectedTimePoint = i;
+                oFigure.oParentFigure.SelectedBeat = i;
                 oFigure.PlotData();
                 drawnow; pause(.2);
                 oFigure.PrintFigureToFile(sLongDataFileName);
             end
             
-%             %             %Save series of activation maps
-%             for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-%                 %Get the full file name and save it to string attribute
-%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-%                 oFigure.oParentFigure.SelectedBeat = i;
-%                 oFigure.PlotActivation();
-%                 drawnow; pause(.2);
-%                 oFigure.PrintFigureToFile(sLongDataFileName);
-%             end
-            
             %end
+        end
+        
+        % -----------------------------------------------------------------
+        function oMontageMenu_Callback(oFigure, src, event)
+            %Get the save file path
+            %Call built-in file dialog to select filename
+            [sFileName,sPathName]=uigetfile('*.*','Select image file(s)','multiselect','on');
+            %Make sure the dialogs return char objects
+            if iscell(sFileName)
+                if (~ischar(sFileName{1}) && ~ischar(sPathName))
+                    return
+                end
+                sDosString = 'D:\Users\jash042\Documents\PhD\Analysis\Utilities\montage.exe ';
+                for i = 1:length(sFileName)
+                    %Loop through files adding them to list
+                    sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
+                end
+                sDosString = strcat(sDosString, {' -geometry +1+1 '}, sPathName, 'montage.png');
+            else
+                if (~ischar(sFileName) && ~ischar(sPathName))
+                    return
+                end
+            end
+            sStatus = dos(char(sDosString{1}));
+            if ~sStatus
+                imshow(strcat(sPathName, 'montage.png'));
+            end
+        end
+        
+        % -----------------------------------------------------------------
+        function oToggleColourBarMenu_Callback(oFigure, src, event)
+            oFigure.ColourBarVisible = ~oFigure.ColourBarVisible;
+            oFigure.PlotData();
+        end
+            
+        % -----------------------------------------------------------------
+        function oToggleElectrodeMarkerMenu_Callback(oFigure, src, event)
+            oFigure.ElectrodeMarkerVisible = ~oFigure.ElectrodeMarkerVisible;
+            oFigure.PlotData();
         end
         
         % -----------------------------------------------------------------
@@ -499,23 +544,40 @@ classdef MapElectrodes < SubFigure
                      [C, oContour] = contourf(oMapAxes,oFigure.Activation.x,oFigure.Activation.y,oFigure.Activation.Beats(iBeat).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                      colormap(oMapAxes, colormap(flipud(colormap(jet))));
                      if oHandle < 0
-                         oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
-                         oTitle = get(oColorBar, 'title');
+                         if oFigure.ColourBarVisible
+                             %if the colour bar should be visible then make
+                             %a new one
+                             oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                             oTitle = get(oColorBar, 'title');
+                             set(oTitle,'units','normalized');
+                             set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                         end
                      else
-                         oTitle = get(oHandle, 'title');
+                         if ~oFigure.ColourBarVisible
+                             % if the colour bar should not be visible then
+                             % delete the existing one
+                             delete(oHandle);
+                             set(oMapAxes,'userdata',[]);
+                             set(oMapAxes,'Position',oFigure.PlotPosition);
+                         else
+                             oTitle = get(oHandle, 'title');
+                             set(oTitle,'units','normalized');
+                             set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                         end
                      end
-                     set(oTitle,'units','normalized');
-                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     
                      iChannel = oFigure.oParentFigure.SelectedChannel;
                      %Get the electrodes and plot the selected electrode
                      %and the electrode with the earliest activation
                      hold(oMapAxes,'on');
                      oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
-                     plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     if oFigure.ElectrodeMarkerVisible
+                         plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
+                             'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     end
                      [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
                      plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                         'MarkerSize',15,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','r');
+                         'MarkerSize',16,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
                      hold(oMapAxes,'off');
                      
                  case 'Activation2DScatter'
@@ -531,19 +593,10 @@ classdef MapElectrodes < SubFigure
                      oTitle = get(oHandle, 'title');
                      set(oTitle,'units','normalized');
                      set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
-                     
-                 case 'Activation3DSurface'
-                     aTriangulatedMesh = delaunay(oFigure.Activation.x, oFigure.Activation.y);
-                     trisurf(aTriangulatedMesh,oFigure.Activation.x, oFigure.Activation.y,-oFigure.Activation.z(:,iBeat));
-                     zlim(oMapAxes,[-ceil(oFigure.Activation.MaxActivationTime) 0]);
-                     set(oMapAxes,'CLim',[-ceil(oFigure.Activation.MaxActivationTime) 0]);
-                     view(oMapAxes,30,30);
-                     colormap(oMapAxes, colormap(colormap(jet)));
-                     colorbar('peer',oMapAxes);
-                     colorbar('location','EastOutside');
              end
              
-             title(oMapAxes,sprintf('Activation map for beat #%d',iBeat));
+             oTitle = title(oMapAxes,sprintf('Activation map for beat #%d',iBeat));
+             set(oTitle,'fontsize',20,'fontweight','bold');
          end
          
          function PlotPotential(oFigure, oMapAxes)
@@ -590,22 +643,37 @@ classdef MapElectrodes < SubFigure
                      contourf(oMapAxes,oFigure.Potential.x,oFigure.Potential.y,oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                      colormap(oMapAxes, colormap(flipud(colormap(jet))));
                      if oHandle < 0
-                         oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
-                         oTitle = get(oColorBar, 'title');
+                         if oFigure.ColourBarVisible
+                             %if the colour bar should be visible then make
+                             %a new one
+                             oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                             oTitle = get(oColorBar, 'title');
+                             set(oTitle,'units','normalized');
+                             set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
+                         end
                      else
-                         oTitle = get(oHandle, 'title');
+                         if ~oFigure.ColourBarVisible
+                             % if the colour bar should not be visible then
+                             % delete the existing one
+                             delete(oHandle);
+                             set(oMapAxes,'userdata',[]);
+                             set(oMapAxes,'Position',oFigure.PlotPosition);
+                         else
+                             oTitle = get(oHandle, 'title');
+                             set(oTitle,'units','normalized');
+                             set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
+                         end
                      end
-                     set(oTitle,'units','normalized');
-                     set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
                      %Reset the axes limits
                      set(oMapAxes,'XLim',oXLim,'YLim',oYLim);
                      iChannel = oFigure.oParentFigure.SelectedChannel;
                      %Get the electrodes
                      hold(oMapAxes,'on');
                      oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
-                     plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
-                     
+                     if oFigure.ElectrodeMarkerVisible
+                         plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
+                             'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     end
                      for i = 1:length(oElectrodes)
                          if (oElectrodes(i).Accepted) && (oElectrodes(i).SignalEvent(1).Index(iBeat) <= iTimeIndex)
                              plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
@@ -618,8 +686,9 @@ classdef MapElectrodes < SubFigure
                      
                      hold(oMapAxes,'off');
              end
-             title(oMapAxes,sprintf('Potential Field for time %5.5f s',oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
+             oTitle = title(oMapAxes,sprintf('Potential Field for time %5.5f s',oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(...
                  oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,1)+iTimeIndex)));
+             set(oTitle,'fontsize',20,'fontweight','bold');
          end
      end
 end

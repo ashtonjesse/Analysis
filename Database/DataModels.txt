@@ -2,6 +2,7 @@ Unemap: (BasePotential)
 oUnemap.TimeSeries
 oUnemap.oExperiment
 oUnemap.Electrodes
+oUnemap.RMS.Electrodes
 oUnemap.RMS.Values
 oUnemap.RMS.Smoothed
 oUnemap.RMS.Smoothing
