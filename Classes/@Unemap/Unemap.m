@@ -25,6 +25,9 @@ classdef Unemap < BasePotential
                     oUnemap.oExperiment = Experiment(oUnemapStruct.oExperiment);
                     oUnemap.Electrodes = oUnemapStruct.Electrodes;
                     oUnemap.RMS = oUnemapStruct.RMS;
+                    if ~isfield(oUnemap.RMS,'Electrodes')
+                        oUnemap.RMS.Electrodes = [];
+                    end
                 end
             end
         end
@@ -77,6 +80,33 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes(iElectrodeNumber).Accepted = 0;
         end
         
+        function AddChannelToRMS(oUnemap, iElectrodeNumber)
+            %check if this index is already in the array
+            ind = find(oUnemap.RMS.Electrodes==iElectrodeNumber);
+            if isempty(ind)
+                %if not then add it 
+                oUnemap.RMS.Electrodes = [oUnemap.RMS.Electrodes ; iElectrodeNumber];
+            end
+        end
+        
+        function RemoveChannelFromRMS(oUnemap, iElectrodeNumber)
+            %check if this index is in the array
+            ind = find(oUnemap.RMS.Electrodes==iElectrodeNumber);
+            if ~isempty(ind)
+                %if so, remove it
+                oUnemap.RMS.Electrodes(ind) = [];
+            end
+        end
+        
+        function bResult = IsChannelIncludedInRMS(oUnemap, iElectrodeNumber)
+            ind = find(oUnemap.RMS.Electrodes==iElectrodeNumber);
+            if isempty(ind)
+                bResult = 0;
+            else
+                bResult = 1;
+            end
+        end
+                
         function oElectrode = GetElectrodeByName(oUnemap,sChannelName)
             %Return the electrode that matches the input name
             %This is a hacky way to do it but IDGF
@@ -1442,7 +1472,8 @@ classdef Unemap < BasePotential
             % Get the electrodes 
             oUnemap.Electrodes = oUnemap.oDAL.GetElectrodesFromConfigFile(...
                 oUnemap.oExperiment.Unemap.NumberOfChannels, char(aFileFull(1)), 0);
-                       
+            oUnemap.RMS.Electrodes = [];
+                             
             % Get the electrode data
             oUnemap.oDAL.GetDataFromSignalFile(oUnemap,sFile);
         end

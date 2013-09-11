@@ -12,8 +12,9 @@ function CalculateVrms(oUnemap, varargin)
 %Check if there is Processed.Data
 if isnan(oUnemap.Electrodes(1).Processed.Data(1))
 
-   %Calculate Vrms of the original data
-    aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Potential');
+    %Calculate Vrms of the original data
+    %aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Potential');
+    aData = cell2mat({oUnemap.Electrodes(oUnemap.RMS.Electrodes).Potential});
     % Get the dimensions
     x = length(oUnemap.TimeSeries);
     y = size(aData,2);
@@ -27,8 +28,8 @@ if isnan(oUnemap.Electrodes(1).Processed.Data(1))
     end
 else
     %Calculate Vrms of the processed data
-    %aData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes,'Processed','Data');
-    aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data');
+    aData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes(oUnemap.RMS.Electrodes),'Processed','Data');
+    %aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data');
     
     % Get the dimensions
     x = length(oUnemap.TimeSeries);

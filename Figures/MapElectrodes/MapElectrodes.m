@@ -154,7 +154,7 @@ classdef MapElectrodes < SubFigure
                 oFigure.PrintFigureToFile(sLongDataFileName);
             end
             
-            %end
+            
         end
         
         % -----------------------------------------------------------------
@@ -180,6 +180,7 @@ classdef MapElectrodes < SubFigure
             end
             sStatus = dos(char(sDosString{1}));
             if ~sStatus
+                figure();
                 imshow(strcat(sPathName, 'montage.png'));
             end
         end

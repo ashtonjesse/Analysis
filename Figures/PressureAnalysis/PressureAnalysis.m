@@ -281,10 +281,9 @@ classdef PressureAnalysis < SubFigure
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             
             %Plot the data
-            oFigure.CreateSubPlot(3);
             oFigure.PlotPressure(oFigure.aPlots(1));
-            %oFigure.PlotRefSignal(oFigure.aPlots(2));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
+            %oFigure.PlotRefSignal(oFigure.aPlots(2));\
+            cla(oFigure.aPlots(3));
             oFigure.PlotIntegral(oFigure.aPlots(3));
         end
         
@@ -345,16 +344,13 @@ classdef PressureAnalysis < SubFigure
         end
         
         function oHeartRateMenu_Callback(oFigure, src, event)
-            [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetSinusBeats(...
-                oFigure.oParentFigure.oGuiHandle.oECG.Original, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Curvature.Peaks);
-            aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.GetHeartRateData(dMaxPeaks);
+            aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRate(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Electrodes(10));
             oFigure.CreateSubPlot(3);
             oFigure.PlotPressure(oFigure.aPlots(1));
             %             oFigure.PlotRefSignal(oFigure.aPlots(2));
             
             plot(oFigure.aPlots(2),oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,aRateData,'k');
-            set(oFigure.aPlots(2),'XTick',[]);
+            set(oFigure.aPlots(2),'xticklabel',[]);
             ylabel(oFigure.aPlots(2),'Heart rate (bpm)');
             oFigure.PlotUnemapRefSignal(oFigure.aPlots(3));
         end
@@ -410,7 +406,7 @@ classdef PressureAnalysis < SubFigure
                 ymax = max(ymax,max(oFigure.oParentFigure.oGuiHandle.oPressure(i).Phrenic.Integral));
                 ymin = min(ymin,min(oFigure.oParentFigure.oGuiHandle.oPressure(i).Phrenic.Integral));
             end
-            set(oAxesHandle,'XTick',[]);
+            set(oAxesHandle,'xticklabel',[]);
             ylabel(oAxesHandle,'Phrenic Integral (Vs)');
             ylim(oAxesHandle,[ymin-abs(ymin/25) ymax+ymax/25]);
         end
@@ -454,7 +450,7 @@ classdef PressureAnalysis < SubFigure
             end
             hold(oAxesHandle, 'off');
             %             axis(oAxesHandle,'tight');
-            set(oAxesHandle,'XTick',[]);
+            set(oAxesHandle,'xticklabel',[]);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
             ylabel(oAxesHandle,strcat(oFigure.oParentFigure.oGuiHandle.oPressure(i).RefSignal.Name,' (V)'));
         end
@@ -465,12 +461,11 @@ classdef PressureAnalysis < SubFigure
             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.TimeSeries,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data,'k');
             xLimits = get(oFigure.aPlots(1),'xlim');
             xlim(oAxesHandle,xLimits);
-            set(oAxesHandle,'XTick',[]);
-            set(oAxesHandle,'YTick',[]);
+            set(oAxesHandle,'xticklabel',[]);
             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            ylabel(oAxesHandle,'Phrenic signal as recorded via Unemap');
+            ylabel(oAxesHandle,'Unemap Phrenic Signal (V)');
             
             %             oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName('15-09');
             %             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oElectrode.Processed.Data,'k');

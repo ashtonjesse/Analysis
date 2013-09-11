@@ -36,6 +36,7 @@ classdef Preprocessing < SubFigure
             
             %Set callback functions for controls
             set(oFigure.oGuiHandle.oCheckBoxReject, 'callback', @(src, event) oCheckBoxReject_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oCheckBoxIncludeInRMS, 'callback', @(src, event) oCheckBoxIncludeInRMS_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -70,6 +71,7 @@ classdef Preprocessing < SubFigure
                 set(handles.oCheckBoxOriginal, 'string', 'Plot Original');
                 set(handles.oCheckBoxReject, 'string', 'Accepted');
                 set(handles.oCheckBoxReject, 'TooltipString', 'Uncheck to reject channel');
+                set(handles.oCheckBoxIncludeInRMS, 'string', 'Include Channel in RMS Calculation');
                 
                 %Set the output attribute
                 handles.output = hObject;
@@ -127,6 +129,26 @@ classdef Preprocessing < SubFigure
                         set(oFigure.oGuiHandle.oSlider,'value',iChannel - 1);
                         oSlider_Callback(oFigure, oFigure.oGuiHandle.oSlider, [])
                     end
+                case 'i'
+                    %Get the button state
+                    ButtonState = get(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Value');
+                    %Get the channel index
+                    iChannel = str2num(get(oFigure.oGuiHandle.oSliderEdit,'string'));
+                    if ButtonState == get(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Max')
+                        % Toggle button is pressed
+                        % Remove this channel index from the list of RMS electrodes
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveChannelFromRMS(iChannel);
+                        set(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Value',0);
+                    elseif ButtonState == get(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Min')
+                        % Toggle button is not pressed
+                        % Add this channel index to the list of RMS electrodes
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.AddChannelToRMS(iChannel);
+                        set(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Value',1);
+                    end
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(iChannel);
+                    %Replot
+                    oFigure.PlotOriginal(iChannel);
+                    oFigure.PlotProcessed(iChannel);
             end
         end
         
@@ -191,6 +213,27 @@ classdef Preprocessing < SubFigure
             oFigure.PlotOriginal(iChannel);
             oFigure.PlotProcessed(iChannel);
         end
+        
+        function oCheckBoxIncludeInRMS_Callback(oFigure, src, event)
+            %Get the button state
+            ButtonState = get(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Value');
+            %Get the channel index
+            iChannel = oFigure.GetSliderIntegerValue('oSlider');
+            if ButtonState == get(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Max')
+                % Toggle button is pressed
+                % Add this channel index to the list of RMS electrodes
+                oFigure.oParentFigure.oGuiHandle.oUnemap.AddChannelToRMS(iChannel);
+            elseif ButtonState == get(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'Min')
+                % Toggle button is not pressed
+                % Remove this channel index to the list of RMS electrodes
+                oFigure.oParentFigure.oGuiHandle.oUnemap.RemoveChannelFromRMS(iChannel);
+            end
+            oFigure.oParentFigure.oGuiHandle.oUnemap.AcceptChannel(iChannel);
+            %Replot
+            oFigure.PlotOriginal(iChannel);
+            oFigure.PlotProcessed(iChannel);
+        end
+        
         %% Menu Callbacks
         % -----------------------------------------------------------------
         function oFileMenu_Callback(oFigure, src, event)
@@ -273,18 +316,19 @@ classdef Preprocessing < SubFigure
         function CheckChannelStatus(oFigure,iChannel)
             %Get selected channel and set checkbox value
             set(oFigure.oGuiHandle.oCheckBoxReject,'value',oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted);
+            set(oFigure.oGuiHandle.oCheckBoxIncludeInRMS,'value',oFigure.oParentFigure.oGuiHandle.oUnemap.IsChannelIncludedInRMS(iChannel));
         end
         
         function PlotOriginal(oFigure, iChannel)
             oAxes = oFigure.oGuiHandle.oTopAxes;
             cla(oAxes);
             sTitle = sprintf('Original Signal for Channel %s',oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Name);
-            if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
-                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
-            else
+            if ~oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
                 plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
                     oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'r');
+            else
+                plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
             end
             axis(oAxes, 'auto');
             title(oAxes, sTitle);
@@ -313,7 +357,13 @@ classdef Preprocessing < SubFigure
             %If there has been some processing done then plot the data
             if strcmp(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Status,'Processed')
                 set(oAxes,'Visible','on');
-                if oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
+                if ~oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Accepted
+                   plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r'); 
+                elseif ~isempty(find(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Electrodes==iChannel))
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
+                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'g');
+                else
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
                         oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
                     hold(oAxes, 'on');
@@ -328,9 +378,7 @@ classdef Preprocessing < SubFigure
                             oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Beats,'-g');
                         hold(oAxes, 'off');
                     end
-                else
-                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,...
-                        oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'-r');
+                    
                 end
                 axis(oAxes, 'auto');
                 if ~isempty(oFigure.CurrentZoomLimits)
