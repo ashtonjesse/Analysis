@@ -126,11 +126,14 @@ classdef MapElectrodes < SubFigure
             if (~ischar(sFilename) && ~ischar(sPathName))
                 return
             end
-%                         %Save individual beat activation time
-%                         iBeat = oFigure.oParentFigure.SelectedBeat;
-%                         sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
-%                         oFigure.PrintFigureToFile(sLongDataFileName);
-            
+%                         Save individual beat activation time
+                        iBeat = oFigure.oParentFigure.SelectedBeat;
+                        sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
+                        oFigure.PrintFigureToFile(sLongDataFileName);
+%                         sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',sLongDataFileName)});
+%                         sChopString = strcat(sChopString, {' -gravity South -chop 0x100'}, {sprintf(' %s',sLongDataFileName)});
+%                         sStatus = dos(char(sChopString{1}));
+                        
             %Save series of potential fields
 %             iBeat = oFigure.oParentFigure.SelectedBeat;
 %             oFigure.PlotType = 'Potential2DContour';
@@ -143,16 +146,22 @@ classdef MapElectrodes < SubFigure
 %                 oFigure.PrintFigureToFile(sLongDataFileName);
 %             end
             
-            %             %Save series of activation maps
-            oFigure.PlotType = 'Activation2DContour';
-            for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-                %Get the full file name and save it to string attribute
-                sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-                oFigure.oParentFigure.SelectedBeat = i;
-                oFigure.PlotData();
-                drawnow; pause(.2);
-                oFigure.PrintFigureToFile(sLongDataFileName);
-            end
+%                         %Save series of activation maps
+%             oFigure.PlotType = 'Activation2DContour';
+%             for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+%                 %Get the full file name and save it to string attribute
+%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+%                 oFigure.oParentFigure.SelectedBeat = i;
+%                 oFigure.PlotData();
+%                 drawnow; pause(.2);
+%                 oFigure.PrintFigureToFile(sLongDataFileName);
+%                 sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',sLongDataFileName)});
+%                 sChopString = strcat(sChopString, {' -gravity South -chop 0x100'}, {sprintf(' %s',sLongDataFileName)});
+%                 sStatus = dos(char(sChopString{1}));
+%                 if sStatus
+%                     break
+%                 end
+%             end
             
             
         end
@@ -172,7 +181,7 @@ classdef MapElectrodes < SubFigure
                     %Loop through files adding them to list
                     sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
                 end
-                sDosString = strcat(sDosString, {' -geometry +1+1 '}, sPathName, 'montage.png');
+                sDosString = strcat(sDosString, {' -quality 98 -tile 8x3 -geometry 561x617+0+0 '}, sPathName, 'montage.png');
             else
                 if (~ischar(sFileName) && ~ischar(sPathName))
                     return
@@ -181,6 +190,7 @@ classdef MapElectrodes < SubFigure
             sStatus = dos(char(sDosString{1}));
             if ~sStatus
                 figure();
+                disp(char(sDosString));
                 imshow(strcat(sPathName, 'montage.png'));
             end
         end
@@ -378,6 +388,7 @@ classdef MapElectrodes < SubFigure
              %Create a subplot in the position specified
              oMapPlot = axes('Position',oFigure.PlotPosition,'Tag', 'MapPlot');
              oHiddenPlot = axes('Position',oFigure.PlotPosition,'xtick',[],'ytick',[],'Tag', 'HiddenPlot','color','none');
+             
          end
          
          function PlotData(oFigure)
@@ -417,8 +428,10 @@ classdef MapElectrodes < SubFigure
              %Set the axis limits
              axis(oMapPlot, 'equal');
              set(oMapPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
+%              set(oMapPlot,'xticklabel',{},'yticklabel',{});
              axis(oHiddenPlot, 'equal');
              set(oHiddenPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
+             
              %Refocus on HiddenPlot has this needs to be on the top to
              %receive user clicks.
              axes(oHiddenPlot);
@@ -462,7 +475,7 @@ classdef MapElectrodes < SubFigure
                  hold(oMapAxes,'on');
                  if strcmpi(oFigure.PlotType,'JustElectrodes')
                      %Just plotting the electrodes so add a text label
-                     plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
+                     plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), 'k.', ...
                          'MarkerSize',12);
                      %Label the point with the channel name
                      oLabel = text(oElectrodes(i).Coords(1) - 0.1, oElectrodes(i).Coords(2) + 0.07, ...
@@ -480,11 +493,11 @@ classdef MapElectrodes < SubFigure
                      if ~oElectrodes(i).Accepted
                          %plot the point as red
                          plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'r.', ...
-                             'MarkerSize', 12);
+                             'MarkerSize', 14);
                      else
-                         %else just plot the default color
-                         plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'.', ...
-                             'MarkerSize', 12);
+                         %else just plot black
+                         plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'k.', ...
+                             'MarkerSize', 14);
                      end
                  end
              end
@@ -578,7 +591,7 @@ classdef MapElectrodes < SubFigure
                      end
                      [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
                      plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                         'MarkerSize',16,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
+                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
                      hold(oMapAxes,'off');
                      
                  case 'Activation2DScatter'
@@ -596,8 +609,9 @@ classdef MapElectrodes < SubFigure
                      set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
              end
              
-             oTitle = title(oMapAxes,sprintf('Activation map for beat #%d',iBeat));
-             set(oTitle,'fontsize',20,'fontweight','bold');
+             oTitle = title(oMapAxes,sprintf('%d',iBeat));
+             set(oTitle,'units','normalized');
+             set(oTitle,'fontsize',26,'fontweight','bold');
          end
          
          function PlotPotential(oFigure, oMapAxes)

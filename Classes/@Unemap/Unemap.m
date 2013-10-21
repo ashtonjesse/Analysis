@@ -107,15 +107,17 @@ classdef Unemap < BasePotential
             end
         end
                 
-        function oElectrode = GetElectrodeByName(oUnemap,sChannelName)
+        function [oElectrode, iIndex] = GetElectrodeByName(oUnemap,sChannelName)
             %Return the electrode that matches the input name
             %This is a hacky way to do it but IDGF
             oElectrode = [];
+            iIndex = 0;
             for i = 1:length(oUnemap.Electrodes)
                 %Revisit this by trying aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID),
                 %aEvents);
                 if strcmp(oUnemap.Electrodes(i).Name,sChannelName)
                     oElectrode = oUnemap.Electrodes(i);
+                    iIndex = i;
                 end
             end
         end
@@ -1007,7 +1009,7 @@ classdef Unemap < BasePotential
                 end
             end
         end
-        
+                
         function iIndex = GetIndexFromTime(oUnemap, iElectrodeNumber, iBeat, dTime)
             %Returns the index of the beat window corresponding to the
             %specified time
@@ -1184,6 +1186,7 @@ classdef Unemap < BasePotential
                             %activation time relative to the pacing
                             %stimulus
                             aActivationTimes(k,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(k,:)) - oUnemap.TimeSeries(oUnemap.Electrodes(1).Pacing.Index(k)));
+                            aOutActivationTimes(k,:) = 1000*(aOutActivationTimes(k,:) - oUnemap.TimeSeries(oUnemap.Electrodes(1).Pacing.Index(k)));
                         else
                             %this is a sequence of sinus beats so express the
                             %activation time relative to the earliest accepted

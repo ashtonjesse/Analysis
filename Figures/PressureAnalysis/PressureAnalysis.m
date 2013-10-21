@@ -3,10 +3,12 @@ classdef PressureAnalysis < SubFigure
 
     properties
         DefaultPath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\';
-        aPlots;
+        Plots = [];
         CurrentZoomLimits = [];
         SelectedExperiments = [];
         Colours = ['k','r','b','g','c'];
+        CurrentPlotNumber = 0;
+        SelectedElectrode;
     end
     
     events
@@ -29,34 +31,48 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oSaveMenu, 'callback', @(src, event) oSaveMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) Unused_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oPlotUnemapRefSignal, 'callback', @(src, event) oPlotUnemapRef_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExportMenu, 'callback', @(src, event) oExportMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTimeAlignMenu, 'callback', @(src, event) oTimeAlignMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oHeartRateMenu, 'callback', @(src, event) oHeartRateMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oIntegralMenu, 'callback', @(src, event) oIntegralMenu_Callback(oFigure, src, event));
             
             set(oFigure.oGuiHandle.cb1, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.cb2, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.cb3, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.cb4, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.cb5, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
-                        
+            
+            set(oFigure.oGuiHandle.oChannelSelector, 'callback', @(src, event) oChannelSelector_Callback(oFigure, src, event));
+            
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
-            
            
             %Turn zoom on for this figure
             set(oFigure.oZoom,'enable','on');
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
+            %set up the checkboxes and plots
+            sPlotNames = {'Pressure','Reference Signal', 'Unemap Reference Signal', 'Phrenic Integral', 'Electrode', 'Heart Rate', };
+            for i = 1:length(sPlotNames)
+                oFigure.Plots(i).ID = 0;
+                oFigure.Plots(i).Visible = 0;
+                oFigure.Plots(i).Name = char(sPlotNames(i));
+                oFigure.Plots(i).Checkbox = uicontrol(oFigure.oGuiHandle.oPlotPanel, 'style', 'checkbox', 'string', oFigure.Plots(i).Name, 'position', [3 18-(i-1)*1.875, 34, 1.75], 'callback',  ...
+                    @(src, event) oPlotSelector_Callback(oFigure, src, event), 'value', 0, 'visible', 'off','units','characters');
+            end
+            
             if ~isempty(oFigure.oParentFigure.oGuiHandle.oPressure)
                 %Plot the data
-                oFigure.CreateSubPlot(2);
-                oFigure.PlotPressure(oFigure.aPlots(1));
-                oFigure.PlotRefSignal(oFigure.aPlots(2));
+                for i = 1:length(oFigure.Plots)
+                    set(oFigure.Plots(i).Checkbox,'visible','on');
+                end
+                set(oFigure.Plots(1).Checkbox,'value', 1,'visible', 'on');
+                oFigure.Plots(1).Visible = 1;
+                oFigure.Replot();
             end
+            
+            sString = oFigure.GetPopUpSelectionString('oChannelSelector');
+            oFigure.SelectedElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
             
             % --- Executes just before BaselineCorrection is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
@@ -65,16 +81,13 @@ classdef PressureAnalysis < SubFigure
                 % eventdata  reserved - to be defined in a future version of MATLAB
                 % handles    structure with handles and user data (see GUIDATA)
                 % varargin   command line arguments to BaselineCorrection (see VARARGIN)
-                
+
                 %Set the output attribute
-                set(handles.cb1,'visible','off');
-                set(handles.cb2,'visible','off');
-                set(handles.cb3,'visible','off');
-                set(handles.cb4,'visible','off');
-                set(handles.cb5,'visible','off');
-               handles.output = hObject;
-               %Update the gui handles
-               guidata(hObject, handles);
+                aChannelNames = {oParent.oGuiHandle.oUnemap.Electrodes(:).Name};
+                set(handles.oChannelSelector,'string',aChannelNames);
+                handles.output = hObject;
+                %Update the gui handles
+                guidata(hObject, handles);
             end
         end
     end
@@ -88,6 +101,29 @@ classdef PressureAnalysis < SubFigure
     end
     
     methods (Access = private)
+        function oChannelSelector_Callback(oFigure, src, event)
+            %Plot the selected electrode
+            sString = oFigure.GetPopUpSelectionString('oChannelSelector');
+            oFigure.SelectedElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
+            oPlot = oFigure.GetPlotByName('Electrode');
+            if ~isempty(oPlot)
+                cla(oPlot.ID);
+                oFigure.PlotElectrode(oPlot.ID, oFigure.SelectedElectrode);
+                set(oPlot.ID,'xminortick','off');
+                xlabel(oPlot.ID,'');
+                set(oPlot.ID,'xticklabel',[]);
+                xlim(oPlot.ID,get(oFigure.Plots(1).ID,'xlim'));
+            end
+            
+        end
+        
+        function oPlot = GetPlotByName(oFigure, sPlotName)
+            %Get plot names
+            aPlotNames = {oFigure.Plots(:).Name};
+            aIndex = strcmpi(aPlotNames, sPlotName);
+            oPlot = oFigure.Plots(aIndex);
+        end
+        
         function oSelection_Callback(oFigure, src, event)
             %Reset the selected experiments
             oFigure.SelectedExperiments = [];
@@ -100,6 +136,28 @@ classdef PressureAnalysis < SubFigure
                 end
             end
         end
+        
+        function oPlotSelector_Callback(oFigure, src, event)
+            %Work out which check box fired this and recreate the plots
+            
+            %Get the value of the checkbox
+            dIndex = find([oFigure.Plots(:).Checkbox] == src);
+            if ~isempty(dIndex)
+                %check if the selection corresponds to 'Electrode'
+                if dIndex == find(strcmp({oFigure.Plots(:).Name},'Electrode'))
+                    if get(src, 'value')
+                        set(oFigure.oGuiHandle.oChannelSelector,'visible', 'on');
+                    else
+                        set(oFigure.oGuiHandle.oChannelSelector,'visible', 'off');
+                    end
+                end
+                %update the visibility of this plot
+                oFigure.Plots(dIndex).Visible = get(src, 'Value');
+                oFigure.Replot();
+                
+            end
+        end
+        
         % --------------------------------------------------------------------
         function PostZoom_Callback(oFigure, src, event)
             %Synchronize the zoom of all the axes
@@ -110,9 +168,15 @@ classdef PressureAnalysis < SubFigure
             oYLim = get(oCurrentAxes,'YLim');
             oFigure.CurrentZoomLimits = [oXLim ; oYLim];
             %Apply to axes
-            set(oFigure.aPlots(1),'XLim',oXLim);
-            set(oFigure.aPlots(2),'XLim',oXLim);
-            set(oFigure.aPlots(3),'XLim',oXLim);
+            dIndex = find([oFigure.Plots(:).ID] == oCurrentAxes);
+            %get copy of plots
+            oPlots = oFigure.Plots;
+            oPlots(dIndex) = [];
+            for i = 1:length(oPlots)
+                if oPlots(i).Visible
+                    set(oPlots(i).ID,'XLim',oXLim);
+                end
+            end
         end
         
         %% Private UI control callbacks
@@ -174,10 +238,12 @@ classdef PressureAnalysis < SubFigure
             end
             
             %Plot the data
-            oFigure.CreateSubPlot(2);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
-            
+            for i = 1:length(oFigure.Plots)
+                set(oFigure.Plots(i).Checkbox,'visible','on');
+            end
+            set(oFigure.Plots(1).Checkbox,'value', 1);
+            oFigure.Plots(1).Visible = 1;
+            oFigure.Replot();
         end
         
         function oFigure = oOpenSingleMenu_Callback(oFigure, src, event)
@@ -215,13 +281,15 @@ classdef PressureAnalysis < SubFigure
                 end
                 
                 %Plot the data
-                oFigure.CreateSubPlot(2);
-                oFigure.PlotPressure(oFigure.aPlots(1));
-                oFigure.PlotRefSignal(oFigure.aPlots(2));
+                for i = 1:length(oFigure.Plots)
+                    set(oFigure.Plots(i).Checkbox,'visible','on');
+                end
+                set(oFigure.Plots(1).Checkbox,'value', 1);
+                oFigure.Plots(1).Visible = 1;
+                oFigure.Replot();
             end
         end
-        
-        
+                
         function oFigure = oSaveMenu_Callback(oFigure, src, event)
             % Save the current entities
            
@@ -250,41 +318,7 @@ classdef PressureAnalysis < SubFigure
             oFigure.oParentFigure.oGuiHandle.oPressure.ResampleOriginalData(...
                 oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.Unemap.ADConversion.SamplingRate)
             %Plot data
-            oFigure.CreateSubPlot(2);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
-        end
-        
-        function oIntegralMenu_Callback(oFigure, src, event)
-            % Calculate a bin integral for the phrenic signal
-            
-            for j = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure)
-                aPhrenic = oFigure.oParentFigure.oGuiHandle.oPressure(j).Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure(j).Status);
-                aIntegral = zeros(length(aPhrenic),1);
-                dIntegrand = 0;
-                iBinSize = 100;
-                iBinCount = 1;
-                for i = 1:length(aIntegral)
-                    if (iBinCount * iBinSize) == i
-                        iStart = (iBinSize * (iBinCount-1) + 1);
-                        iEnd = iStart + iBinSize;
-                        dSum = sum(abs(aPhrenic(iStart:iEnd)));
-                        dIntegrand = dSum / iBinSize;
-                        iBinCount = iBinCount + 1;
-                    end
-                    aIntegral(i) = dIntegrand;
-                end
-                %Save the integral data
-                oFigure.oParentFigure.oGuiHandle.oPressure(j).Phrenic.Integral = aIntegral;
-            end
-            %Make sure the current figure is PressureAnalysis
-            set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
-            
-            %Plot the data
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            %oFigure.PlotRefSignal(oFigure.aPlots(2));\
-            cla(oFigure.aPlots(3));
-            oFigure.PlotIntegral(oFigure.aPlots(3));
+            oFigure.Replot();
         end
         
         function oTimeAlignMenu_Callback(oFigure, src, event)
@@ -309,12 +343,7 @@ classdef PressureAnalysis < SubFigure
             %truncate the data and time series
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).TruncateData(bIndexesToKeep);
             %replot
-            oFigure.CreateSubPlot(2);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
-            
-            
-            
+            oFigure.Replot();
         end
         
         function oTruncateMenu_Callback(oFigure, src, event)
@@ -338,65 +367,102 @@ classdef PressureAnalysis < SubFigure
             bIndexes = ~bIndexes;
             %Truncate data that is not selected
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).TruncateData(bIndexes);
-             oFigure.CreateSubPlot(2);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
+            oFigure.Replot();
         end
         
-        function oHeartRateMenu_Callback(oFigure, src, event)
-            aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRate(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Electrodes(10));
-            oFigure.CreateSubPlot(3);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            %             oFigure.PlotRefSignal(oFigure.aPlots(2));
-            
-            plot(oFigure.aPlots(2),oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,aRateData,'k');
-            set(oFigure.aPlots(2),'xticklabel',[]);
-            ylabel(oFigure.aPlots(2),'Heart rate (bpm)');
-            oFigure.PlotUnemapRefSignal(oFigure.aPlots(3));
-        end
-        
-        function CreateSubPlot(oFigure,iPlotCount)
+        function CreateSubPlot(oFigure)
             %Initialise the subplots
             
             %Make sure the current figure is PressureAnalysis
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
-            
-            %Check what plots are present on the panel
-            %Loop through list and delete
-            for i = 1:size(oFigure.aPlots,1)
-                delete(oFigure.aPlots(i));
-            end
-            
             %Divide up the space for the subplots
-            yDiv = 1/(iPlotCount+0.4);
-            oFigure.aPlots = zeros(iPlotCount,1);
+            yDiv = 1/(length(oFigure.Plots(logical([oFigure.Plots(:).Visible])))+0.4);
+            j = 0;%counter of visible plots
+            %Loop through all the plots
+            for i = 1:length(oFigure.Plots)
+                if oFigure.Plots(i).Visible
+                    j = j + 1;
+                    aPosition = [0.1, (j-1)*yDiv + 0.08, 0.8, yDiv-0.02];%[left bottom width height]
+                    %check if the plot still exists
+                    if oFigure.Plots(i).ID > 0 && ~isempty(find(get(oFigure.oGuiHandle.oPanel,'children') == oFigure.Plots(i).ID))
+                        %plot already been created so just adjust its
+                        %position and make it visible
+                        set(oFigure.Plots(i).ID, 'position', aPosition, 'visible', 'on');
+                        cla(oFigure.Plots(i).ID);
+                    else
+                        %create a new subplot
+                        oFigure.Plots(i).ID = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oPanel, 'Tag', sprintf('Plot%d',i));
+                    end
+                else
+                    if oFigure.Plots(i).ID > 0
+                        %plot has already been created but should not be
+                        %visible
+                        set(oFigure.Plots(i).ID, 'visible', 'off');
+                        cla(oFigure.Plots(i).ID);
+                    end
+                end
+            end
+        end
+        
+        function Replot(oFigure)
+            %Plot the appropriate data
             
-            %Loop through the plot count
-            for i = 1:iPlotCount;
-                %Create subplot
-                aPosition = [0.1, (i-1)*yDiv + 0.08, 0.8, yDiv-0.02];%[left bottom width height]
-                oPlot = subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oPanel, 'Tag', sprintf('Plot%d',i));
-                
-                %Save the subplots to the array
-                oFigure.aPlots(i) = oPlot;
+            %Set up the plots 
+            oFigure.CreateSubPlot();
+            oPlots = oFigure.Plots(logical([oFigure.Plots(:).Visible]));
+            
+            %loop through the plots currently visible
+            for i = 1:length(oPlots)
+                switch (oPlots(i).Name)
+                    case 'Pressure'
+                        oFigure.PlotPressure(oPlots(i).ID);
+                    case 'Reference Signal'
+                        oFigure.PlotRefSignal(oPlots(i).ID);
+                    case 'Unemap Reference Signal'
+                        oFigure.PlotUnemapRefSignal(oPlots(i).ID);
+                    case 'Electrode'
+                        oFigure.PlotElectrode(oPlots(i).ID,oFigure.SelectedElectrode);
+                    case 'Heart Rate'
+                        oFigure.PlotHeartRate(oPlots(i).ID);
+                    case 'Phrenic Integral'
+                        oFigure.PlotIntegral(oPlots(i).ID);
+                end
+                if i == 1
+                    xLimits = get(oFigure.Plots(1).ID,'xlim');
+                    set(oPlots(1).ID,'xminortick','on');
+                    xlabel(oPlots(1).ID,'Time (s)');
+                else
+                    set(oPlots(i).ID,'xminortick','off');
+                    xlabel(oPlots(i).ID,'');
+                    set(oPlots(i).ID,'xticklabel',[]);
+                    xlim(oPlots(i).ID,xLimits);
+                end
+            end
+        end
+
+        function PlotIntegral(oFigure, oAxesHandle)
+            % Calculate a bin integral for the phrenic signal
+            
+            for j = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure)
+                aPhrenic = oFigure.oParentFigure.oGuiHandle.oPressure(j).Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure(j).Status);
+                aIntegral = zeros(length(aPhrenic),1);
+                dIntegrand = 0;
+                iBinSize = 50;
+                iBinCount = 1;
+                for i = 1:length(aIntegral)
+                    if (iBinCount * iBinSize) == i
+                        iStart = (iBinSize * (iBinCount-1) + 1);
+                        iEnd = iStart + iBinSize;
+                        dSum = sum(abs(aPhrenic(iStart:iEnd)));
+                        dIntegrand = dSum / iBinSize;
+                        iBinCount = iBinCount + 1;
+                    end
+                    aIntegral(i) = dIntegrand;
+                end
+                %Save the integral data
+                oFigure.oParentFigure.oGuiHandle.oPressure(j).Phrenic.Integral = aIntegral;
             end
             
-            
-        end
-        
-        function oPlotUnemapRef_Callback(oFigure, src, event)
-            %Plot the reference signal from the Unemap data
-            %Make sure the current figure is PressureAnalysis
-            set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
-            
-            %Plot the data
-            oFigure.CreateSubPlot(3);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
-            oFigure.PlotUnemapRefSignal(oFigure.aPlots(3));
-        end
-        
-        function PlotIntegral(oFigure, oAxesHandle)
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
             hold(oAxesHandle, 'on');
             ymax = 0;
@@ -407,8 +473,10 @@ classdef PressureAnalysis < SubFigure
                 ymin = min(ymin,min(oFigure.oParentFigure.oGuiHandle.oPressure(i).Phrenic.Integral));
             end
             set(oAxesHandle,'xticklabel',[]);
-            ylabel(oAxesHandle,'Phrenic Integral (Vs)');
-            ylim(oAxesHandle,[ymin-abs(ymin/25) ymax+ymax/25]);
+            oLabel = ylabel(oAxesHandle,['Phrenic', 10, 'Integral (Vs)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',14);
+            hold(oAxesHandle, 'off');
         end
         
         function PlotPressure(oFigure,oAxesHandle)
@@ -431,9 +499,9 @@ classdef PressureAnalysis < SubFigure
                 set(oFigure.oGuiHandle.(sprintf('cb%d',i)),'visible','on');
             end
             hold(oAxesHandle, 'off');
-            xlabel(oAxesHandle,'Time (s)');
-            ylabel(oAxesHandle,'Pressure (mmHg)');
-            set(oAxesHandle,'xminortick','on');
+            oLabel = ylabel(oAxesHandle,['Pressure', 10, '(mmHg)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',14);
             ylim(oAxesHandle,[ymin-abs(ymin/25) ymax+ymax/25]);
         end
         
@@ -449,41 +517,77 @@ classdef PressureAnalysis < SubFigure
                 ymin = min(ymin, min(oFigure.oParentFigure.oGuiHandle.oPressure(i).RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure(i).Status)));
             end
             hold(oAxesHandle, 'off');
-            %             axis(oAxesHandle,'tight');
-            set(oAxesHandle,'xticklabel',[]);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            ylabel(oAxesHandle,strcat(oFigure.oParentFigure.oGuiHandle.oPressure(i).RefSignal.Name,' (V)'));
+            oLabel = ylabel(oAxesHandle,[oFigure.oParentFigure.oGuiHandle.oPressure(i).RefSignal.Name, 10, '(V)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',14);
         end
         
         function PlotUnemapRefSignal(oFigure,oAxesHandle)
             %Plot the unemap VRMS data
-            %Get channel to plot
             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.TimeSeries,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data,'k');
-            xLimits = get(oFigure.aPlots(1),'xlim');
-            xlim(oAxesHandle,xLimits);
-            set(oAxesHandle,'xticklabel',[]);
             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            ylabel(oAxesHandle,'Unemap Phrenic Signal (V)');
+            oLabel = ylabel(oAxesHandle, ['Unemap Phrenic', 10, 'Signal (V)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',14);
+        end
+        
+        function PlotElectrode(oFigure, oAxesHandle, oElectrode)
+            %Plot the selected electrode
+            aProcessedData = oElectrode.Processed.Data;
+            aBeatData = oElectrode.Processed.Beats;
+            aBeatIndexes = oElectrode.Processed.BeatIndexes;
+            aTime = transpose(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
             
-            %             oElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName('15-09');
-            %             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries,oElectrode.Processed.Data,'k');
-            %             set(oAxesHandle,'XTick',[]);
-            %             set(oAxesHandle,'YTick',[]);
-            %             ymax = max(oElectrode.Processed.Data);
-            %             ymin = min(oElectrode.Processed.Data);
-            %             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            %             ylabel(oAxesHandle,'Electrogram at x');
+            %Get these values so that we can place text in the
+            %right place and give the axes dimensions
+            YMax = max(aProcessedData);
+            YMin = min(aProcessedData);
             
-            %             plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure.Status), ...
-            %                 oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status),'k');
-            %             set(oAxesHandle,'XTick',[]);
-            %             set(oAxesHandle,'YTick',[]);
-            %             ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
-            %             ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.Phrenic.(oFigure.oParentFigure.oGuiHandle.oPressure.Status));
-            %             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            %             ylabel(oAxesHandle,'Phrenic Nerve Signal');
+            %Plot all the data
+            if oElectrode.Accepted
+                %If the signal is accepted then plot it as black
+                plot(oAxesHandle,aTime,aProcessedData,'k');
+                ylim(oAxesHandle,[YMin - 0.2, YMax + 0.2]);
+                hold(oAxesHandle,'on');
+                plot(oAxesHandle,aTime,aBeatData,'-g');
+%                 %Loop through beats and label
+%                 for j = 1:size(aBeatIndexes,1);
+%                     if mod(j,2)
+%                         oBeatLabel = text(aTime(aBeatIndexes(j,1)),YMax, num2str(j));
+%                     else
+%                         oBeatLabel = text(aTime(aBeatIndexes(j,1)),YMin, num2str(j));
+%                     end
+%                     set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','normalized');
+%                     set(oBeatLabel,'FontSize',0.1);
+%                     set(oBeatLabel,'parent',oAxesHandle);
+%                 end
+                hold(oAxesHandle,'off');
+            else
+                %The signal is not accepted so plot it as red
+                %without beats
+                plot(oAxesHandle,aTime,aProcessedData,'-r');
+                ylim(oAxesHandle,[YMin - 0.2, YMax + 0.2]);
+            end
+            oLabel = ylabel(oAxesHandle, ['Electrogram', 10, '(V)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',14);
+        end
+        
+        function PlotHeartRate(oFigure, oAxesHandle)
+            %get electrode index
+            sString = oFigure.GetPopUpSelectionString('oChannelSelector');
+            [d iChannel] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
+            aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRate(iChannel);
+            plot(oAxesHandle, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, aRateData,'k');
+            YMin = min(aRateData);
+            YMax = max(aRateData);
+            ylim(oAxesHandle,[YMin - 10, YMax + 10]);
+            oLabel = ylabel(oAxesHandle,['Activation', 10, 'Rate (bpm)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',14);
         end
         
         function TimeAlign(oFigure, src, event)
@@ -494,12 +598,7 @@ classdef PressureAnalysis < SubFigure
             dDiff = dSecondTime - dFirstTime;
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.Processed = ...
                 oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Status) + dDiff;
-%             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Status = 'Processed';
-%             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Processed = oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Original;
-%             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Processed.Data = oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Original.Data;
-            oFigure.CreateSubPlot(2);
-            oFigure.PlotPressure(oFigure.aPlots(1));
-            oFigure.PlotRefSignal(oFigure.aPlots(2));
+            oFigure.Replot();
         end
     end
     

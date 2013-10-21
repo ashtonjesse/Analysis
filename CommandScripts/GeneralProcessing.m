@@ -2,9 +2,9 @@ clear all;
 
 disp('loading unemap...');
 oUnemap1 = ...
-GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130724\baroreflex004_unemap.mat');
+GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130904\baro001\pabaro001_unemap.mat');
 oUnemap2 = ...
-GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\barotestpostatropine\pa_barotestpostatropine_unemap.mat');
+GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\chemotest001\pa_chemotest001_unemap.mat');
 disp('done loading');
 
 for i = 1:length(oUnemap2.Electrodes)

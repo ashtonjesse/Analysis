@@ -28,7 +28,7 @@ aBeatIndices = zeros(n,2);
 aBeats = NaN(p,q);
 %Initialise an array to hold the maximum values of each beat
 aMaxPeaks = zeros(n,1);
-iBlank = 50;
+iBlank = 80;
 %Loop through the peaks
 for j = 2:n;
     %If the next peak is greater than 150 more than the current
