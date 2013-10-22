@@ -3,15 +3,24 @@ classdef ImageStack < BaseEntity
     %   class and inherits from BaseEntity
     
     properties
-        oImages = BaseImage();
+        oImages;
         Name;
     end
     
     methods
-        function oStack = ImageStack()
+        function oStack = ImageStack(varargin)
             %% Constructor
             oStack = oStack@BaseEntity();
             oStack.oDAL = ImageStackDAL();
+            if nargin == 2
+                iStackSize = varargin{1};
+                sStackType = varargin{2};
+                switch (sStackType)
+                    case 'uint8'
+                        oStack.oImages = Uint8Image();
+                        oStack.oImages(iStackSize,1) = Uint8Image();
+                end
+            end
         end
     end
     
@@ -182,6 +191,16 @@ classdef ImageStack < BaseEntity
             oNewStack = ImageStack();
             oNewStack.oImages = oSubsampledImages;
         end
-       
+        
+        function oFigure = SubplotImages(oStack, aIndicesToPlot)
+            
+            %Create a new figure
+            oFigure = figure();
+            for i = 1:length(aIndicesToPlot)
+                subplot(1,length(aIndicesToPlot),i);
+                imagesc(squeeze(max(oStack.oImages(aIndicesToPlot(i)).Data,[],1)))
+                colormap gray;
+            end
+        end
     end
 end

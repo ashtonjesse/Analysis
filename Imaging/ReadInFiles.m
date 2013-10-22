@@ -1,31 +1,31 @@
-%This script loads an image or image sequence into entities and saves these
-
 close all;
 clear all;
 
 %Specify paths
-sImagesPath = 'D:\Users\jash042\Documents\DataLocal\Imaging\MicroCT\20130613\segmented\';
+sImagesPath = 'D:\Users\jash042\Documents\DataLocal\Imaging\Immuno\20130425\v28bitblock\v28bitblock_cropped\';
+sThresholdedPath = 'D:\Users\jash042\Documents\DataLocal\Imaging\Immuno\20130425\v28bitblock\v28bitblock_cropped\v28bitblock_image_1\';
 % sSavePath = 'H:/Data/Database/20111124';
-sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\Images\MicroCT\20130613\';
+sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\Images\Immuno\20130425\';
 sFormat = 'png';
-sName = 'atria_rec';
-%Get the full path names of all the  files in the signal directory
+sName = 'CholinergicNerves';
+
+%Get the full path names of all the  files in the image directory
 %aImageFileFull = fGetFileNamesOnly(sImagesPath,'*deconv00021.png');
 aImageFileFull = fGetFileNamesOnly(sImagesPath,strcat('*.',sFormat));
-
+aThresholdedImages = fGetFileNamesOnly(sThresholdedPath,strcat('*Nerve0*.',sFormat));
 %Initialise Imagestack to hold images
-oImageStack = ImageStack();
-%get the size of the images
-aTempImage = imread(char(aImageFileFull(1)),sFormat);
-[m n] = size(aTempImage);
-clear aTempImage;
-oDataStack = zeros(m,n,length(aImageFileFull),'uint8');
+oImageStack = ImageStack(length(aImageFileFull),'uint8');
+% %get the size of the images
+% aTempImage = imread(char(aImageFileFull(1)),sFormat);
+% [m n] = size(aTempImage);
+% clear aTempImage;
+% oDataStack = zeros(m,n,length(aImageFileFull),'uint8');
 fprintf('Running... \n');
 for k = 1:length(aImageFileFull)
     %Create image
-    oImage = GetImageEntityFromFile(BaseImage,char(aImageFileFull(k)),sFormat);
-    oImageStack.oImages(k) = oImage;
-    oDataStack(:,:,k) = imread(char(aImageFileFull(k)),sFormat);
+    oImageStack.oImages(k) = oImageStack.oImages(k).GetImageEntityFromFile(char(aImageFileFull(k)),sFormat);
+    oImageStack.oImages(k) = oImageStack.oImages(k).GetBinaryImageFromFile(char(aThresholdedImages(k)), sFormat);
+    disp(k);
 end
 %Get current filename fileparts
 [a sFileName c] = fileparts(aImageFileFull{k});

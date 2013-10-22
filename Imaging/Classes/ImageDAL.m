@@ -10,12 +10,11 @@ classdef ImageDAL < BaseDAL
     end
    
     methods (Access = public)
-        function oImage = ReadImageFromFile(oImageDAL, sFile, sFormat)
+        function ImageData = ReadImageFromFile(oImageDAL, sFile, sFormat)
             %Reads an image from file
-            %Create the image entity
-            oImage = BaseImage();
+            
             %Load the image data from the file
-            oImage.Data = imread(sFile, sFormat);
+            ImageData = imread(sFile, sFormat);
         end
         
         function SaveImageToFile(oImageDAL, oImage, sFilePath, sFormat)
