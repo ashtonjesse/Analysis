@@ -34,22 +34,22 @@ iLength = 1 + iEndFrame - iStartFrame;
 %         
 %     end
 % end
-
+% 
 %Find point of max curvature in segment of signal before
-xIndex = 51;
-yIndex = 55;
+xIndex = 100-57;
+yIndex = 100-62;
 %Find the index of the peak and trough of the potential
 [dMaxVal iMaxIndex] = max(double(squeeze(cmosData(xIndex,yIndex,iStartFrame:iEndFrame))));
-[dMinVal iMinIndex] = min(double(squeeze(cmosData(xIndex,yIndex,iStartFrame:iEndFrame))));
+[dMinVal iMinIndex] = min(double(squeeze(cmosData(xIndex,yIndex,325:500))));
 iMaxIndex = iMaxIndex + iStartFrame;
-iMinIndex = iMinIndex + iStartFrame;
+iMinIndex = iMinIndex + 325;
 %Find the mean of the diastolic potential as an estimate of the baseline 
 dBaseline = mean(double(squeeze(cmosData(xIndex,yIndex,275:325))));
 iRVActIndex = iMinIndex;
 oSlopeAxes = axes();
 % plot(oSlopeAxes,iStartFrame:1:iEndFrame,squeeze(aSlope(xIndex,yIndex,:)),'r');
-% set(oSlopeAxes, 'YTick',[]);
-oDataAxes = axes('Position',get(oSlopeAxes,'Position'),'color','none','XTick',[]);
+set(oSlopeAxes, 'YTick',[],'XTick',[]);
+oDataAxes = axes('Position',get(oSlopeAxes,'Position'),'color','none');
 line(iStartFrame:1:iEndFrame,squeeze(cmosData(xIndex,yIndex,iStartFrame:iEndFrame)),'parent',oDataAxes);
 % oCurvatureAxes = axes('Position',get(oSlopeAxes,'Position'),'color','none','XTick',[],'YTick',[]);
 % line(iStartFrame:1:iEndFrame,squeeze(aCurvature(xIndex,yIndex,:)),'parent',oCurvatureAxes,'color','k');
@@ -64,19 +64,19 @@ b = dBaseline - m*iMaxIndex;
 aStraightLine = nan(1,iLength);
 aNewData = zeros(iLength,1);
 aNewData(1:(iMaxIndex-iStartFrame+1),1) = double(squeeze(cmosData(xIndex,yIndex,iStartFrame:iMaxIndex)));
-for i = 0:(iRVActIndex-iMaxIndex)
+for i = 1:(iRVActIndex-iMaxIndex)
     %Calculate point y = mx + b
     iPointIndex = iMaxIndex+i;
     aStraightLine(iPointIndex-iStartFrame) = m*iPointIndex + b;
-    aNewData(iPointIndex-iStartFrame) = double(squeeze(cmosData(xIndex,yIndex,iPointIndex))) + aStraightLine(iMaxIndex-iStartFrame) - aStraightLine(iPointIndex-iStartFrame);
+    aNewData(iPointIndex-iStartFrame) = double(squeeze(cmosData(xIndex,yIndex,iPointIndex))) + aStraightLine(iMaxIndex+1-iStartFrame) - aStraightLine(iPointIndex-iStartFrame);
 end
-aNewData(iPointIndex-iStartFrame:end) = double(squeeze(cmosData(xIndex,yIndex,iRVActIndex-1:iEndFrame)));
+aNewData(iPointIndex+1-iStartFrame:end) = double(squeeze(cmosData(xIndex,yIndex,iRVActIndex:iEndFrame)));
 oCorrectedLine = line(iStartFrame:1:iEndFrame, aStraightLine);
 set(oCorrectedLine,'color', 'c', 'parent',oDataAxes, 'linewidth',2);
 oCorrectedData = line(iStartFrame:1:iEndFrame, aNewData);
 set(oCorrectedData,'color', 'g', 'parent',oDataAxes, 'linewidth',2);
 
-% % % Initialise arrays
+% % Initialise arrays
 % aStraightLine = nan(1,iLength);
 % % % Loop through all pixels
 % NewcmosData = cmosData;
@@ -86,8 +86,8 @@ set(oCorrectedData,'color', 'g', 'parent',oDataAxes, 'linewidth',2);
 %         [dMaxVal iMaxIndex] = max(double(squeeze(cmosData(i,j,iStartFrame:iEndFrame))));
 %         iMaxIndex = iMaxIndex + iStartFrame;
 %         %         disp([iMaxIndex, i, j]);
-%         [dMinVal iMinIndex] = min(double(squeeze(cmosData(i,j,iMaxIndex:iMaxIndex+100))));
-%         iMinIndex = iMinIndex + iStartFrame;
+%         [dMinVal iMinIndex] = min(double(squeeze(cmosData(i,j,325:500))));
+%         iMinIndex = iMinIndex + 325;
 %         iRVActIndex= iMinIndex;
 %         % %         Find the mean of the diastolic potential as an estimate of the baseline
 %         dBaseline = mean(double(squeeze(cmosData(i,j,275:325))));
@@ -95,11 +95,11 @@ set(oCorrectedData,'color', 'g', 'parent',oDataAxes, 'linewidth',2);
 %         m = (double(cmosData(i,j,iRVActIndex))-dBaseline) / (iRVActIndex-iMaxIndex);
 %         b = dBaseline - m*iMaxIndex;
 %         
-%         for k = 0:(iRVActIndex-iMaxIndex)
+%         for k = 1:(iRVActIndex-iMaxIndex)
 %             % %             Calculate point y = mx + b
 %             iPointIndex = iMaxIndex+k;
 %             aStraightLine(iPointIndex-iStartFrame) = m*iPointIndex + b;
-%             aNewData = double(squeeze(cmosData(i,j,iPointIndex))) + aStraightLine(iMaxIndex-iStartFrame) - aStraightLine(iPointIndex-iStartFrame);
+%             aNewData = double(squeeze(cmosData(i,j,iPointIndex))) + aStraightLine(iMaxIndex+1-iStartFrame) - aStraightLine(iPointIndex-iStartFrame);
 %             NewcmosData(i,j,iPointIndex) = int32(aNewData);
 %         end
 %         
