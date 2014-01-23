@@ -1,4 +1,4 @@
- function CMOSwriter(sHeaderFile,sSavePath,cmosData)
+ function CMOSwriter(sHeaderFile,sSavePath,cmosData,iStartFrame)
 %This function writes out a series of rsd files containing the input data cmosData for use with BVAna
 
 %Open the header file
@@ -40,72 +40,77 @@ num = length(dataPaths);
 
 %Loop through each data file, read in the data and write out a combination
 %of this and the new data from cmosData
-k=1;
 
+%find the data files we need
+iFileNumber = idivide(int32(iStartFrame),int32(256)) + 1;
+iStartIndex = 12800*(iStartFrame - (iFileNumber-1)*256 - 1);
+iDataFileNumber = iFileNumber + 1;
 %Open the first file to get the data size
-fpath = fullfile(pathstr,dataPaths{2});
+fpath = fullfile(pathstr,dataPaths{iDataFileNumber});
 fid=fopen(fpath,'r','l');       % use little-endian format
 fdata=fread(fid,'*int16')'; %
 fclose(fid);
 %Make copy of the data
 aDataToWrite = fdata;
-iNewDataIndex = 12800*(210-1);
+iNewDataIndex = iStartIndex;
 cmosData = int16(cmosData);
 %Loop through the frames
-for n = 210:256
+for n = iStartFrame:(iFileNumber)*256
     %Loop through the columns
     for i = 1:100
         aDataToWrite(iNewDataIndex+21:iNewDataIndex+120) = -cmosData(i,:,n);
         iNewDataIndex = iNewDataIndex+128;
     end
 end
-fpath = fullfile(sSavePath,dataPaths{2});
+fpath = fullfile(sSavePath,dataPaths{iDataFileNumber});
 fid = fopen(fpath,'w','l');
 fwrite(fid,aDataToWrite,'int16','l');
 disp(['Saving ',fpath])
 fclose(fid);
 
+iDataFileNumber = iDataFileNumber + 1;
 %Open the second file to get the data size
-fpath = fullfile(pathstr,dataPaths{3});
+fpath = fullfile(pathstr,dataPaths{iDataFileNumber});
 fid=fopen(fpath,'r','l');       % use little-endian format
 fdata=fread(fid,'*int16')'; %
 fclose(fid);
 %Make copy of the data
 aDataToWrite = fdata;
-iNewDataIndex = 1;
+iNewDataIndex = 0;
 cmosData = int16(cmosData);
 %Loop through the frames
-for n = 257:512
+for n = (iFileNumber)*256+1:(iFileNumber+1)*256
     %Loop through the columns
     for i = 1:100
         aDataToWrite(iNewDataIndex+21:iNewDataIndex+120) = -cmosData(i,:,n);
         iNewDataIndex = iNewDataIndex+128;
     end
 end
-fpath = fullfile(sSavePath,dataPaths{3});
+fpath = fullfile(sSavePath,dataPaths{iDataFileNumber});
 fid = fopen(fpath,'w','l');
 fwrite(fid,aDataToWrite,'int16','l');
 disp(['Saving ',fpath])
 fclose(fid);
 
+iDataFileNumber = iDataFileNumber + 1;
 %Open the third file to get the data size
-fpath = fullfile(pathstr,dataPaths{4});
+fpath = fullfile(pathstr,dataPaths{iDataFileNumber});
 fid=fopen(fpath,'r','l');       % use little-endian format
 fdata=fread(fid,'*int16')'; %
 fclose(fid);
 %Make copy of the data
 aDataToWrite = fdata;
-iNewDataIndex = 1;
+iNewDataIndex = 0;
 cmosData = int16(cmosData);
 %Loop through the frames
-for n = 513:598
+for n = (iFileNumber+1)*256+1:(iFileNumber+2)*256
     %Loop through the columns
     for i = 1:100
         aDataToWrite(iNewDataIndex+21:iNewDataIndex+120) = -cmosData(i,:,n);
         iNewDataIndex = iNewDataIndex+128;
     end
 end
-fpath = fullfile(sSavePath,dataPaths{4});
+fpath = fullfile(sSavePath,dataPaths{iDataFileNumber});
 fid = fopen(fpath,'w','l');
 fwrite(fid,aDataToWrite,'int16','l');
 disp(['Saving ',fpath])
