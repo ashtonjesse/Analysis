@@ -1032,7 +1032,8 @@ classdef Unemap < BasePotential
         function oMapData = PrepareActivationMap(oUnemap, dInterpDim, sPlotType, iEventID)
             %Get the inputs for a mapping call for activation times,
             %returning a struct containing the x and y locations of the
-            %electrodes and the activation times for each.
+            %electrodes and the activation times for each. dInterpDim is
+            %the number of interpolation points in each direction
             
             oWaitbar = waitbar(0,'Please wait...');
             %If no eventID has been specified then default to 1

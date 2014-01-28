@@ -32,29 +32,36 @@ function [CV,Vect] = ComputeCV(Locs,AT,ns)
   
   % Loop over the AT points
   for i=1:N
-      
-      % Find the relative distance vectors between point of interest and
-      % all other points
-      RelativeDistVectors = Locs-repmat(Locs(i,:),[N,1]);
-      
-      % Find nearest ns supporting points
-      [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
-      SupportPoints = sort(SupportPoints(1:(ns+1)),1,'ascend');
-      
-      % Calculate gradient approximation using a pseudoinverse of the
-      % supporting relative distance vectors
-      G = pinv(RelativeDistVectors(SupportPoints,:))*(AT(SupportPoints)-repmat(AT(i),[ns+1,1]));
-      
-      % Find the CV
-      NG = norm(G);
-      if NG >= Tol
-        CV(i) = 1.0/NG;
-        Vect(i,:) = G/NG;
+      %Check if the central point is an accepted electrode and skip if not
+      if ~isinf(AT(i))
+
+          % Find the relative distance vectors between point of interest and
+          % all other points
+          RelativeDistVectors = Locs-repmat(Locs(i,:),[N,1]);
+          
+          % Find nearest ns supporting points
+          [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
+          SupportPoints = sort(SupportPoints(1:(ns+1)),1,'ascend');
+          % Only include supportpoints that are 
+          SupportPoints = SupportPoints(~isinf(AT(SupportPoints)));
+          % Calculate gradient approximation using a pseudoinverse of the
+          % supporting relative distance vectors of points that actually
+          % exist
+          G = pinv(RelativeDistVectors(SupportPoints,:))*(AT(SupportPoints)-repmat(AT(i),[length(SupportPoints),1]));
+          
+          % Find the CV
+          NG = norm(G);
+          if NG >= Tol
+              CV(i) = 1.0/NG;
+              Vect(i,:) = G/NG;
+          else
+              CV(i) = NaN;
+              Vect(i,:) = NaN*ones(size(G));
+          end;
       else
-        CV(i) = NaN;
-        Vect(i,:) = NaN*ones(size(G));
-      end;
-      
+          CV(i) = NaN;
+          Vect(i,:) = NaN*ones(size(G));
+      end
   end;
 
 return;

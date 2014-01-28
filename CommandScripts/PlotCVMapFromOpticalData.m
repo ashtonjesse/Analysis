@@ -1,0 +1,1 @@
+%Read in file and get data
