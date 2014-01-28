@@ -29,7 +29,7 @@ for i = 1:rowdim;
     tline = fgets(fid);
     [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
     aData = str2double(splitstring);
-    aActivationTimes(i,:,k) = aData;
+    aActivationTimes(i,:) = aData;
 end
 %get and discard line
 tline = fgets(fid);
@@ -38,7 +38,7 @@ for i = 1:rowdim;
     tline = fgets(fid);
     [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
     aData = str2double(splitstring);
-    aRepolarisationTimes(i,:,k) = aData;
+    aRepolarisationTimes(i,:) = aData;
 end
 %get and discard line
 tline = fgets(fid);
@@ -47,10 +47,9 @@ for i = 1:rowdim;
     tline = fgets(fid);
     [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
     aData = str2double(splitstring);
-    aAPDs(i,:,k) = aData;
+    aAPDs(i,:) = aData;
 end
-[pathstr, name, ext, versn] = fileparts(aFileFull{k});
-fprintf('Got data for file %s\n',name);
+fprintf('Got data for file %s\n',sFilePath);
 fclose(fid);
 
 end
