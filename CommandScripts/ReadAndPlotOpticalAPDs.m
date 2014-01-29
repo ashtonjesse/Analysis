@@ -15,9 +15,9 @@ rowdim = 100;
 coldim = 101;
 HeaderInfo = struct('startframe',0,'endframe',0,'ActivationTimeMode','maximal dV/dt','RepolarisationMark','%');
 aHeaderInfo = repmat(HeaderInfo,length(aFileFull),1);
-aActivationTimes = zeros(rowdim,coldim,length(aFileFull),'int16');
-aRepolarisationTimes = zeros(rowdim,coldim,length(aFileFull),'int16');
-aAPDs = zeros(rowdim,coldim,length(aFileFull),'int16');
+aActivationTimes = zeros(rowdim,coldim,length(aFileFull),'double');
+aRepolarisationTimes = zeros(rowdim,coldim,length(aFileFull),'double');
+aAPDs = zeros(rowdim,coldim,length(aFileFull),'double');
 
 %loop through the list of files and read in the data
 for k = 1:length(aFileFull)

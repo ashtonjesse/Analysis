@@ -33,8 +33,8 @@ function [CV,Vect] = ComputeCV(Locs,AT,ns)
   % Loop over the AT points
   for i=1:N
       %Check if the central point is an accepted electrode and skip if not
-      if ~isinf(AT(i))
-
+      %       if ~isinf(AT(i))
+      
           % Find the relative distance vectors between point of interest and
           % all other points
           RelativeDistVectors = Locs-repmat(Locs(i,:),[N,1]);
@@ -58,10 +58,7 @@ function [CV,Vect] = ComputeCV(Locs,AT,ns)
               CV(i) = NaN;
               Vect(i,:) = NaN*ones(size(G));
           end;
-      else
-          CV(i) = NaN;
-          Vect(i,:) = NaN*ones(size(G));
-      end
+      
   end;
 
 return;

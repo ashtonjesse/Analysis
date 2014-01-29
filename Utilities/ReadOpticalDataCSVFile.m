@@ -5,9 +5,9 @@ function [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOptical
 
 %Initialise the output arrays
 aHeaderInfo = struct('startframe',0,'endframe',0,'ActivationTimeMode','maximal dV/dt','RepolarisationMark','%');
-aActivationTimes = zeros(rowdim,coldim,'int16');
-aRepolarisationTimes = zeros(rowdim,coldim,'int16');
-aAPDs = zeros(rowdim,coldim,'int16');
+aActivationTimes = zeros(rowdim,coldim,'double');
+aRepolarisationTimes = zeros(rowdim,coldim,'double');
+aAPDs = zeros(rowdim,coldim,'double');
 
 fid = fopen(sFilePath,'r');
 %scan the header information in
