@@ -6,10 +6,10 @@ clear all
 % interpolation field.
 disp('loading unemap...');
 oUnemap = ...
-GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\pa_baropacetest001_unemap2.mat');
+GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130904\baro001\pabaro001_unemap.mat');
 disp('done loading');
 %
-oMapData = oUnemap.PrepareActivationMap();
+oMapData = oUnemap.PrepareActivationMap(50, 'Contour',1);
 %
 r2 = 0:0.001:0.02;
 
@@ -48,10 +48,10 @@ end
 
 %Get the interpolated points array that will be used to assess the accuracy
 %of the interpolation
-xlin = linspace(min(oMapData.x(~isnan(oMapData.z(:,1)))), ...
-    max(oMapData.x(~isnan(oMapData.z(:,1)))),50);
-ylin = linspace(min(oMapData.y(~isnan(oMapData.z(:,1)))), ...
-    max(oMapData.y(~isnan(oMapData.z(:,1)))),50);
+xlin = linspace(min(oMapData.x(~isnan(oMapData.Beats(1).z(:,1)))), ...
+    max(oMapData.x(~isnan(oMapData.Beats(1).z(:,1)))),50);
+ylin = linspace(min(oMapData.y(~isnan(oMapData.Beats(1).z(:,1)))), ...
+    max(oMapData.y(~isnan(oMapData.Beats(1).z(:,1)))),50);
 
 %Also the indexes in the interpolation array of the points that are closest to
 %the recording points - will use to calculate the error
