@@ -53,7 +53,7 @@ classdef ImageStack < BaseEntity
             elseif isfield(oData,'aImageData')
                 %this has been created manually
                 %convert the data into Image entities
-                oStack = GetImageStackFromDataFile(oStack, sFile, 'aImageData');
+                oStack = CreateStackFromData(oStack, oData, 'aImageData');
             elseif isfield(oData,'imvolffBW')
                 %this has been created using VasEx
                 %convert the data into Image entities

@@ -1,4 +1,4 @@
-function [CV,Vect] = ComputeCV(Locs,AT,ns)
+function [CV,Vect,ATGrad] = ReComputeCV(Locs,AT,ns,BandProportion)
 
   % This function computes a local CV estimate from scattered AT data at
   % x, y (and z) positions. The number of supporting points used to
@@ -27,14 +27,16 @@ function [CV,Vect] = ComputeCV(Locs,AT,ns)
   % Initialize
   CV = zeros(size(AT));
   Vect = zeros(size(Locs));
+  ATGrad = zeros(size(AT));
   N = length(AT);
   Tol = 1e-6;
+  
   
   % Loop over the AT points
   for i=1:N
       %Check if the central point is an accepted electrode and skip if not
-      %       if ~isinf(AT(i))
-      
+      if ~isinf(AT(i))
+
           % Find the relative distance vectors between point of interest and
           % all other points
           RelativeDistVectors = Locs-repmat(Locs(i,:),[N,1]);
@@ -42,8 +44,17 @@ function [CV,Vect] = ComputeCV(Locs,AT,ns)
           % Find nearest ns supporting points
           [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
           SupportPoints = sort(SupportPoints(1:(ns+1)),1,'ascend');
-          % Only include supportpoints that are 
+          % Only include support points that have a non-infinite AT
           SupportPoints = SupportPoints(~isinf(AT(SupportPoints)));
+          % Find significant quadrants of support points around point of
+          % interest - only works in 2D
+          XBand = BandProportion*(max(RelativeDistVectors(SupportPoints,1))-min(RelativeDistVectors(SupportPoints,1)));
+          YBand = BandProportion*(max(RelativeDistVectors(SupportPoints,2))-min(RelativeDistVectors(SupportPoints,2)));
+          quadrant = [(RelativeDistVectors(SupportPoints,1) >  XBand & RelativeDistVectors(SupportPoints,2) >  YBand),...
+                      (RelativeDistVectors(SupportPoints,1) < -XBand & RelativeDistVectors(SupportPoints,2) >  YBand),...
+                      (RelativeDistVectors(SupportPoints,1) >  XBand & RelativeDistVectors(SupportPoints,2) < -YBand),...
+                      (RelativeDistVectors(SupportPoints,1) < -XBand & RelativeDistVectors(SupportPoints,2) < -YBand)];
+          
           % Calculate gradient approximation using a pseudoinverse of the
           % supporting relative distance vectors of points that actually
           % exist
@@ -51,15 +62,20 @@ function [CV,Vect] = ComputeCV(Locs,AT,ns)
           
           % Find the CV
           NG = norm(G);
-          if NG >= Tol
+          if NG >= Tol && (min(sum(quadrant,1)) >= 1) % points must exist in all four quadrants
               CV(i) = 1.0/NG;
               Vect(i,:) = G/NG;
+              ATGrad(i) = NG;
           else
               CV(i) = NaN;
               Vect(i,:) = NaN*ones(size(G));
+              ATGrad(i) = NaN;
           end;
-      
+      else
+          CV(i) = NaN;
+          Vect(i,:) = NaN*ones(size(G));
+          ATGrad(i) = NaN;
+      end
   end;
 
-    
 return;

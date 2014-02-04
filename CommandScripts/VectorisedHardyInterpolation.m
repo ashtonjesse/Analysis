@@ -1,27 +1,27 @@
 % Read in file and get data
-clear all;
+% clear all;
 close all;
 % % Define inputs
 sDataSource = 'optical';
 switch (sDataSource)
     case 'optical'
-        sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro003\0114_01_ApdMap50.csv';
+%         sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro003\0114_01_ApdMap50.csv';
         rowdim = 100;
         coldim = 101;
         % % % get data
-        [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(sFilesPath,rowdim,coldim);
-        aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
+%         [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(sFilesPath,rowdim,coldim);
+%         aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
         % % % get coords of data points
         [rowIndices colIndices] = find(aActivationTimes > 0);
         AT = aActivationTimes(aActivationTimes > 0);
         % % % % Apply scale
-        dRes = 0.5;
-        dInterpDim = dRes/2;
+        dRes = 0.25;
+        dInterpDim = dRes/1;
         rowlocs = dRes .* rowIndices;
         collocs = dRes .* colIndices;
         % Find the boundary of the recording points by converting to logical array
         aMask = logical(aActivationTimes + 1);
-        aMask = imresize(aMask,'scale',2,'method', 'bicubic');
+        aMask = imresize(aMask,'scale',1,'method', 'bicubic');
         %Dilate this mask and subtract the original to just leave the boundary
         aMask = logical(filter2(true(3),aMask)) - aMask;
         % se = strel('square',3);
@@ -131,11 +131,11 @@ aPoints = (repmat(rowlocs,1,size(rowlocs,1)) - repmat(rowlocs',size(rowlocs,1),1
     (repmat(collocs,1,size(collocs,1)) - repmat(collocs',size(collocs,1),1)).^2;
 
 
-% figure(2);
-% scatter(aXArray,aYArray);
-% hold on;
-% scatter(aXArray(aInBoundaryPoints),aYArray(aInBoundaryPoints),'filled');
-% hold off;
+figure(2);
+scatter(aXArray,aYArray);
+hold on;
+scatter(aXArray(aInBoundaryPoints),aYArray(aInBoundaryPoints),'filled');
+hold off;
 %Only keep these mesh points
 aMeshPoints = aMeshPoints(aInBoundaryPoints,:);
 %Find the distance from each interpolation point to every data point
@@ -209,29 +209,19 @@ set(oTitle,'units','normalized');
 set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
 axis(oMapAxes, 'equal');
 
-
-% visualize AT
-x = rowlocs;
-y = collocs;
-F = TriScatteredInterp(x,y,AT);
-[xx,yy]=ndgrid(min(x):0.2:max(x),min(y):0.2:max(y));
-ATI = F(xx,yy);
-figure(4); mesh(xx,yy,ATI); hold on; 
-scatter3(x,y,AT,40,AT,'filled'); hold off; axis tight; colorbar;
-xlabel('x'); ylabel('y'); zlabel('AT'); title('Input AT samples and function');
-% visualize CV
-x = rowlocs;
-y = collocs;
-AT = CVApprox;
-F = TriScatteredInterp(x,y,AT);
-[xx,yy]=ndgrid(min(x):0.2:max(x),min(y):0.2:max(y));
-ATI = F(xx,yy);
-figure(5); mesh(xx,yy,ATI); hold on; 
-scatter3(x,y,AT,40,AT,'filled'); hold off; axis tight; colorbar;
-xlabel('x'); ylabel('y'); zlabel('AT'); title('CV function');
-aDataToPlot = aRMS;
-[C iMinIndex] = min(aDataToPlot);
-figure();
-plot(r2,aDataToPlot);
-hold on
-plot(r2(iMinIndex),C,'r+');
+% % visualize CV
+% x = rowlocs;
+% y = collocs;
+% AT = CVApprox;
+% F = TriScatteredInterp(x,y,AT);
+% [xx,yy]=ndgrid(min(x):0.2:max(x),min(y):0.2:max(y));
+% ATI = F(xx,yy);
+% figure(5); mesh(xx,yy,ATI); hold on; 
+% scatter3(x,y,AT,40,AT,'filled'); hold off; axis tight; colorbar;
+% xlabel('x'); ylabel('y'); zlabel('AT'); title('CV function');
+% aDataToPlot = aRMS;
+% [C iMinIndex] = min(aDataToPlot);
+% figure();
+% plot(r2,aDataToPlot);
+% hold on
+% plot(r2(iMinIndex),C,'r+');

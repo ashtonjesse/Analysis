@@ -28,8 +28,8 @@ classdef BaseImage < BaseEntity
                         end
                     else
                         %Else the fields have been supplied as arguments
-                        oImage.Data = varargin{2};
-                        oImage.Name = varargin{3};
+                        oImage.Data = varargin{1};
+                        oImage.Name = varargin{2};
                         oImage.sClass = class(oImage.Data);
                     end
                 end
