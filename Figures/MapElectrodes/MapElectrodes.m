@@ -148,7 +148,9 @@ classdef MapElectrodes < SubFigure
             
 %                         %Save series of activation maps
 %             oFigure.PlotType = 'Activation2DContour';
-%             for i = 1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+%             %             for i =
+%             %             1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+%             for i = 29:52;
 %                 %Get the full file name and save it to string attribute
 %                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
 %                 oFigure.oParentFigure.SelectedBeat = i;
@@ -156,7 +158,7 @@ classdef MapElectrodes < SubFigure
 %                 drawnow; pause(.2);
 %                 oFigure.PrintFigureToFile(sLongDataFileName);
 %                 sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',sLongDataFileName)});
-%                 sChopString = strcat(sChopString, {' -gravity South -chop 0x100'}, {sprintf(' %s',sLongDataFileName)});
+%                 sChopString = strcat(sChopString, {' -gravity South -chop 0x90'}, {sprintf(' %s',sLongDataFileName)});
 %                 sStatus = dos(char(sChopString{1}));
 %                 if sStatus
 %                     break
@@ -181,7 +183,7 @@ classdef MapElectrodes < SubFigure
                     %Loop through files adding them to list
                     sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
                 end
-                sDosString = strcat(sDosString, {' -quality 98 -tile 8x3 -geometry 561x617+0+0 '}, sPathName, 'montage.png');
+                sDosString = strcat(sDosString, {' -quality 98 -tile 8x3 -geometry 355x478+0+0 '}, sPathName, 'montage.png');
             else
                 if (~ischar(sFileName) && ~ischar(sPathName))
                     return
@@ -493,11 +495,11 @@ classdef MapElectrodes < SubFigure
                      if ~oElectrodes(i).Accepted
                          %plot the point as red
                          plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'r.', ...
-                             'MarkerSize', 14);
+                             'MarkerSize', 1.5);
                      else
                          %else just plot black
                          plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'k.', ...
-                             'MarkerSize', 14);
+                             'MarkerSize', 1.5);
                      end
                  end
              end
@@ -564,6 +566,7 @@ classdef MapElectrodes < SubFigure
                              oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
                              oTitle = get(oColorBar, 'title');
                              set(oTitle,'units','normalized');
+                             set(oTitle,'fontsize',12);
                              set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                          end
                      else
@@ -576,6 +579,7 @@ classdef MapElectrodes < SubFigure
                          else
                              oTitle = get(oHandle, 'title');
                              set(oTitle,'units','normalized');
+                             set(oTitle,'fontsize',12);
                              set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
                          end
                      end
@@ -587,11 +591,11 @@ classdef MapElectrodes < SubFigure
                      oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
                      if oFigure.ElectrodeMarkerVisible
                          plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                             'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                             'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
                      end
                      [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
                      plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
+                         'MarkerSize',6,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
                      hold(oMapAxes,'off');
                      
                  case 'Activation2DScatter'
@@ -608,10 +612,13 @@ classdef MapElectrodes < SubFigure
                      set(oTitle,'units','normalized');
                      set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
              end
-             
+             set(oMapAxes,'fontsize',8);
+             %              set(oMapAxes,'ytick',1:5);
+             %              set(get(oMapAxes,'ylabel'),'string','Length (mm)');
+             set(oMapAxes,'ytick',[],'xtick',[]);
              oTitle = title(oMapAxes,sprintf('%d',iBeat));
              set(oTitle,'units','normalized');
-             set(oTitle,'fontsize',26,'fontweight','bold');
+             set(oTitle,'fontsize',22,'fontweight','bold');
          end
          
          function PlotPotential(oFigure, oMapAxes)

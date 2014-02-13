@@ -424,6 +424,9 @@ classdef BeatPlot < SubFigure
              %Rename it as this is deleted after each load and hide
              %ticks
              set(oSignalPlot, 'Tag', 'SignalPlot', 'NextPlot', 'replacechildren');
+%              set(oSignalPlot,'xticklabel',0:5:30);
+             set(get(oSignalPlot,'xlabel'),'string','Time (ms)');
+             set(oSignalPlot,'fontsize',8);
              cla(oSignalPlot);
              
              %Get the handle to current envelope plot

@@ -143,6 +143,7 @@ end
 set(ax0,'units',au)
 set(ax,'units','pixel','position',axPos)
 set(ax,'units','normalized')
+set(ax,'fontsize',12);
 
 % find start and end indices of L:
 i1=find(L>mv); i1=i1(1)-1;
@@ -211,7 +212,8 @@ if isVertical
   if length(L(a:b+1)) <=10
     yt=L(a:b+1);
   else
-    yt=intersect(yt,L(a:b+1));
+    yt=intersect(single(yt),single(L(a:b+1)));
+    yt = double(yt);
   end
   if isLinear
     ytl=yt;
@@ -227,7 +229,8 @@ else
   if length(L(a:b+1)) <=10
     xt=L(a:b+1);
   else
-    xt=intersect(xt,L(a:b+1));
+    xt=intersect(single(xt),single(L(a:b+1)));
+    xt = double(xt);
   end
   if isLinear
     xtl=xt;

@@ -1,42 +1,33 @@
-clear all;
-
-disp('loading unemap...');
-oUnemap1 = ...
-GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130904\baro001\pabaro001_unemap.mat');
-oUnemap2 = ...
-GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130221\chemotest001\pa_chemotest001_unemap.mat');
-disp('done loading');
-
-for i = 1:length(oUnemap2.Electrodes)
-    for j = 1:length(oUnemap1.Electrodes)
-        if strcmp(oUnemap2.Electrodes(i).Name, oUnemap1.Electrodes(j).Name)
-            oUnemap2.Electrodes(i).Location = oUnemap1.Electrodes(j).Location;
-        end
-    end
-    
-%     switch (oUnemap.Electrodes(i).Name)
-%         case {'22-20','23-01','23-06','23-11','23-16','23-21','24-02','24-07','24-12','24-17','24-22','25-03','25-08','25-13','25-18','25-23','26-04','26-09','26-14'}
-%             if isfield(oUnemap.Electrodes(i),'SignalEvent')
-%                 oUnemap.Electrodes(i).SignalEvent = oUnemap.Electrodes(i+5).SignalEvent;
-%             end
-%             oUnemap.Electrodes(i).Potential = oUnemap.Electrodes(i+5).Potential;
-%             if isfield(oUnemap.Electrodes(i),'Processed')
-%                 oUnemap.Electrodes(i).Processed = oUnemap.Electrodes(i+5).Processed;
-%             end
-%         case {'26-19','12-23','13-04'}
-%             oUnemap.Electrodes(i).Accepted = 0;
+% % clear all;
+% sFilePath = 'G:\PhD\Experiments\Bordeaux\Data\20131201\RA1201-117_refd_spatial3x3_cubic3x3_ROI1-wave.csv';
+% 
+% %open the file
+% fid = fopen(sFilePath,'r');
+% %scan the header information in
+% for i = 1:10;
+%     tline = fgets(fid);
+%      [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
+%     switch (splitstring{1})
+%         case 'frm num'
+%             iNumFrames = str2double(splitstring{2});
 %     end
-end
+% end
+% aData = zeros(iNumFrames,2);
+% %Get activation times
+% for i = 1:iNumFrames;
+%     tline = fgets(fid);
+%     [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
+%     aData(i,1) = str2double(splitstring{1});
+%     aData(i,2) = str2double(splitstring{2});
+% end
+% fclose(fid);
 
-%Call built-in file dialog to select filename
-[sDataFileName,sDataPathName]=uiputfile('*.mat','Select a location for the unemap .mat file');
-%Make sure the dialogs return char objects
-if (~ischar(sDataFileName))
-    return
-end
+% aRateData = NaN(1,size(aData,1));
+% %Loop through the peaks and insert into aRateTrace
+% for i = 1:size(aPeaks,1)
+%     aRateData(aLocs(i,1):aLocs(i,2)-2) = aRates(i);
+% end
 
-%Get the full file name
-sLongDataFileName=strcat(sDataPathName,sDataFileName);
-
-%Save
-oUnemap2.Save(sLongDataFileName);
+figure();
+oMainAxes = axes();
+plotyy(oMainAxes,aData(:,1),aData(:,2),aData(:,1),aRateData);
