@@ -436,7 +436,7 @@ classdef BeatPlot < SubFigure
              
              %Get the handle to current slope plot
              oSlopePlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'SlopePlot');
-             set(oSlopePlot,'XTick',[],'YTick',[],'Tag', 'SlopePlot', 'NextPlot', 'replacechildren');
+             set(oSlopePlot,'XTick',[],'YColor','r','Tag', 'SlopePlot', 'NextPlot', 'replacechildren');
              cla(oSlopePlot);
              
              %Get the handle to current signalevent plot

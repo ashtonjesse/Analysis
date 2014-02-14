@@ -1102,55 +1102,43 @@ classdef Unemap < BasePotential
                     %coefficients
                     %First solve the inverse problem of ActTimes(p) = sum(ci * sqrt((p-pi)^2 + r2))
                     % I.e x = A^-1 * b where x is ci.
-                    aPoints = zeros(length(aElectrodes),length(aElectrodes));
-                    %...and turn the coords into a 2 column matrix
-                    aCoords = zeros(length(aElectrodes),2);
-                   
-                    for m = 1:length(aElectrodes);
-                        for i = 1:length(aElectrodes);
-                            %Calc the euclidean distance between each point and every other
-                            %point
-                            aPoints(m,i) =  (aElectrodes(m).Coords(1) - aElectrodes(i).Coords(1))^2 + ...
-                                (aElectrodes(m).Coords(2) - aElectrodes(i).Coords(2))^2;
-                        end
-                        %Save the coordinates
-                        aCoords(m,1) = aElectrodes(m).Coords(1);
-                        aCoords(m,2) = aElectrodes(m).Coords(2);
-                    end
-                    
+                    aCoords = cell2mat({aElectrodes(:).Coords});
+                    aCoords = aCoords';
+                    rowlocs = aCoords(:,1);
+                    collocs = aCoords(:,2);
+                    dInterpDim = 100;
                     %Get the interpolated points array
-                    xlin = linspace(min(aCoords(:,1)), max(aCoords(:,1)), dInterpDim);
-                    ylin = linspace(min(aCoords(:,2)), max(aCoords(:,2)), dInterpDim);
-                    
-                    %Also the indexes in the interpolation array of the points that are closest to
-                    %the recording points - will use to calculate the error
-                    xIndices = zeros(length(aElectrodes),1);
-                    yIndices = zeros(length(aElectrodes),1);
-                    %Make an array of arbitrarily large numbers to be replaced with minimums
-                    aMinPoints = ones(1,length(aElectrodes))*2000;
-                    aInterpPoints = zeros(dInterpDim*dInterpDim,length(aElectrodes));
-                    
-                    for i = 1:length(aElectrodes);
-                        for m = 1:length(xlin)
-                            for n = 1:length(ylin)
-                                aInterpPoints((m-1)*length(ylin)+n,i) =  (xlin(m) - aElectrodes(i).Coords(1))^2 + ...
-                                    (ylin(n) - aElectrodes(i).Coords(2))^2;
-                                if aInterpPoints((m-1)*length(xlin)+n,i) < aMinPoints(1,i)
-                                    aMinPoints(1,i) = aInterpPoints((m-1)*length(xlin)+n,i);
-                                    xIndices(i) = m;
-                                    yIndices(i) = n;
-                                end
-                            end
-                        end
-                    end
-                    
+                    [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
+                    aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
+                    aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
+                    aMeshPoints = [aXArray,aYArray];
+                    %Find which points lie within the area of the array
+                    DT = DelaunayTri(aCoords);
+                    aIndices = pointLocation(DT,aMeshPoints);
+                    aIndices(isnan(aIndices)) = 0;
+                    aInBoundaryPoints = logical(aIndices);
+                    aMeshPoints = aMeshPoints(aInBoundaryPoints,:);
+                    clear aIndices;
+                    %Get the points array that will be used to solve for the interpolation
+                    %coefficients
+                    %First solve the inverse problem of ActTimes(p) = sum(ci * sqrt((p-pi)^2 + r2))
+                    % I.e x = A^-1 * b where x is ci.
+                    aPoints = (repmat(rowlocs,1,size(rowlocs,1)) - repmat(rowlocs',size(rowlocs,1),1)).^2 + ...
+                        (repmat(collocs,1,size(collocs,1)) - repmat(collocs',size(collocs,1),1)).^2;
+                    %Find the distance from each interpolation point to every data point
+                    aInterpPoints = (repmat(aMeshPoints(:,1),1,size(rowlocs,1)) - repmat(rowlocs',size(aMeshPoints(:,1)),1)).^2 + ...
+                        (repmat(aMeshPoints(:,2),1,size(collocs,1)) - repmat(collocs',size(aMeshPoints(:,2),1),1)).^2;
                     %Initialise the map data struct
-                    oMapData = struct('x', xlin, 'y', ylin, 'r2', 0.005);
+                    oMapData = struct('x', xlin(1,:)', 'y', ylin(:,1), 'Boundary', aInBoundaryPoints, 'r2', 0.01);
                     %Finish calculating the points array
                     oMapData.Points = sqrt(aPoints + oMapData.r2);
                     %Finish calculating the interpolation points array
                     oMapData.InterpPoints = sqrt(aInterpPoints + oMapData.r2);
-                    oMapData.Beats = struct();
+                    %Initialise the Beats struct
+                    aData = struct('FullActivationTimes',zeros(1, length(oUnemap.Electrodes)),'ActivationTimes',...
+                        zeros(1, length(oUnemap.Electrodes)),'Coefs',zeros(size(aInterpPoints,2),1),'Interpolated', ...
+                        zeros(size(aInterpPoints,2),1),'z',NaN(size(aXArray,1),1),'RMS',0);
+                    oMapData.Beats = repmat(aData,1,size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1));
                     %Get the electrode processed data
                     aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(aElectrodes));
                     aOutActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(oUnemap.Electrodes));
@@ -1163,16 +1151,12 @@ classdef Unemap < BasePotential
                             aActivationIndexes(:,m) = aElectrodes(m).SignalEvent(iEventID).Index;
                             aOutActivationIndexes(:,p) =  aElectrodes(m).SignalEvent(iEventID).Index + oUnemap.Electrodes(p).Processed.BeatIndexes(:,1);
                             aOutActivationTimes(:,p) = oUnemap.TimeSeries(aOutActivationIndexes(:,p));
-                            
                         else
                             %hold the unaccepted electrode places with inf
                             aOutActivationTimes(:,p) =  Inf;
                         end
                     end
                     aActivationTimes = zeros(size(aActivationIndexes));
-                    %initialise an RMS array
-                    aRMS = zeros(length(aElectrodes),1);
-                    
                     %Loop through the beats
                     for k = 1:size(aActivationIndexes,1)
                         %Get the activation time fields for all time points during this
@@ -1202,16 +1186,16 @@ classdef Unemap < BasePotential
                         %Get the interpolated data via matrix multiplication
                         oMapData.Beats(k).Interpolated = oMapData.InterpPoints * oMapData.Beats(k).Coefs;
                         %Reconstruct field
-                        oMapData.Beats(k).z = zeros(dInterpDim, dInterpDim);
-                        for m = 1:dInterpDim
-                            oMapData.Beats(k).z(:,m) = oMapData.Beats(k).Interpolated((m-1)*dInterpDim+1:m*dInterpDim,1);
-                        end
-                        %Calc the RMS error for this field
-                        for i = 1:length(aRMS)
-                            aRMS(i) =  (oMapData.Beats(k).ActivationTimes(i) -  oMapData.Beats(k).z(yIndices(i),xIndices(i)))^2;
-                        end
-                        oMapData.Beats(k).RMS = sqrt(sum(aRMS)/length(aRMS));
-                        
+                        oMapData.Beats(k).z(oMapData.Boundary) = oMapData.Beats(k).Interpolated;
+                        oMapData.Beats(k).z = reshape(oMapData.Beats(k).z,size(xlin,1),size(xlin,2));
+                        %Find the indices of the closest interpolation points to each recording
+                        %point
+                        [Vals aMinIndices] = min(oMapData.InterpPoints,[],1);
+                        % %Calc the RMS error for this field
+                        aExactPart = cell2mat({oMapData.Beats(k).ActivationTimes});
+                        aInterpPart = cell2mat({oMapData.Beats(k).Interpolated});
+                        aInterpPart = aInterpPart(aMinIndices,:);
+                        oMapData.Beats(k).RMS = sqrt(sum((aExactPart - aInterpPart).^2,1)/size(aExactPart,1));
                         
                     end
             end

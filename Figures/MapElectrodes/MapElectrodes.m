@@ -69,7 +69,7 @@ classdef MapElectrodes < SubFigure
             %Set plot position and plot type 
             oFigure.PlotPosition = [0.05 0.05 0.88 0.88];
             oFigure.PlotType = 'JustElectrodes';
-            oFigure.PlotLimits = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetSpatialLimits();
+            oFigure.PlotLimits = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetSpatialLimits()+[-0.1,0.1;-0.1,0.1];
             %Plot the electrodes
             oFigure.CreatePlots();
             oFigure.PlotData();
@@ -495,11 +495,11 @@ classdef MapElectrodes < SubFigure
                      if ~oElectrodes(i).Accepted
                          %plot the point as red
                          plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'r.', ...
-                             'MarkerSize', 1.5);
+                             'MarkerSize', 14);%1.5 for posters
                      else
                          %else just plot black
                          plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2),'k.', ...
-                             'MarkerSize', 1.5);
+                             'MarkerSize', 14);%1.5 for posters
                      end
                  end
              end
@@ -591,11 +591,11 @@ classdef MapElectrodes < SubFigure
                      oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
                      if oFigure.ElectrodeMarkerVisible
                          plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                             'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                             'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
                      end
                      [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
                      plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                         'MarkerSize',6,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
+                         'MarkerSize',18,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
                      hold(oMapAxes,'off');
                      
                  case 'Activation2DScatter'

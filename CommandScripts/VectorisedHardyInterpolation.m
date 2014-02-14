@@ -2,7 +2,7 @@
 % clear all;
 close all;
 % % Define inputs
-sDataSource = 'optical';
+sDataSource = 'unemap';
 switch (sDataSource)
     case 'optical'
 %         sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro003\0114_01_ApdMap50.csv';
@@ -53,23 +53,22 @@ switch (sDataSource)
         aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
         
         %...and turn the coords into a 2 column matrix
-        aCoords = zeros(length(aElectrodes),2);
-        
-        for m = 1:length(aElectrodes);
-            %Save the coordinates
-            aCoords(m,1) = aElectrodes(m).Coords(1);
-            aCoords(m,2) = aElectrodes(m).Coords(2);
-        end
-        dInterpDim = 49;
-        %Get the interpolated points array
-        %Get the interpolation points array
-        [xlin ylin] = meshgrid(min(aCoords(:,1)):(max(aCoords(:,1)) - min(aCoords(:,1)))/dInterpDim:max(aCoords(:,1)),min(aCoords(:,2)):(max(aCoords(:,2))-min(aCoords(:,2)))/dInterpDim:max(aCoords(:,2)));
+        aCoords = cell2mat({aElectrodes(:).Coords})';
         rowlocs = aCoords(:,1);
         collocs = aCoords(:,2);
+        dInterpDim = 100;
+        %Get the interpolated points array
+        [xlin ylin] = meshgrid(min(aCoords(:,1)):(max(aCoords(:,1)) - min(aCoords(:,1)))/dInterpDim:max(aCoords(:,1)),min(aCoords(:,2)):(max(aCoords(:,2))-min(aCoords(:,2)))/dInterpDim:max(aCoords(:,2)));
         aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
         aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
         aMeshPoints = [aXArray,aYArray];
-        aInBoundaryPoints = true(length(aXArray),1);
+        %Find which points lie within the area of the array
+        DT = DelaunayTri(aCoords);
+        aIndices = pointLocation(DT,aMeshPoints);
+        aIndices(isnan(aIndices)) = 0;
+        aInBoundaryPoints = logical(aIndices);
+        clear aIndices;
+                
         iEventID = 1;
         %Get the electrode processed data
         aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(aElectrodes));
@@ -113,8 +112,12 @@ end
 
 
 % % % % Approximate AT
-[CVApprox,ConductionVector]=ComputeCV([rowlocs,collocs],AT,24);
-
+% [CVApprox,ConductionVector]=ReComputeCV([rowlocs,collocs],AT,24,0.1);
+% aIndices = ~isnan(CVApprox);
+% CVApprox = CVApprox(aIndices);
+% ConductionVector = ConductionVector(aIndices);
+% rowlocs = rowlocs(aIndices);
+% collocs = collocs(aIndices);
 % % % Plot conduction direction
 % figure(1); axes(); 
 % quiver(rowlocs,collocs,ConductionVector(:,1),ConductionVector(:,2)); 
@@ -132,10 +135,11 @@ aPoints = (repmat(rowlocs,1,size(rowlocs,1)) - repmat(rowlocs',size(rowlocs,1),1
 
 
 figure(2);
-scatter(aXArray,aYArray);
+scatter(rowlocs,collocs,'filled');
 hold on;
-scatter(aXArray(aInBoundaryPoints),aYArray(aInBoundaryPoints),'filled');
+scatter(aXArray(aInBoundaryPoints),aYArray(aInBoundaryPoints),'r');
 hold off;
+axis equal; axis tight;
 %Only keep these mesh points
 aMeshPoints = aMeshPoints(aInBoundaryPoints,:);
 %Find the distance from each interpolation point to every data point
@@ -143,9 +147,9 @@ aInterpPoints = (repmat(aMeshPoints(:,1),1,size(rowlocs,1)) - repmat(rowlocs',si
     (repmat(aMeshPoints(:,2),1,size(collocs,1)) - repmat(collocs',size(aMeshPoints(:,2),1),1)).^2;
 
 %Initialise the map data struct
-oData = struct('x', xlin(1,:)', 'y', ylin(:,1), 'Boundary', aInBoundaryPoints, 'r2', 0, 'Points', zeros(size(aPoints)), 'InterpPoints', zeros(size(aInterpPoints)), 'CVApprox', CVApprox, ...
+oData = struct('x', xlin(1,:)', 'y', ylin(:,1), 'Boundary', aInBoundaryPoints, 'r2', 0, 'Points', zeros(size(aPoints)), 'InterpPoints', zeros(size(aInterpPoints)), 'CVApprox', AT, ...
     'Coefs', zeros(size(aInterpPoints,2),1), 'Interpolated', zeros(size(aInterpPoints,2),1), 'z', NaN(size(aXArray,1),1), 'RMS', 0);
-r2 = 0:0.01:2;
+r2 = 0:0.001:0.02;
 oMapData = repmat(oData,length(r2),1);
 %clear oData from memory as no longer need it
 clear oData;
@@ -207,7 +211,7 @@ oColorBar = cbarf([cbarmin cbarmax], floor(cbarmin):0.2:ceil(cbarmax));
 oTitle = get(oColorBar, 'title');
 set(oTitle,'units','normalized');
 set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
-axis(oMapAxes, 'equal');
+axis(oMapAxes, 'equal');axis(oMapAxes, 'tight');
 
 % % visualize CV
 % x = rowlocs;
@@ -219,9 +223,9 @@ axis(oMapAxes, 'equal');
 % figure(5); mesh(xx,yy,ATI); hold on; 
 % scatter3(x,y,AT,40,AT,'filled'); hold off; axis tight; colorbar;
 % xlabel('x'); ylabel('y'); zlabel('AT'); title('CV function');
-% aDataToPlot = aRMS;
-% [C iMinIndex] = min(aDataToPlot);
-% figure();
-% plot(r2,aDataToPlot);
-% hold on
-% plot(r2(iMinIndex),C,'r+');
+aDataToPlot = aRMS;
+[C iMinIndex] = min(aDataToPlot);
+figure();
+plot(r2,aDataToPlot);
+hold on
+plot(r2(iMinIndex),C,'r+');
