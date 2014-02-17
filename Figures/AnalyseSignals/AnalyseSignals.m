@@ -468,6 +468,11 @@ classdef AnalyseSignals < SubFigure
                  notify(oFigure,'BeatIndexChange');
                  error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
              end
+             %Reset the gui
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+             oFigure.Replot();
+             notify(oFigure,'BeatIndexChange');
           end
          
          %% Menu Callbacks
@@ -817,9 +822,13 @@ classdef AnalyseSignals < SubFigure
                  %Replot the specified electrode and the previously
                  %selected electrode
                  aTimeSeries = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries;
-                 iChannelIndex = varargin{1}{1}(1);
-                 aIndices = logical(cell2mat({oFigure.Plots(:).Channel})==iChannelIndex);
-                 oFigure.PlotElectrode(iChannelIndex,oFigure.Plots(aIndices),aTimeSeries);
+                 if max(ismember(oFigure.SelectedChannels,oFigure.SelectedChannel))
+                     %if the selected channel is part of the selected
+                     %channels array then replot it
+                     iChannelIndex = varargin{1}{1}(1);
+                     aIndices = logical(cell2mat({oFigure.Plots(:).Channel})==iChannelIndex);
+                     oFigure.PlotElectrode(iChannelIndex,oFigure.Plots(aIndices),aTimeSeries);
+                 end
                  if max(ismember(oFigure.SelectedChannels,oFigure.PreviousChannel))
                      %replot the previous channel as well
                      aIndices = logical(cell2mat({oFigure.Plots(:).Channel})==oFigure.PreviousChannel);

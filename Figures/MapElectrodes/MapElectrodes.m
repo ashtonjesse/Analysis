@@ -8,6 +8,7 @@ classdef MapElectrodes < SubFigure
         ColourBarVisible = 1;
         Potential = [];
         Activation = [];
+        CV = [];
         cbarmin;
         cbarmax;
         PlotType; %A string specifying the currently selected type of plot
@@ -41,6 +42,8 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveMapMenu, 'callback', @(src, event) oSaveMapMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
+             set(oFigure.oGuiHandle.oCVContourMenu, 'callback', @(src, event) oCVContourMenu_Callback(oFigure, src, event));
+              set(oFigure.oGuiHandle.oCVScatterMenu, 'callback', @(src, event) oCVScatterMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRefreshActivationMenu, 'callback', @(src, event) oRefreshActivationMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oMontageMenu, 'callback', @(src, event) oMontageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleColourBarMenu, 'callback', @(src, event) oToggleColourBarMenu_Callback(oFigure, src, event));
@@ -312,7 +315,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID);
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID);
             end
             
             %Update the plot type
@@ -327,7 +330,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour', oFigure.oParentFigure.SelectedEventID);
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID);
             end
             
             %Update the plot type
@@ -337,6 +340,36 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotData();
         end
        
+        function oCVScatterMenu_Callback(oFigure, src, event)
+            %Generate conduction velocity map for the current beat
+            
+            %Check if the conduction velocity data needs to be prepared
+            if isempty(oFigure.Activation)
+                oFigure.CV = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareCVMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID);
+            end
+            
+            %Update the plot type
+            oFigure.PlotType = 'CV2DScatter';
+            
+            %Plot a 2D activation map
+            oFigure.PlotData();
+        end
+        
+        function oCVContourMenu_Callback(oFigure, src, event)
+            %Generate conduction velocity map for the current beat
+            
+            %Check if the conduction velocity data needs to be prepared
+            if isempty(oFigure.Activation)
+                oFigure.CV = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareCVMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID);
+            end
+            
+            %Update the plot type
+            oFigure.PlotType = 'CV2DContour';
+
+            %Plot a 2D activation map
+            oFigure.PlotData();
+        end
+        
         function BeatSelectionListener(oFigure,src,event)
             %An event listener callback
             %Is called when the user selects a new beat using the electrode
