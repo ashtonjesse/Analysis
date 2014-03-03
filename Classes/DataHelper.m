@@ -235,6 +235,7 @@ classdef DataHelper
                     out = 0;
             end
         end
+                
     end
     
     methods (Static)
@@ -273,6 +274,23 @@ classdef DataHelper
                  end
                  dOutput = str2double(sCombined);
              end
+        end
+       
+        function fid = ExportDataToTextFile(sfilename, aRowIDs, aRowData)
+            %This function writes out the input data to a text file
+            %open a new text file for writing
+            %loop through the rows and write out the data with the
+            %row id first
+            fid = fopen(sfilename,'w','n','US-ASCII');
+            fprintf(fid,'%s,',aRowIDs{1:end-1});
+            fprintf(fid,'%s',aRowIDs{end});
+            fprintf(fid,'%s\n','');
+            for i = 1:size(aRowData,1)
+                fprintf(fid,'%5.2f,',aRowData(i,1:end-1));
+                fprintf(fid,'%5.2f',aRowData(i,end));
+                fprintf(fid,'%s\n','');
+            end
+            fclose(fid);
         end
     end
 end

@@ -35,7 +35,7 @@ function [CV,Vect,ATGrad] = ReComputeCV(Locs,AT,ns,BandProportion)
   % Loop over the AT points
   for i=1:N
       %Check if the central point is an accepted electrode and skip if not
-      if ~isinf(AT(i))
+      if isfinite(AT(i))
 
           % Find the relative distance vectors between point of interest and
           % all other points
@@ -45,7 +45,7 @@ function [CV,Vect,ATGrad] = ReComputeCV(Locs,AT,ns,BandProportion)
           [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
           SupportPoints = sort(SupportPoints(1:(ns+1)),1,'ascend');
           % Only include support points that have a non-infinite AT
-          SupportPoints = SupportPoints(~isinf(AT(SupportPoints)));
+          SupportPoints = SupportPoints(isfinite(AT(SupportPoints)));
           % Find significant quadrants of support points around point of
           % interest - only works in 2D
           XBand = BandProportion*(max(RelativeDistVectors(SupportPoints,1))-min(RelativeDistVectors(SupportPoints,1)));
@@ -73,7 +73,7 @@ function [CV,Vect,ATGrad] = ReComputeCV(Locs,AT,ns,BandProportion)
           end;
       else
           CV(i) = NaN;
-          Vect(i,:) = NaN*ones(size(G));
+          Vect(i,:) = NaN*ones(1,size(Locs,2));
           ATGrad(i) = NaN;
       end
   end;

@@ -7,8 +7,8 @@ clear all;
 close all;
 % 
 % %get a list of the csv files in the directory
-sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro006\';
-sSavePath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro006\';
+sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro005\APD50\';
+sSavePath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro005\APD50\';
 sFormat = 'csv';
 % %Get the full path names of all the  files in the directory
 aFileFull = fGetFileNamesOnly(sFilesPath,strcat('*.',sFormat));
@@ -105,12 +105,41 @@ print(oHistFigure,'-dbmp','-r300',sSaveFilePath)
 sCVHistDosString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\montage.exe ', {sprintf(' %s',sSaveFilePath)});
 fprintf('Printed data for %s\n', name);
 
+%Prepare for CVtxt file 
+%The row header is the row index and col index appended together 
+rowString = num2str(rowIndices);
+colString = num2str(colIndices);
+aCVRowHeader = horzcat(rowString,colString);
+%convert to cell array of strings
+aCVRowHeader = cellstr(aCVRowHeader);
+%Initialise array to hold loop data
+aCVDataToWrite = zeros(length(aFileFull),length(aCVRowHeader),'double');
+%Select just the data that belongs to a recording point
+aCVDataToWrite(1,:) = CV;
+
+%Prepare for the APDtxt file
+aCurrentAPD = rot90(aAPDs(:,1:end-1,1),-1);
+aDataPoints = aCurrentAPD(:,:,1) > 0;
+%The row header is the row index and col index appended together (for some
+%reason the row index is out by 1, hence adding 100
+aAPDRowHeader = find(aDataPoints) + 100;
+aAPDRowHeader = aAPDRowHeader';
+%convert to cell array of strings
+aAPDRowHeader = strread(num2str(aAPDRowHeader),'%s');
+aAPDRowHeader = aAPDRowHeader';
+%Initialise array to hold loop data
+aAPDDataToWrite = zeros(length(aFileFull),length(aAPDRowHeader),'double');
+%Select just the data that belongs to a recording point
+aAPDDataToWrite(1,:) = aCurrentAPD(aDataPoints);
+
 %loop through the list of files and read in the data
 for k = 2:length(aFileFull)
     %get the data from this file 
     [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(aFileFull{k},rowdim,coldim);
     %actually turns out the data needs to be rotated for display
     aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
+    aCurrentAPD = rot90(aAPDs(:,1:end-1),-1);
+    aAPDDataToWrite(k,:) = aCurrentAPD(aDataPoints);
     %dispose of the data that has been excluded in the ROI
     [rowIndices colIndices] = find(aActivationTimes > 0);
     AT = aActivationTimes(aActivationTimes > 0);
@@ -145,10 +174,11 @@ for k = 2:length(aFileFull)
     
     %Get Cv data
     [CV,Vect]=ReComputeCV([x,y],AT,24,0.1);
+    aCVDataToWrite(k,:) = CV;
     idxCV = find(~isnan(CV));
     aCVdata = CV(idxCV);
     aCVdata(aCVdata > 2) = 2;
-
+       
     %plot the CV with neighbourhood 24
     scatter(oCVAxes,x(idxCV),y(idxCV),60,aCVdata,'filled');
     hold(oCVAxes, 'on'); quiver(oCVAxes,x(idxCV),y(idxCV),Vect(idxCV,1),Vect(idxCV,2),'color','k','linewidth',1); hold(oCVAxes, 'off');
@@ -179,6 +209,11 @@ for k = 2:length(aFileFull)
     sCVHistDosString = strcat(sCVHistDosString, {sprintf(' %s',sSaveFilePath)});
     fprintf('Printed data for %s\n', name);
 end
+%Write out CV data
+DataHelper.ExportDataToTextFile(strcat({sSavePath,'CVData.txt'}),aCVRowHeader,aCVDataToWrite);
+%Write out APD data
+DataHelper.ExportDataToTextFile(strcat({sSavePath,'CVData.txt'}),aAPDRowHeader,aAPDDataToWrite);
+
 %montage the AT maps
 sATMapDosString = strcat(sATMapDosString, {' -quality 98 -tile 9x5 -geometry 275x302+0+0 '}, sSavePath, 'ATMapmontage.png');
 sStatus = dos(char(sATMapDosString{1}));
