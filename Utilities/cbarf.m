@@ -123,7 +123,7 @@ if newCbar
     ax0Pos = [ap(1) ap(2) ap(3)-dW-W  ap(4)];
     axPos  = [ap(1)+ap(3)-W  ap(2) W ap(4)];
   else
-    ax0Pos = [ap(1) ap(2)+dW+W ap(3) ap(4)-dW-W];
+    ax0Pos = [ap(1) ap(2)+dW+W+dW ap(3) ap(4)-dW-W-dW];
     axPos  = [ap(1) ap(2) ap(3) W];
   end
   set(ax0,'position',ax0Pos)
@@ -131,11 +131,20 @@ if newCbar
   ud.Mm=[mv Mv];
   ax=axes('units','pixel','tag',['cbarf_',mode,'_',scale],'userdata',ud);
   set(ax0,'userdata',ax);
+  if ~isVertical
+      W=10;
+      aTightInset = get(ax, 'TightInset');
+      axPos(1) = aTightInset(1)+40;
+      axPos(2) = dW+aTightInset(2);
+      axPos(3) = ap(3)+10;
+      axPos(4) = W;
+  end
+  
 else
   if isVertical
-    axPos  = [ap(1)+ap(3)+dW  ap(2) W ap(4)];
+      axPos  = [ap(1)+ap(3)+dW  ap(2) W ap(4)];
   else
-    axPos  = [ap(1) ap(2)-dW-W ap(3) W];
+      axPos  = [ap(1) ap(2)-dW-W ap(3) W];
   end
   cla(ax)
   axes(ax)
@@ -143,7 +152,7 @@ end
 set(ax0,'units',au)
 set(ax,'units','pixel','position',axPos)
 set(ax,'units','normalized')
-set(ax,'fontsize',12);
+set(ax,'fontsize',8);
 
 % find start and end indices of L:
 i1=find(L>mv); i1=i1(1)-1;
@@ -239,7 +248,7 @@ else
     xt=linspace(yl(1),yl(2),Ntick);
     xtl=L(a:b+1);
   end
-  set(ax,'ytick',[],'xaxislocation','bottom','xtick',xt,'xticklabel',xtl);
+  set(ax,'ytick',[],'xaxislocation','top','xtick',xt,'xticklabel',xtl);
   xlim(yl)
 end
 hfill=get(ax,'Children');

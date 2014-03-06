@@ -1,8 +1,9 @@
 #Load the s20x library
 library("s20x")
 
+routedir <- "G:/PhD/Experiments/Bordeaux/Data/20131129/Baro003/APD30/"
 #load the data
-CVdata <- read.table("G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130823/vagus002/CVData.txt", sep = ",", header = TRUE)
+CVdata <- read.table(paste(c(routedir,"CVData.txt"),collapse=''), sep = ",", header = TRUE)
 
 #Enter case specific information
 BeatGroups <- list(1:11,c(12:14,16:25),27:40)
@@ -17,14 +18,14 @@ par(mar = c(0,0,0,0))
 par(mai = c(0.4,0.2,0.4,0))
 par(pin = c(5,4))
 boxplot(CVdataByBeat, main=paste("CV distributions for each beat"), pars=list(ylab="CV (m/s)",xlab="Beat number"))
-dev.copy(png,"G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130823/vagus002/CVDistByBeat.png",width=2480,height=1753,pointsize=12,res=300)
+dev.copy(png,paste(c(routedir,"CVDistByBeat.png"),collapse=''),width=2480,height=1753,pointsize=12,res=300)
 dev.off()
 dev.new(width=8.27,height=5.845)
 par(mar = c(0,0,0,0))
 par(mai = c(0.4,0.2,0.4,0))
 par(pin = c(5,4))
-boxplot(CVdataByBeat, main=paste("CV distributions for each beat without outliers"), outline=FALSE, ylim=c(0,1), pars=list(ylab="CV (m/s)",xlab="Beat number"))
-dev.copy(png,"G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130823/vagus002/CVDistByBeat_nooutliers.png",width=2480,height=1753,pointsize=12,res=300)
+boxplot(CVdataByBeat, main=paste("CV distributions for each beat without outliers"), outline=FALSE, ylim=c(0,1.5), pars=list(ylab="CV (m/s)",xlab="Beat number"))
+dev.copy(png,paste(c(routedir,"CVDistByBeat_nooutliers.png"),collapse=''),width=2480,height=1753,pointsize=12,res=300)
 dev.off()
 
 #Produce a boxplot of the CVdata by electrode group
@@ -55,7 +56,7 @@ for (i in 12:7) {
 	boxplot(ConnectorDataAllBeats[i], main=paste("CV distribution for connector",ConnectorPatterns[i],"n =",nAcceptedElectrodes[i]), outline=FALSE, ylim=c(0,1.4), pars=list(ylab="CV (m/s)"))
 }
 mtext( "CV distributions across all beats for n electrodes per connector", outer = TRUE )
-dev.copy(png,filename="G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130823/vagus002/CVDistByLocation.png",width=2480,height=3507,pointsize=12,res=300)
+dev.copy(png,filename=paste(c(routedir,"CVDistByLocation.png"),collapse=''),width=2480,height=3507,pointsize=12,res=300)
 dev.off()
 
 #Produce boxplots for each groups of beats
@@ -90,7 +91,7 @@ for (i in 12:7) {
 	boxplot(df[i], main=paste("CV distribution for connector",ConnectorPatterns[i],"n =",nAcceptedElectrodes[i]), outline=FALSE, ylim=c(0,1.4), pars=list(ylab="CV (m/s)"))
 }
 mtext(paste("CV distributions across beats",BeatGroups[[j]][1],"to",BeatGroups[[j]][length(BeatGroups[[j]])]), outer = TRUE )
-dev.copy(png,filename=paste0("G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130823/vagus002/CVDistByLocation_beatgroup",j,".png"),width=2480,height=3507,pointsize=12,res=300)
+dev.copy(png,filename=paste(c(routedir,"CVDistByLocation_beatgroup",j,".png"),collapse=''),width=2480,height=3507,pointsize=12,res=300)
 dev.off()
 
 #Print out boxplots with outliers
@@ -108,7 +109,7 @@ for (i in 12:7) {
 	boxplot(df[i], main=paste("CV distribution for connector",ConnectorPatterns[i],"n =",nAcceptedElectrodes[i]), ylim=c(0,2.5), pars=list(ylab="CV (m/s)"))
 }
 mtext(paste("CV distributions across beats",BeatGroups[[j]][1],"to",BeatGroups[[j]][length(BeatGroups[[j]])]), outer = TRUE )
-dev.copy(png,filename=paste0("G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130823/vagus002/CVDistByLocation_beatgroup",j,"_outliers.png"),width=2480,height=3507,pointsize=12,res=300)
+dev.copy(png,filename=paste(c(routedir,"CVDistByLocation_beatgroup",j,"_outliers.png"),collapse=''),width=2480,height=3507,pointsize=12,res=300)
 dev.off()
 }
 
