@@ -1,6 +1,6 @@
 %Plots the rate change from a signal optical recording
 clear all;
-sFilePath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro003\RA1129-069_rotated_3x3spatial_3x3cubic_ROI5-wave.csv';
+sFilePath = 'G:\PhD\Experiments\Bordeaux\Data\20131201\RA1201-122_refd_spatial3x3_cubic3x3_ROI1-wave.csv';
 
 %open the file
 fid = fopen(sFilePath,'r');
@@ -25,7 +25,7 @@ fclose(fid);
 %Initialise a basesignal entity
 oBaseSignal = BaseSignal();
 aGradient = CalculateSlope(oBaseSignal,aData(:,2),5,3);
-dThreshold = 0.171;
+dThreshold = 0.1;
 [aPeaks, aLocs] = GetPeaks(oBaseSignal,aGradient,dThreshold);
 aPeaks = [aPeaks(1:end-1) ; aPeaks(2:end)];
 aLocs = [aLocs(1:end-1) ; aLocs(2:end)];

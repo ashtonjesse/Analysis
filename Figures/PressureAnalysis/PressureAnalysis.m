@@ -9,6 +9,7 @@ classdef PressureAnalysis < SubFigure
         Colours = ['k','r','b','g','c'];
         CurrentPlotNumber = 0;
         SelectedElectrode;
+        FontSize = 8;
     end
     
     events
@@ -196,9 +197,13 @@ classdef PressureAnalysis < SubFigure
             
             %Get the full file name and save it to string attribute
             sLongDataFileName=strcat(sPathName,sFilename);
-           
+            aPosition = get(oFigure.oGuiHandle.oPanel,'position');
+            dMontageWidth = (8.27 - 2)/aPosition(3); %in inches, with borders
+            dMontageHeight = 4.845/aPosition(4);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dMontageWidth dMontageHeight]);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dMontageWidth dMontageHeight]);
             oFigure.PrintFigureToFile(sLongDataFileName);
-           
         end
         
         function oOpenMultiMenu_Callback(oFigure, src, event)
@@ -413,6 +418,7 @@ classdef PressureAnalysis < SubFigure
             
             %loop through the plots currently visible
             for i = 1:length(oPlots)
+                set(oPlots(i).ID,'fontsize',oFigure.FontSize);
                 switch (oPlots(i).Name)
                     case 'Pressure'
                         oFigure.PlotPressure(oPlots(i).ID);
@@ -475,7 +481,7 @@ classdef PressureAnalysis < SubFigure
             set(oAxesHandle,'xticklabel',[]);
             oLabel = ylabel(oAxesHandle,['Phrenic', 10, 'Integral (Vs)']);
             set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',14);
+            set(oLabel,'FontSize',oFigure.FontSize);
             hold(oAxesHandle, 'off');
         end
         
@@ -501,7 +507,7 @@ classdef PressureAnalysis < SubFigure
             hold(oAxesHandle, 'off');
             oLabel = ylabel(oAxesHandle,['Pressure', 10, '(mmHg)']);
             set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',14);
+            set(oLabel,'FontSize',oFigure.FontSize);
             ylim(oAxesHandle,[ymin-abs(ymin/25) ymax+ymax/25]);
         end
         
@@ -520,7 +526,7 @@ classdef PressureAnalysis < SubFigure
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
             oLabel = ylabel(oAxesHandle,[oFigure.oParentFigure.oGuiHandle.oPressure(i).RefSignal.Name, 10, '(V)']);
             set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',14);
+            set(oLabel,'FontSize',oFigure.FontSize);
         end
         
         function PlotUnemapRefSignal(oFigure,oAxesHandle)
@@ -531,7 +537,7 @@ classdef PressureAnalysis < SubFigure
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
             oLabel = ylabel(oAxesHandle, ['Unemap Phrenic', 10, 'Signal (V)']);
             set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',14);
+            set(oLabel,'FontSize',oFigure.FontSize);
         end
         
         function PlotElectrode(oFigure, oAxesHandle, oElectrode)
@@ -573,21 +579,27 @@ classdef PressureAnalysis < SubFigure
             end
             oLabel = ylabel(oAxesHandle, ['Electrogram', 10, '(V)']);
             set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',14);
+            set(oLabel,'FontSize',oFigure.FontSize);
         end
         
         function PlotHeartRate(oFigure, oAxesHandle)
             %get electrode index
             sString = oFigure.GetPopUpSelectionString('oChannelSelector');
             [d iChannel] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
-            aRateData = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRate(iChannel);
+            [aRateData dPeaks] = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRate(iChannel);
             plot(oAxesHandle, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, aRateData,'k');
             YMin = min(aRateData);
             YMax = max(aRateData);
             ylim(oAxesHandle,[YMin - 10, YMax + 10]);
             oLabel = ylabel(oAxesHandle,['Activation', 10, 'Rate (bpm)']);
             set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',14);
+            set(oLabel,'FontSize',oFigure.FontSize);
+            for k = 2:2:length(dPeaks)
+                oBeatLabel = text(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(dPeaks(1,k)-300),aRateData(dPeaks(1,k-1))+5, num2str(k));
+                set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
+                set(oBeatLabel,'FontSize',4);
+                set(oBeatLabel,'parent',oAxesHandle);
+            end
         end
         
         function TimeAlign(oFigure, src, event)

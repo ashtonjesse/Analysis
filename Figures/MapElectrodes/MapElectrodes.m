@@ -6,6 +6,7 @@ classdef MapElectrodes < SubFigure
         Overlay = 0;
         ElectrodeMarkerVisible = 1;
         ColourBarVisible = 1;
+        ColourBarOrientation = 'vert';
         Potential = [];
         Activation = [];
         CV = [];
@@ -47,7 +48,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oMontageMenu, 'callback', @(src, event) oMontageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleColourBarMenu, 'callback', @(src, event) oToggleColourBarMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleElectrodeMarkerMenu, 'callback', @(src, event) oToggleElectrodeMarkerMenu_Callback(oFigure, src, event));
-           
+            set(oFigure.oGuiHandle.oRotateArrayMenu, 'callback', @(src, event) oRotateArrayMenu_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -76,7 +77,7 @@ classdef MapElectrodes < SubFigure
             oFigure.CreatePlots();
             oFigure.PlotData();
             %Set default selection
-            oFigure.SelectedChannels = 1:(Xdim*Ydim);
+            oFigure.SelectedChannels = 1:length(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
             % --- Executes just before BaselineCorrection is made visible.
             function MapElectrodes_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -152,19 +153,74 @@ classdef MapElectrodes < SubFigure
             
             %             for i =
             %             1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
-            for i = 1:40;
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
+            oFigure.oParentFigure.SelectedBeat = 10;
+            %Set figure size
+            iMontageX = 5;%5
+            iMontageY = 8;%9
+            dMontageWidth = 8.27 - 2; %in inches, with borders
+            dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
+            dWidth = dMontageWidth/iMontageX; %in inches
+            dHeight = dMontageHeight/iMontageY; %in inches
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dWidth dHeight])
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dWidth dHeight])
+            aSubPlots = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+            oMapPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'MapPlot');
+            oHiddenPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'HiddenPlot');
+            axis(oMapPlot,'on');
+            axis(oHiddenPlot,'off');
+            set(oMapPlot,'units','normalized');
+            set(oMapPlot,'outerposition',[0 0 1 1]);
+            aTightInset = get(oMapPlot, 'TightInset');
+            aPosition(1) = aTightInset(1);
+            aPosition(2) = aTightInset(2);
+            aPosition(3) = 1-aTightInset(1)-aTightInset(3);
+            aPosition(4) = 1 - aTightInset(2) - aTightInset(4)-0.05;
+            set(oMapPlot, 'Position', aPosition);
+            sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',oFigure.oParentFigure.SelectedBeat),'.bmp');
+            oFigure.PlotData(0);
+            drawnow; pause(.2);
+            
+            
+            set(oMapPlot,'FontUnits','points');
+            set(oMapPlot,'FontSize',6);
+            aYticks = get(oMapPlot,'ytick');
+            aYticks = aYticks - aYticks(1);
+            aYtickstring = cell(length(aYticks),1);
+            for i=1:length(aYticks)
+                %Check if the label has a decimal place and hide this label
+                if ~mod(aYticks(i),1) == 0
+                    aYtickstring{i} = '';
+                else
+                    aYtickstring{i} = num2str(aYticks(i));
+                end
+            end
+            set(oMapPlot,'xticklabel',[]);
+            set(oMapPlot,'xtickmode','manual');
+            set(oMapPlot,'yticklabel', char(aYtickstring));
+            set(oMapPlot,'ytickmode','manual');
+            set(oMapPlot,'Box','off');
+            oXLim = get(oMapPlot,'xlim');
+            oYLim = get(oMapPlot,'ylim');
+            oBeatLabel = text(oXLim(1)+0.1,oYLim(2)-0.5, sprintf('%d',oFigure.oParentFigure.SelectedBeat));
+            set(oBeatLabel,'units','normalized');
+            set(oBeatLabel,'fontsize',14,'fontweight','bold');
+            set(oBeatLabel,'parent',oMapPlot);
+            oFigure.PrintFigureToFile(sLongDataFileName);
+            
+            for i = oFigure.oParentFigure.SelectedBeat+1:min(size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1),oFigure.oParentFigure.SelectedBeat+iMontageX*iMontageY-1)
                 %Get the full file name and save it to string attribute
                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
                 oFigure.oParentFigure.SelectedBeat = i;
                 oFigure.PlotData(0);
                 drawnow; pause(.2);
+                oBeatLabel = text(oXLim(1)+0.1,oYLim(2)-0.5, sprintf('%d',i));
+                set(oBeatLabel,'units','normalized');
+                set(oBeatLabel,'fontsize',14,'fontweight','bold');
+                set(oBeatLabel,'parent',oMapPlot);
+                axis(oMapPlot, 'off');
+                
                 oFigure.PrintFigureToFile(sLongDataFileName);
-                sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',sLongDataFileName)});
-                sChopString = strcat(sChopString, {' -gravity South -chop 0x50 -gravity West -chop 50x0 -gravity East -chop 50x0'}, {sprintf(' %s',sLongDataFileName)});
-                sStatus = dos(char(sChopString{1}));
-                if sStatus
-                    break
-                end
             end
             
             
@@ -185,7 +241,16 @@ classdef MapElectrodes < SubFigure
                     %Loop through files adding them to list
                     sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
                 end
-                sDosString = strcat(sDosString, {' -quality 98 -tile 8x4 -geometry 438x620+0+0 '}, sPathName, 'montage.png');
+                iMontageX = 5;%5
+                iMontageY = 8;%9
+                dMontageWidth = 8.27 - 2; %in inches, with borders
+                dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
+                dWidth = dMontageWidth/iMontageX; %in inches
+                dHeight = dMontageHeight/iMontageY; %in inches
+                iPixelWidth = dWidth*300;
+                iPixelHeight = dHeight*300;
+                sDosString = strcat(sDosString, {' -quality 98 -tile '},{sprintf('%d',iMontageX)},'x',{sprintf('%d',iMontageY)},{' -geometry '},{sprintf('%d',iPixelWidth)},'x',{sprintf('%d',iPixelHeight)},{'+0+0 '}, sPathName, 'montage.png');
+
             else
                 if (~ischar(sFileName) && ~ischar(sPathName))
                     return
@@ -197,6 +262,42 @@ classdef MapElectrodes < SubFigure
 %                 disp(char(sDosString));
 %                 imshow(strcat(sPathName, 'montage.png'));
             end
+            oFigure.ColourBarVisible = true;
+            oFigure.ColourBarOrientation = 'horiz';
+
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dMontageWidth dMontageHeight]);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dMontageWidth dMontageHeight]);
+
+            oFigure.PlotData(0);
+            switch (oFigure.PlotType)
+                case 'Activation2DContour'
+                    sSaveCbarFilePath = fullfile(sPathName,'ATcolorbar.bmp');
+                    sSaveFilePath = fullfile(sPathName,'ATmontage_cbar.png');
+                case 'CV2DScatter'
+                    sSaveCbarFilePath = fullfile(sPathName,'CVcolorbar.bmp');
+                    sSaveFilePath = fullfile(sPathName,'CVmontage_cbar.png');
+            end
+            oFigure.PrintFigureToFile(sSaveCbarFilePath);
+            sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
+                {' -gravity North -chop 0x2180'},{' -gravity South -chop 0x100'}, {sprintf(' %s', sSaveCbarFilePath)});
+            sStatus = dos(char(sChopString{1}));
+            
+            sAppend = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
+                {sprintf(' %s', sPathName)}, 'montage.png',{' -append'}, {sprintf(' %s', sSaveFilePath)});
+            sStatus = dos(char(sAppend{1}));
+        end
+        
+        function oRotateArrayMenu_Callback(oFigure, src, event)
+            %Calls a function to rotate the array
+            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.RotateArray();
+            oFigure.Activation = [];
+            oFigure.PlotPosition = [0.05 0.05 0.88 0.88];
+            oFigure.PlotLimits = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.GetSpatialLimits()+[-0.1,0.1;-0.1,0.1];
+            %Plot the electrodes
+            oFigure.ReplotElectrodes();
+            %Notify listeners
+            notify(oFigure,'ChannelGroupSelection',DataPassingEvent(oFigure.SelectedChannels,[]));
         end
         
         function oExportToTextMenu_Callback(oFigure, src, event)
@@ -459,6 +560,7 @@ classdef MapElectrodes < SubFigure
              switch (oFigure.PlotType)
                  case 'JustElectrodes'
                      oFigure.PlotElectrodes(oMapPlot);
+                     axis(oMapPlot, 'on');
                  case 'Activation2DContour'
                      oFigure.PlotActivation(oMapPlot,bUpdateColorBar);
                      if oFigure.Overlay
@@ -559,6 +661,9 @@ classdef MapElectrodes < SubFigure
                  %get figure children
                  oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
                  oColorBar = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+                 if oColorBar < 0
+                     oColorBar = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+                 end
                  if oColorBar > 0
                      delete(oColorBar);
                      set(oMapAxes,'userdata',[]);
@@ -582,6 +687,10 @@ classdef MapElectrodes < SubFigure
              %get figure children
              oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
              oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+             if oHandle < 0
+                 %there might be a horizontal bar
+                 oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+             end
              if oHandle < 0 || bUpdateColorBar
                  %Get a new min and max
                  oFigure.cbarmax = 0;
@@ -611,11 +720,17 @@ classdef MapElectrodes < SubFigure
                  if oFigure.ColourBarVisible
                      %if the colour bar should be visible then make
                      %a new one
-                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                      oTitle = get(oColorBar, 'title');
-                     set(oTitle,'units','normalized');
-                     set(oTitle,'fontsize',12);
-                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',8);
+                         set(oTitle,'string','Activation Time (ms)','position',[0.5 2.5]);
+                     else
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',12);
+                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     end
                  end
              else
                  if ~oFigure.ColourBarVisible
@@ -628,11 +743,17 @@ classdef MapElectrodes < SubFigure
                      delete(oHandle);
                      set(oMapAxes,'userdata',[]);
                      set(oMapAxes,'Position',oFigure.PlotPosition);
-                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                      oTitle = get(oColorBar, 'title');
-                     set(oTitle,'units','normalized');
-                     set(oTitle,'fontsize',12);
-                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',8);
+                         set(oTitle,'string','Activation Time (ms)','position',[0.5 2.5]);
+                     else
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',12);
+                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     end
                  else
                      oTitle = get(oHandle, 'title');
                      set(oTitle,'units','normalized');
@@ -648,20 +769,20 @@ classdef MapElectrodes < SubFigure
              oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                     'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
+                     'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
              end
              [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
              plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                 'MarkerSize',16,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
+                 'MarkerSize',6,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
              hold(oMapAxes,'off');
              
-             set(oMapAxes,'fontsize',8);
+             %              set(oMapAxes,'fontsize',8);
              %              set(oMapAxes,'ytick',1:5);
              %              set(get(oMapAxes,'ylabel'),'string','Length (mm)');
-             set(oMapAxes,'ytick',[],'xtick',[]);
-             oTitle = title(oMapAxes,sprintf('%d',iBeat));
-             set(oTitle,'units','normalized');
-             set(oTitle,'fontsize',22,'fontweight','bold');
+             %              set(oMapAxes,'ytick',[],'xtick',[]);
+             %              oTitle = title(oMapAxes,sprintf('%d',iBeat));
+             %              set(oTitle,'units','normalized');
+             %              set(oTitle,'fontsize',22,'fontweight','bold');
          end
          
          function PlotCV(oFigure,oMapAxes,bUpdateColorBar)
@@ -673,28 +794,37 @@ classdef MapElectrodes < SubFigure
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              idxCV = find(~isnan(oFigure.Activation.Beats(iBeat).CVApprox));
              aCVdata = oFigure.Activation.Beats(iBeat).CVApprox(idxCV);
-             aCVdata(aCVdata > 2) = 2;
-             scatter(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),150,aCVdata,'filled');
+             aCVdata(aCVdata > 1) = 1;
+             scatter(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),12,aCVdata,'filled');
              hold(oMapAxes, 'on');
-             oQuivers = quiver(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,1),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,2),'color','k','linewidth',2);
-             set(oQuivers,'autoscale','on');
-             set(oQuivers,'AutoScaleFactor',0.4);
+             oQuivers = quiver(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,1),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,2),'color','k','linewidth',0.6);
+             % %              set(oQuivers,'autoscale','on');
+             % %              set(oQuivers,'AutoScaleFactor',0.4);
              hold(oMapAxes, 'off');
              colormap(oMapAxes, colormap(jet));
              oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
              oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+             if oHandle < 0
+                 oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+             end
              oFigure.cbarmin = 0;
-             oFigure.cbarmax = 2;
+             oFigure.cbarmax = 1;
              caxis([oFigure.cbarmin oFigure.cbarmax]);
              if oHandle < 0 
                  if oFigure.ColourBarVisible
                      %if the colour bar should be visible then make
                      %a new one
-                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):0.2:ceil(oFigure.cbarmax));
+                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):0.1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                      oTitle = get(oColorBar, 'title');
-                     set(oTitle,'units','normalized');
-                     set(oTitle,'fontsize',12);
-                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',8);
+                         set(oTitle,'string','Conduction Velocity (m/s)','position',[0.5 2.5]);
+                     else
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',12);
+                         set(oTitle,'string','Conduction Velocity (m/s)','position',[0.5 1.02]);
+                     end
                  end
              else
                  if ~oFigure.ColourBarVisible
@@ -707,16 +837,22 @@ classdef MapElectrodes < SubFigure
                      delete(oHandle);
                      set(oMapAxes,'userdata',[]);
                      set(oMapAxes,'Position',oFigure.PlotPosition);
-                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):0.2:ceil(oFigure.cbarmax));
+                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):0.1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                      oTitle = get(oColorBar, 'title');
-                     set(oTitle,'units','normalized');
-                     set(oTitle,'fontsize',12);
-                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                    if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',8);
+                         set(oTitle,'string','Conduction Velocity (m/s)','position',[0.5 2.5]);
+                     else
+                         set(oTitle,'units','normalized');
+                         set(oTitle,'fontsize',12);
+                         set(oTitle,'string','Conduction Velocity (m/s)','position',[0.5 1.02]);
+                     end
                  else
                      oTitle = get(oHandle, 'title');
                      set(oTitle,'units','normalized');
                      set(oTitle,'fontsize',12);
-                     set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+                     set(oTitle,'string','Conduction Velocity (m/s)','position',[0.5 1.02]);
                  end
              end
              iChannel = oFigure.oParentFigure.SelectedChannel;
@@ -726,19 +862,19 @@ classdef MapElectrodes < SubFigure
              oElectrodes = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes;
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                     'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
+                     'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
              end
              [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
              plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                 'MarkerSize',16,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
+                 'MarkerSize',6,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
              hold(oMapAxes,'off');
-             set(oMapAxes,'fontsize',8);
-             %              set(oMapAxes,'ytick',1:5);
-             %              set(get(oMapAxes,'ylabel'),'string','Length (mm)');
-             set(oMapAxes,'ytick',[],'xtick',[]);
-             oTitle = title(oMapAxes,sprintf('%d',iBeat));
-             set(oTitle,'units','normalized');
-             set(oTitle,'fontsize',22,'fontweight','bold');
+             %              set(oMapAxes,'fontsize',8);
+             %              %              set(oMapAxes,'ytick',1:5);
+             %              %              set(get(oMapAxes,'ylabel'),'string','Length (mm)');
+             %              set(oMapAxes,'ytick',[],'xtick',[]);
+             %              oTitle = title(oMapAxes,sprintf('%d',iBeat));
+             %              set(oTitle,'units','normalized');
+             %              set(oTitle,'fontsize',22,'fontweight','bold');
          end
          
          function PlotPotential(oFigure, oMapAxes)
@@ -759,6 +895,9 @@ classdef MapElectrodes < SubFigure
                      %get figure children
                      oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
                      oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+                     if oHandle < 0
+                         oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+                     end
                      if oHandle < 0
                          %Get a new min and max
                          oFigure.cbarmax = 0; 

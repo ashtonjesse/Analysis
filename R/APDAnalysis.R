@@ -1,7 +1,7 @@
 #Load the s20x library
 library("s20x")
 
-routedir <- "G:/PhD/Experiments/Bordeaux/Data/20131129/Baro003/APD30/"
+routedir <- "G:/PhD/Experiments/Bordeaux/Data/20131129/Baro006/APD50/"
 #load the data
 APDdata <- read.table(paste(c(routedir,"APDData.txt"),collapse=''), sep = ",", header = TRUE)
 

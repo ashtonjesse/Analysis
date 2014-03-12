@@ -134,9 +134,9 @@ if newCbar
   if ~isVertical
       W=10;
       aTightInset = get(ax, 'TightInset');
-      axPos(1) = aTightInset(1)+40;
+      axPos(1) = aTightInset(1)+20;
       axPos(2) = dW+aTightInset(2);
-      axPos(3) = ap(3)+10;
+      axPos(3) = 680;
       axPos(4) = W;
   end
   

@@ -704,7 +704,7 @@ classdef Unemap < BasePotential
             end
         end
         
-        function aRateData = CalculateSinusRate(oUnemap, iElectrodeNumber)
+        function [aRateData dPeaks] = CalculateSinusRate(oUnemap, iElectrodeNumber)
             %Get the peaks associated with the beat data from this
             %electrode and make call to GetHeartRateData
             dPeaks = zeros(size(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
@@ -717,10 +717,10 @@ classdef Unemap < BasePotential
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
             end
-            aRateData = oUnemap.GetHeartRateData(dPeaks);
+            [aRateData, dPeaks] = oUnemap.GetHeartRateData(dPeaks);
         end
         
-        function aRateData = GetHeartRateData(oUnemap,dPeaks)
+        function [aRateData, dPeaks] = GetHeartRateData(oUnemap,dPeaks)
             %Take the peaks  supplied and create an array of
             %discrete heart rates
             
@@ -904,7 +904,38 @@ classdef Unemap < BasePotential
             %Return the index of the electrode with the minimum distance
             [C iElectrodeNumber] = min(aDistance);
         end
+        
+        function RotateArray(oUnemap)
+            %Rotates the array locations 90 deg clockwise
             
+            %Get the coord and location arrays
+            aCoords = cell2mat({oUnemap.Electrodes(:).Coords});
+            aLocations = cell2mat({oUnemap.Electrodes(:).Location});
+            %Carry out first transpose so now 16 rows and 18 columns
+            aNewCoords = [aCoords(2,:) ; aCoords(1,:)]';
+            aNewLocs = [aLocations(2,:) ; aLocations(1,:)]';
+            iMaxIndex = max(aNewLocs(:,2));
+            %Loop through the array rows
+            for i = 1:iMaxIndex
+                %switch the rows so 1st row = last row etc
+                aThisCol = find(aNewLocs(:,2) == i);
+                aNewLocs(aThisCol,:) = flipud(aNewLocs(aThisCol,:));
+                aNewCoords(aThisCol,:) = flipud(aNewCoords(aThisCol,:));
+            end
+            aNewCoords = aNewCoords';
+            aNewLocs = aNewLocs';
+            %switch the x and y coords and locations
+            aNewCoords = num2cell([aNewCoords(1,:) ; aNewCoords(2,:)]',2);
+            aNewLocs = num2cell([aNewLocs(1,:) ; aNewLocs(2,:)]',2);
+            %Set the coords to be vertical arrays
+            
+            [oUnemap.Electrodes(:).Coords] = deal(aNewCoords{:});
+            [oUnemap.Electrodes(:).Location] = deal(aNewLocs{:});
+            for i = 1:length(oUnemap.Electrodes)
+                oUnemap.Electrodes(i).Coords = [oUnemap.Electrodes(i).Coords(1) ; oUnemap.Electrodes(i).Coords(2)];
+                oUnemap.Electrodes(i).Location = [oUnemap.Electrodes(i).Location(1) ; oUnemap.Electrodes(i).Location(2)];
+            end
+        end
         %% Methods relating to Electrode Activation data
         function UpdateEventRange(oUnemap, iEventIndex, aBeats, aElectrodes, aRange)
             %Change the range for the specified event and beat and selected
