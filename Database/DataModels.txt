@@ -93,4 +93,10 @@ oPressure.RefSignal.Processed
 oPressure.Phrenic.Original
 oPressure.Phrenic.Processed
 oPressure.Phrenic.Integral
-oPressure.oUnemap
+oPressure.oRecording
+oPressure.RecordingType
+
+Optical:
+oOptical.oExperiment
+oOptical.TimeSeries
+oOptical.Electrodes

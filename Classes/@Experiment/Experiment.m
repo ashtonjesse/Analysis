@@ -11,6 +11,7 @@ classdef Experiment < BaseEntity
         ECG;
         Plot;
         Array;
+        Optical;
     end
         
     methods
@@ -20,15 +21,11 @@ classdef Experiment < BaseEntity
             if nargin == 1
                 if isstruct(varargin{1}) || isa(varargin{1},'Experiment')
                     oExperimentStruct = varargin{1};
-                    oExperiment.Date = oExperimentStruct.Date;
-                    oExperiment.Material = oExperimentStruct.Material;
-                    oExperiment.Unemap = oExperimentStruct.Unemap;
-                    oExperiment.PerfusionPressure = oExperimentStruct.PerfusionPressure;
-                    oExperiment.Phrenic = oExperimentStruct.Phrenic;
-                    oExperiment.ECG = oExperimentStruct.ECG;
-                    oExperiment.Plot = oExperimentStruct.Plot;
-                    if isfield(oExperimentStruct,'Array')
-                        oExperiment.Array = oExperimentStruct.Array;
+                    %get the fields
+                    sFields = fields(oExperimentStruct);
+                    %loop through and load these fields
+                    for i = 1:length(sFields)
+                        oExperiment.(char(sFields{i})) = oExperimentStruct.(char(sFields{i}));
                     end
                 end
             end

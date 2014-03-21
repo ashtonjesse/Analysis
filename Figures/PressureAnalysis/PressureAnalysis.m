@@ -10,6 +10,7 @@ classdef PressureAnalysis < SubFigure
         CurrentPlotNumber = 0;
         SelectedElectrode;
         FontSize = 8;
+        RecordingType = 'Extracellular';
     end
     
     events
@@ -18,9 +19,12 @@ classdef PressureAnalysis < SubFigure
     
     methods
         %% Constructor
-        function oFigure = PressureAnalysis(oParent)
+        function oFigure = PressureAnalysis(oParent,sRecordingType)
             oFigure = oFigure@SubFigure(oParent,'PressureAnalysis',@OpeningFcn);
-                        
+            
+            %set properties
+            oFigure.RecordingType = sRecordingType;
+            
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) Unused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToolMenu, 'callback', @(src, event) Unused_Callback(oFigure, src, event));
@@ -53,14 +57,22 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             
             %set up the checkboxes and plots
-            sPlotNames = {'Pressure','Reference Signal', 'Unemap Reference Signal', 'Phrenic Integral', 'Electrode', 'Heart Rate', };
+            switch (oFigure.RecordingType)
+                case 'Extracellular'
+                    sPlotNames = {'Pressure','Reference Signal', 'Unemap Reference Signal', 'Phrenic Integral', 'Electrode', 'Heart Rate', };
+                case 'Optical'
+                    sPlotNames = {'Pressure','Reference Signal', 'Optical Signal', 'Phrenic Integral', 'Heart Rate', };
+            end
+            
             for i = 1:length(sPlotNames)
                 oFigure.Plots(i).ID = 0;
                 oFigure.Plots(i).Visible = 0;
                 oFigure.Plots(i).Name = char(sPlotNames(i));
-                oFigure.Plots(i).Checkbox = uicontrol(oFigure.oGuiHandle.oPlotPanel, 'style', 'checkbox', 'string', oFigure.Plots(i).Name, 'position', [3 18-(i-1)*1.875, 34, 1.75], 'callback',  ...
+                oFigure.Plots(i).Checkbox = uicontrol(oFigure.oGuiHandle.oPlotPanel, 'style', 'checkbox', 'string', oFigure.Plots(i).Name, 'callback',  ...
                     @(src, event) oPlotSelector_Callback(oFigure, src, event), 'value', 0, 'visible', 'off','units','characters');
+                set(oFigure.Plots(i).Checkbox, 'position', [3 18-(i-1)*1.875, 34, 1.75]);
             end
+
             
             if ~isempty(oFigure.oParentFigure.oGuiHandle.oPressure)
                 %Plot the data
@@ -75,6 +87,7 @@ classdef PressureAnalysis < SubFigure
                 sString = oFigure.GetPopUpSelectionString('oChannelSelector');
                 oFigure.SelectedElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
             end
+            
             % --- Executes just before BaselineCorrection is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -279,8 +292,8 @@ classdef PressureAnalysis < SubFigure
                     case '.mat'
                         oFigure.oParentFigure.oGuiHandle.oPressure = GetPressureFromMATFile(Pressure,sLongDataFileName);
                 end
-                
-                if ~isfield(oFigure.oParentFigure.oGuiHandle.oPressure, 'oUnemap') && isempty(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap)
+                 oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType = oFigure.RecordingType;
+                if strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Extracellular') && isempty(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
                     [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing Unemap signal data',oFigure.DefaultPath);
                     %Make sure the dialogs return char objects
                     if (~ischar(sDataFileName) && ~ischar(sDataPathName))
@@ -290,7 +303,18 @@ classdef PressureAnalysis < SubFigure
                     sLongDataFileName=strcat(sDataPathName,sDataFileName);
                     
                     %Get the unemap reference data
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical') && isempty(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
+                    [sDataFileName,sDataPathName]=uigetfile('*.*','Select a CSV file that contains an optical transmembrane recording',oFigure.DefaultPath);
+                    %Make sure the dialogs return char objects
+                    if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                        return
+                    end
+                    %Check the extension
+                    sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                    
+                    %Get the optical reference data
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = GetOpticalRecordingFromCSVFile(Optical,sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
                 end
                 
                 %Plot the data
@@ -432,8 +456,8 @@ classdef PressureAnalysis < SubFigure
                         oFigure.PlotPressure(oPlots(i).ID);
                     case 'Reference Signal'
                         oFigure.PlotRefSignal(oPlots(i).ID);
-                    case 'Unemap Reference Signal'
-                        oFigure.PlotUnemapRefSignal(oPlots(i).ID);
+                    case {'Unemap Reference Signal', 'Optical Signal'}
+                        oFigure.PlotRecordingRefSignal(oPlots(i).ID);
                     case 'Electrode'
                         oFigure.PlotElectrode(oPlots(i).ID,oFigure.SelectedElectrode);
                     case 'Heart Rate'
@@ -537,13 +561,13 @@ classdef PressureAnalysis < SubFigure
             set(oLabel,'FontSize',oFigure.FontSize);
         end
         
-        function PlotUnemapRefSignal(oFigure,oAxesHandle)
+        function PlotRecordingRefSignal(oFigure,oAxesHandle)
             %Plot the unemap VRMS data
-            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.TimeSeries,oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data,'k');
-            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
-            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oUnemap.Electrodes.Potential.Data);
+            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Potential.Data,'k');
+            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Potential.Data);
+            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Potential.Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-            oLabel = ylabel(oAxesHandle, ['Unemap Phrenic', 10, 'Signal (V)']);
+            oLabel = ylabel(oAxesHandle, ['Recorded Reference', 10, 'Signal (V)']);
             set(oLabel, 'FontUnits', 'points');
             set(oLabel,'FontSize',oFigure.FontSize);
         end
@@ -618,6 +642,13 @@ classdef PressureAnalysis < SubFigure
             dDiff = dSecondTime - dFirstTime;
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.Processed = ...
                 oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Status) + dDiff;
+            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Status = 'Processed';
+            if isempty(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Processed)
+                oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Processed.Data = ...
+                    oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Original.Data;
+                oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Processed = ...
+                    oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Original;
+            end
             oFigure.Replot();
         end
     end

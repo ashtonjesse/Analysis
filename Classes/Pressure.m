@@ -11,7 +11,8 @@ classdef Pressure < BaseSignal
         Processed = [];
         Phrenic = [];
         Status = 'Original';
-        oUnemap;
+        oRecording = [];
+        RecordingType = 'Extracellular';
     end
     
     methods
@@ -72,7 +73,23 @@ classdef Pressure < BaseSignal
             oPressure.RefSignal = oData.oEntity.RefSignal;
             oPressure.Phrenic = oData.oEntity.Phrenic;
             oPressure.Status =  oData.oEntity.Status;
-            oPressure.oUnemap = Unemap(oData.oEntity.oUnemap);
+            %this is a hack to allow backwards compatibility with files
+            %saved without a RecordingType property
+            if isfield(oData.oEntity,'RecordingType')
+                oPressure.RecordingType = oData.oEntity.RecordingType;
+            else
+                oPressure.RecordingType = 'Extracellular';
+            end
+            switch (oPressure.RecordingType)
+                case 'Extracellular'
+                    if isfield(oData.oEntity,'oUnemap')
+                        oPressure.oRecording = Unemap(oData.oEntity.oUnemap);
+                    else
+                        oPressure.oRecording = Unemap(oData.oEntity.oRecording);
+                    end
+                case 'Optical'
+                    oPressure.oRecording = Optical(oData.oEntity.oRecording);
+            end
         end
         
         function [oPressure] = GetPressureFromTXTFile(oPressure,sFile)
