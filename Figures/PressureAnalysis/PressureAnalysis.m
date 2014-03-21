@@ -71,10 +71,10 @@ classdef PressureAnalysis < SubFigure
                 oFigure.Plots(1).Visible = 1;
                 oFigure.Replot();
             end
-            
-            sString = oFigure.GetPopUpSelectionString('oChannelSelector');
-            oFigure.SelectedElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
-            
+            if isfield(oParent.oGuiHandle,'oUnemap')
+                sString = oFigure.GetPopUpSelectionString('oChannelSelector');
+                oFigure.SelectedElectrode = oFigure.oParentFigure.oGuiHandle.oUnemap.GetElectrodeByName(sString);
+            end
             % --- Executes just before BaselineCorrection is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -84,8 +84,10 @@ classdef PressureAnalysis < SubFigure
                 % varargin   command line arguments to BaselineCorrection (see VARARGIN)
 
                 %Set the output attribute
-                aChannelNames = {oParent.oGuiHandle.oUnemap.Electrodes(:).Name};
-                set(handles.oChannelSelector,'string',aChannelNames);
+                if isfield(oParent.oGuiHandle,'oUnemap')
+                    aChannelNames = {oParent.oGuiHandle.oUnemap.Electrodes(:).Name};
+                    set(handles.oChannelSelector,'string',aChannelNames);
+                end
                 handles.output = hObject;
                 %Update the gui handles
                 guidata(hObject, handles);
@@ -200,10 +202,16 @@ classdef PressureAnalysis < SubFigure
             aPosition = get(oFigure.oGuiHandle.oPanel,'position');
             dMontageWidth = (8.27 - 2)/aPosition(3); %in inches, with borders
             dMontageHeight = 4.845/aPosition(4);
+            dPixelsToChopSouth = ceil(dMontageHeight*300 - 1500);
+            dPixelsToChopEast = ceil(dMontageWidth*300 - 1800);
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dMontageWidth dMontageHeight]);
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dMontageWidth dMontageHeight]);
             oFigure.PrintFigureToFile(sLongDataFileName);
+            %             Trim the white space
+            sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.bmp', sLongDataFileName)}, ...
+                {' -gravity South -chop 0x'},{sprintf('%d', dPixelsToChopSouth)},{' -gravity East -chop '},{sprintf('%d', dPixelsToChopEast)},{'x0'},{sprintf(' %s.bmp', sLongDataFileName)});
+            sStatus = dos(char(sChopString{1}));
         end
         
         function oOpenMultiMenu_Callback(oFigure, src, event)

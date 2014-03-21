@@ -24,6 +24,7 @@ classdef BeatPlot < SubFigure
             %Add a listener so that the figure knows when a user has
             %made a beat selection
             addlistener(oFigure.oParentFigure,'BeatSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'NewSignalEventCreated',@(src,event) oFigure.BeatSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.BeatSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.BeatSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.BeatSelectionListener(src, event));

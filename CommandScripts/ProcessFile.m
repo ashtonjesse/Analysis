@@ -1,5 +1,4 @@
-%This script batch processes Unemap .signal files that have been converted
-%into .txt files into the .mat file database
+%This script writes out a new file with locations
 
 close all;
 clear all;

@@ -32,6 +32,7 @@ classdef Preprocessing < SubFigure
             set(oFigure.oGuiHandle.oApplyChannelMenu, 'callback', @(src, event) oApplyChannelMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oApplyAllMenu, 'callback', @(src, event) oApplyAllMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateMenu, 'callback', @(src, event) oTruncateMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oClassifyMenu, 'callback', @(src, event) oClassifyMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
             
             %Set callback functions for controls
@@ -51,7 +52,17 @@ classdef Preprocessing < SubFigure
             %Plot the original and processed data of the first signal
             oFigure.PlotOriginal(1);
             oFigure.PlotProcessed(1);
-            
+            %set and save the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) ThisKeyPressFcn(oFigure, src, event));
+            oldKeyPressFcnHook = get(oFigure.oGuiHandle.(oFigure.sFigureTag), 'KeyPressFcn');
+
+            set(oFigure.oZoom,'enable','on');
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
+            %disable the listeners hold
+            hManager = uigetmodemanager(oFigure.oGuiHandle.(oFigure.sFigureTag));
+            set(hManager.WindowListenerHandles,'Enable','off');
+            %reset the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', oldKeyPressFcnHook);
             
             % --- Executes just before the figure is made visible.
             function Preprocessing_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -196,6 +207,33 @@ classdef Preprocessing < SubFigure
         function pmWindowSize_Callback(oFigure, src, event)
 
         end
+        
+        function oClassifyMenu_Callback(oFigure, src, event)
+            %Apply Accept/Reject and Include classifications from another
+            %unemap file
+            
+            %get the user to select a file
+            %Call built-in file dialog to select filename
+            [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file containing a Unemap entity from which to take the classifications');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                return
+            end
+            
+            %Get the full file name and save it to string attribute
+            sLongDataFileName=fullfile(sDataPathName,sDataFileName);
+            [pathstr, name, ext, versn] = fileparts(sLongDataFileName);
+            oUnemapWithClass = GetUnemapFromMATFile(Unemap,sLongDataFileName);
+            %Get the accepted electrodes
+            oAcceptedChannels = {oUnemapWithClass.Electrodes(:).Accepted};
+            %Set the current Unemap channels with this classification
+            [oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(:).Accepted] = deal(oAcceptedChannels{:});
+            %Replot
+            iChannel = oFigure.GetSliderIntegerValue('oSlider');
+            oFigure.PlotOriginal(iChannel);
+            oFigure.PlotProcessed(iChannel);
+        end
+        
         % --------------------------------------------------------------------
         function oCheckBoxReject_Callback(oFigure, src, event)
             %Get the button state
@@ -261,7 +299,7 @@ classdef Preprocessing < SubFigure
                 {'oBottomText','visible','off'} ; ...
                 {'oBottomPopUp','visible','off'} ; ...
                 {'oButton','string','Done'} ; ...
-                {'oAxes','title',sprintf('Channel %s Potential Data',iChannel)}});
+                {'oAxes','title',sprintf('Channel %s Potential Data',num2str(iChannel))}});
             %Add a listener so that the figure knows when a user has
             %selected the data to truncate            
             addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.TruncateData(src, event));

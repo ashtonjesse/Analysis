@@ -29,6 +29,7 @@ classdef AnalyseSignals < SubFigure
         TimeSelectionChange;
         BeatSelectionChange;
         SignalEventSelectionChange;
+        NewSignalEventCreated;
     end
     
     methods
@@ -432,7 +433,7 @@ classdef AnalyseSignals < SubFigure
                      end
              end
              oFigure.Replot();
-             notify(oFigure,'BeatSelectionChange');
+             notify(oFigure,'NewSignalEventCreated');
          end
          
          function bUpdateBeat_Callback(oFigure, src, event)
@@ -450,8 +451,9 @@ classdef AnalyseSignals < SubFigure
                  if ~isempty(colIndices)
                      aBeatIndexes = [colIndices(1) colIndices(end)];
                      dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
-                     aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
-                     oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
+                     %                      aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
+                     %                      oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
+                     oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(oFigure.SelectedBeat,aBeatIndexes);
                  else
                      %Reset the gui
                      brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');

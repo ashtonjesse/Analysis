@@ -29,6 +29,7 @@ classdef BeatDetection < SubFigure
             set(oFigure.oGuiHandle.oBeatSelectionMenu, 'callback', @(src, event) oBeatSelectionMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDetectPacedBeatsMenu, 'callback', @(src, event) oDetectPacedBeatsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDeleteSelectedBeatMenu, 'callback', @(src, event) oDeleteSelectedBeatMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oThresholdBeatsMenu, 'callback', @(src, event) oThresholdBeatsMenu_Callback(oFigure, src, event));
              
             set(oFigure.oGuiHandle.oMiddleAxes,'Visible','off');
             set(oFigure.oGuiHandle.oBottomAxes,'Visible','off');
@@ -39,10 +40,18 @@ classdef BeatDetection < SubFigure
                             
             %Plot the computed Vrms
             oFigure.PlotVRMS('Values');
+            %set and save the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) ThisKeyPressFcn(oFigure, src, event));
+            oldKeyPressFcnHook = get(oFigure.oGuiHandle.(oFigure.sFigureTag), 'KeyPressFcn');
+            
             %Turn zoom on for this figure
             set(oFigure.oZoom,'enable','on');
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
-            
+            %disable the listeners hold
+            hManager = uigetmodemanager(oFigure.oGuiHandle.(oFigure.sFigureTag));
+            set(hManager.WindowListenerHandles,'Enable','off');
+            %reset the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', oldKeyPressFcnHook);
             function BeatDetection_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
                 % hObject    handle to figure 
@@ -78,6 +87,36 @@ classdef BeatDetection < SubFigure
     end
     
     methods
+        function oThresholdBeatsMenu_Callback(oFigure, src, event)
+            %Discard beats that correspond with peaks in the RMS waveform
+            %that are smaller and so probably due to ventricular activity
+            
+            %Get the max values from the VRMS data corresponding to the detected beats
+            %initialise an array to hold the max values
+            dMaxValues = zeros(length(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes),1);
+            %loop through the beats
+            for i = 1:length(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes)
+                %get the vrms data between the current beat indexes
+                dMaxValues(i) = max(oFigure.oParentFigure.oGuiHandle.oUnemap.RMS.Smoothed(...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(i,1):...
+                    oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(i,2)));
+            end
+            [freq xbins] = hist(dMaxValues);
+            [val ind] = max(freq);
+            dThreshold = 0.6*xbins(ind);
+            %find the beats that should be deleted
+            iBeatsToDelete = find(dMaxValues < dThreshold);
+            %Haven't finished this implementation - need to change
+            %DeleteBeat function on BasePotential to accept arrays of beat
+            %numbers
+        end
+        
+        function ThisKeyPressFcn(oFigure, src, event)
+             switch event.Key
+                case 'delete'
+                    oFigure.DeleteSelectedBeat();
+             end
+        end
         % --------------------------------------------------------------------
         function PostZoom_Callback(oFigure, src, event)
             %Synchronize the zoom of all the axes
@@ -207,14 +246,7 @@ classdef BeatDetection < SubFigure
         end
         
         function oDeleteSelectedBeatMenu_Callback(oFigure, src, event)
-            %Delete the currently selected beat
-            if ~isempty(oFigure.SelectedBeat)
-                oFigure.oParentFigure.oGuiHandle.oUnemap.DeleteBeat(oFigure.SelectedBeat);
-                oFigure.oParentFigure.oGuiHandle.oECG.DeleteBeat(oFigure.SelectedBeat);
-            end
-            oFigure.SelectedBeat = [];
-            %replot
-            oFigure.PlotECG('DetectBeats');
+            oFigure.DeleteSelectedBeat();
         end
         
         function oCurvatureMenu_Callback(oFigure, src, event)
@@ -280,6 +312,17 @@ classdef BeatDetection < SubFigure
     end
     
     methods (Access = private)
+        function DeleteSelectedBeat(oFigure)
+            %Delete the currently selected beat
+            if ~isempty(oFigure.SelectedBeat)
+                oFigure.oParentFigure.oGuiHandle.oUnemap.DeleteBeat(oFigure.SelectedBeat);
+                oFigure.oParentFigure.oGuiHandle.oECG.DeleteBeat(oFigure.SelectedBeat);
+            end
+            oFigure.SelectedBeat = [];
+            %replot
+            oFigure.PlotECG('DetectBeats');
+        end
+        
         function BeatsSelected(oFigure, src, event)
             %Get the locations of the selected data and create a Peaks
             %array for passing to GetArrayBeats with a filler row of random

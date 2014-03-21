@@ -47,7 +47,7 @@ classdef PotentialDAL < BaseDAL
             tline2 = fgets(fid);
             tline = fgets(fid);
             %Loop while there are new lines
-            while ischar(tline)
+            while ischar(tline) 
                 %Split the current line on the :
                 [~,~,~,~,~,~,splitstring] = regexpi(tline,':');
                 %Trim any white space off the split strings
@@ -134,9 +134,50 @@ classdef PotentialDAL < BaseDAL
             
             %Load the potential data from the txt file
             aFileContents = oPotentialDAL.LoadFromFile(sFile);
+            %Get the electrode list by reading the first line from the file
+            fid = fopen(sFile,'r');
+            headline = fgets(fid);
+            fclose(fid);
+            %split the string into the channel names
+            aChannelNames = regexp(headline, '\s+', 'split');
+            %drop the first character which should be a comment character
+            aChannelNames = aChannelNames(1,2:end); 
+            
+            %check if the channels of this data need to be rearranged
+            [pathstr, name, ext, versn] = fileparts(sFile);
+            aPath = regexp(pathstr,'\\','split');
+            if str2double(char(aPath(end))) < 20130428
+                %this file was  created before the config file was adjusted
+                %so some channels are incorrectly labelled
+                %open the file that describes the updated mapping
+                fid = fopen('D:\Users\jash042\Documents\PhD\Experiments\ElectrodeArray\UpdatedMapping.cnfg','r');
+                tline = fgetl(fid);
+                while tline > 0
+                    aLine = regexp(tline,'\:','split');
+                    %find this electrode in the names
+                    bInd = strcmp(char(aLine(1)), aChannelNames);
+                    %update it to the new name
+                    iInd = find(bInd);
+                    if length(iInd) > 1
+                        %this must be the last mapping
+                        aChannelNames(iInd(1)) = {strtrim(char(aLine(2)))};
+                    else
+                        aChannelNames(bInd) = {strtrim(char(aLine(2)))};
+                    end
+                    %get the new line
+                    tline = fgetl(fid);
+                end
+                fclose(fid);
+            end
+            
+            %get the list of channel names loaded
+            aElectrodeNames = {oUnemap.Electrodes(:).Name};
             %Get the potential data and initialise processed.data
-            for i = 1:oUnemap.oExperiment.Unemap.NumberOfChannels
-                oUnemap.Electrodes(i).Potential.Data = aFileContents(:,i+1);
+            for i = 1:length(aElectrodeNames)
+                %Find the index of this electrode 
+                bIndices = strcmp(aElectrodeNames(i), aChannelNames);
+                %save the correct data to this electrode
+                oUnemap.Electrodes(i).Potential.Data = aFileContents(:,bIndices);
                 oUnemap.Electrodes(i).Processed.Data = NaN(size(aFileContents,1),1);
             end
             %Get the Timeseries data

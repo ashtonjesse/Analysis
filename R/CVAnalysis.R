@@ -2,7 +2,7 @@
 library("s20x")
 graphics.off() 
 
-routedir <- "G:/PhD/Experiments/Auckland/InSituPrep/TxtFiles/20130822/baro003/"
+routedir <- "G:/PhD/Experiments/Auckland/InSituPrep/20130816/0816vagus006/"
 #load the data
 CVdata <- read.table(paste(c(routedir,"CVData.txt"),collapse=''), sep = ",", header = TRUE)
 

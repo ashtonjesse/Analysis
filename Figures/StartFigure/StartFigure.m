@@ -7,7 +7,7 @@ classdef StartFigure < BaseFigure
 % to the child figure so a Warning is posted to the command window automatically   
 
     properties
-        DefaultPath = 'D:\Users\jash042\Documents\PhD\Analysis\Database\';
+        DefaultPath = 'G:\PhD\Experiments\Auckland\InSituPrep\';
     end
     
     methods

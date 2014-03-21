@@ -154,10 +154,10 @@ classdef MapElectrodes < SubFigure
             %             for i =
             %             1:size(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
-            oFigure.oParentFigure.SelectedBeat = 10;
+            iStartBeat = oFigure.oParentFigure.SelectedBeat;
             %Set figure size
             iMontageX = 5;%5
-            iMontageY = 8;%9
+            iMontageY = 9;%9
             dMontageWidth = 8.27 - 2; %in inches, with borders
             dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
             dWidth = dMontageWidth/iMontageX; %in inches
@@ -222,8 +222,8 @@ classdef MapElectrodes < SubFigure
                 
                 oFigure.PrintFigureToFile(sLongDataFileName);
             end
-            
-            
+            %reset the beat to what was originally selected
+            oFigure.oParentFigure.SelectedBeat = iStartBeat;
         end
         
         % -----------------------------------------------------------------
@@ -242,7 +242,7 @@ classdef MapElectrodes < SubFigure
                     sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
                 end
                 iMontageX = 5;%5
-                iMontageY = 8;%9
+                iMontageY = 9;%9
                 dMontageWidth = 8.27 - 2; %in inches, with borders
                 dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
                 dWidth = dMontageWidth/iMontageX; %in inches
@@ -710,7 +710,11 @@ classdef MapElectrodes < SubFigure
                          ibmax = i;
                      end
                  end
+                 %Might need to change this if I start analysing pacing
+                 %data but at the moment sinus will always start at 0.
+                 oFigure.cbarmin = 0;
              end
+             
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oFigure.Activation.x,oFigure.Activation.y,oFigure.Activation.Beats(iBeat).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
