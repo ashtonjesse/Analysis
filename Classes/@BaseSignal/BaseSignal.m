@@ -81,8 +81,8 @@ classdef BaseSignal < BaseEntity
                     OutData = filter(oFilter,aInData);
                    
                 case 'SovitzkyGolay'
-                    iOrder = cell2mat(varargin{1}(1));
-                    iWindowSize = cell2mat(varargin{1}(2));
+                    iOrder = varargin{1};
+                    iWindowSize = varargin{2};
                     %Apply filter
                     OutData = sgolayfilt(aInData,iOrder,iWindowSize);
             end

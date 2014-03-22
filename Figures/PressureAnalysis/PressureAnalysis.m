@@ -35,9 +35,10 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oOpenMultiMenu, 'callback', @(src, event) oOpenMultiMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveMenu, 'callback', @(src, event) oSaveMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExitMenu, 'callback', @(src, event) Close_fcn(oFigure, src, event));
-            set(oFigure.oGuiHandle.oViewMenu, 'callback', @(src, event) Unused_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExportMenu, 'callback', @(src, event) oExportMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTimeAlignMenu, 'callback', @(src, event) oTimeAlignMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDetectBeatsMenu, 'callback', @(src, event) oDetectBeatsMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSmoothMenu, 'callback', @(src, event) oSmoothMenu_Callback(oFigure, src, event));
             
             set(oFigure.oGuiHandle.cb1, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.cb2, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
@@ -200,7 +201,39 @@ classdef PressureAnalysis < SubFigure
             deleteme(oFigure);
         end    
         
-                % -----------------------------------------------------------------
+        % -----------------------------------------------------------------
+        function oDetectBeatsMenu_Callback(oFigure, src, event)
+            %Detect the beats through thresholding the curvature of the
+            %waveform
+                        
+            %Open the SelectData figure to apply a threshold
+            oGetThresholdFigure = SelectData(oFigure,oFigure.oParentFigure.oGuiHandle.oRecording.TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oRecording.Electrodes.Processed.Curvature.Values,...
+                {{'oInstructionText','string','Select a range of data during quiescence'} ; ...
+                {'oBottomText','string','How many standard deviations to apply?'} ; ...
+                {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
+                {'oButton','string','Done'} ; ...
+                {'oAxes','title','Curvature'}});
+            %Add a listener so that the figure knows when a user has
+            %calculated the threshold            
+            addlistener(oGetThresholdFigure,'DataSelected',@(src,event) oFigure.ThresholdCurvature(src, event));
+        end
+        
+        function ThresholdCurvature(oFigure, src, event)
+            %Callback for listener waiting for SelectData figure event to
+            %fire when a user has selected a threshold for beat detection
+            %Apply the threshold
+        end
+        
+        function oSmoothMenu_Callback(oFigure, src, event)
+            %Smooth the reference signal
+            aInOptions = struct('Procedure','','Inputs',cell(1,1));
+            aInOptions.Procedure = 'FilterData';
+            aInOptions.Inputs = {'SovitzkyGolay',3,9};
+            oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.ProcessElectrodeData(1, aInOptions);
+            oFigure.Replot();
+        end
+                
         function oExportMenu_Callback(oFigure, src, event)
             %Get the save file path
             %Call built-in file dialog to select filename
@@ -563,9 +596,10 @@ classdef PressureAnalysis < SubFigure
         
         function PlotRecordingRefSignal(oFigure,oAxesHandle)
             %Plot the unemap VRMS data
-            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Potential.Data,'k');
-            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Potential.Data);
-            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Potential.Data);
+            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Status).Data,'k');
+            ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Status).Data);
+            ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Status).Data);
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
             oLabel = ylabel(oAxesHandle, ['Recorded Reference', 10, 'Signal (V)']);
             set(oLabel, 'FontUnits', 'points');
