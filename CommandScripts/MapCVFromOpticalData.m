@@ -7,9 +7,13 @@ clear all;
 close all;
 % 
 % %get a list of the csv files in the directory
-sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131201\20V10Hz6s\ROI3\';
-sSavePath = 'G:\PhD\Experiments\Bordeaux\Data\20131201\20V10Hz6s\ROI3\';
-bPrintAPD = false;
+sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\1129baro008\APD50\';
+sSavePath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\1129baro008\APD50\';
+bPrintAPD = true;
+iSecondMapToCompare = 25;
+iMontageX = 5;%5
+iMontageY = 10;%9
+
 
 sFormat = 'csv';
 % %Get the full path names of all the  files in the directory
@@ -46,8 +50,7 @@ cbarRange = cbarmin:1:cbarmax;
 oATFigure = figure(); oATAxes = axes();
 set(oATFigure,'paperunits','inches');
 %Set figure size
-iMontageX = 5;%5
-iMontageY = 10;%9
+
 dMontageWidth = 8.27 - 2; %in inches, with borders 
 dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
 dWidth = dMontageWidth/iMontageX; %in inches
@@ -92,7 +95,8 @@ set(oATAxes,'Box','off');
 % set(oTitle,'units','normalized');
 % set(oTitle,'fontsize',14,'fontweight','bold');
 %create beat label
-oBeatLabel = text(min(min(xx))+0.1,min(min(yy))+0.5, sprintf('%d',1));
+aLabelPosition = [min(min(xx))+0.2, max(max(yy))-0.5];
+oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',1));
 set(oBeatLabel,'units','normalized');
 set(oBeatLabel,'fontsize',14,'fontweight','bold');
 set(oBeatLabel,'parent',oATAxes);
@@ -109,7 +113,7 @@ sATMapDosString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\mont
 [CV,Vect]=ReComputeCV([x,y],AT,24,0.1);
 idxCV = find(~isnan(CV));
 aCVdata = CV(idxCV);
-aCVdata(aCVdata > 2) = 2;
+aCVdata(aCVdata > 1) = 1;
 oCVFigure = figure(); oCVAxes = axes();
 set(oCVFigure,'paperunits','inches');
 %set up position
@@ -124,9 +128,9 @@ aPosition(3) = 1- aTightInset(3) - aTightInset(1);
 aPosition(4) = 1 - aTightInset(2) - aTightInset(4)-0.05;
 set(oCVAxes, 'Position', aPosition);
 %Finish plotting
-caxis(oCVAxes, [0 2]);
 scatter(oCVAxes,x(idxCV),y(idxCV),14,aCVdata,'filled');
 hold(oCVAxes, 'on'); quiver(oCVAxes,x(idxCV),y(idxCV),Vect(idxCV,1),Vect(idxCV,2),'color','k','linewidth',0.6); hold(oCVAxes, 'off');
+caxis(oCVAxes, [0 1]);
 axis(oCVAxes, 'equal'); axis(oCVAxes, 'tight');
 %set up axis label
 set(oCVAxes,'FontUnits','points');
@@ -146,7 +150,7 @@ set(oCVAxes,'yticklabel', char(aYtickstring));
 set(oCVAxes,'ytickmode','manual');
 set(oCVAxes,'Box','off');
 %set up beat label
-oBeatLabel = text(min(min(xx))+0.1,min(min(yy))+0.5, sprintf('%d',1));
+oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',1));
 set(oBeatLabel,'units','normalized');
 set(oBeatLabel,'fontsize',14,'fontweight','bold');
 set(oBeatLabel,'parent',oCVAxes);
@@ -217,7 +221,7 @@ if bPrintAPD
     
     %Get the range of another beat and combine to ensure range fits across all
     %beats
-    [a b c aAPDs2] = ReadOpticalDataCSVFile(aFileFull{25},rowdim,coldim,6);
+    [a b c aAPDs2] = ReadOpticalDataCSVFile(aFileFull{iSecondMapToCompare},rowdim,coldim,6);
     clear a b c;
     aCurrentAPD = rot90(aAPDs2(:,1:end-1,1),-1);
     APD2 = aCurrentAPD(aDataPoints);
@@ -273,7 +277,7 @@ if bPrintAPD
     % set(oTitle,'units','normalized');
     % set(oTitle,'fontsize',14,'fontweight','bold');
     %create beat label
-    oBeatLabel = text(min(min(xxforAPD))+0.1,min(min(yy))+0.5, sprintf('%d',1));
+    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',1));
     set(oBeatLabel,'units','normalized');
     set(oBeatLabel,'fontsize',14,'fontweight','bold');
     set(oBeatLabel,'parent',oAPDAxes);
@@ -308,7 +312,7 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
     contourf(oATAxes, xx,yy,QAT,cbarRange);
     caxis(oATAxes, [cbarmin cbarmax]);
     axis(oATAxes, 'equal'); axis(oATAxes, 'tight'); axis(oATAxes, 'off');
-    oBeatLabel = text(min(min(xx))+0.1,min(min(yy))+0.5, sprintf('%d',k));
+    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',k));
     set(oBeatLabel,'units','normalized');
     set(oBeatLabel,'fontsize',14,'fontweight','bold');
     set(oBeatLabel,'parent',oATAxes);
@@ -325,17 +329,17 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
     aCVDataToWrite(k,:) = CV;
     idxCV = find(~isnan(CV));
     aCVdata = CV(idxCV);
-    aCVdata(aCVdata > 2) = 2;
+    aCVdata(aCVdata > 1) = 1;
        
     %plot the CV 
     scatter(oCVAxes,x(idxCV),y(idxCV),14,aCVdata,'filled');
     hold(oCVAxes, 'on'); quiver(oCVAxes,x(idxCV),y(idxCV),Vect(idxCV,1),Vect(idxCV,2),'color','k','linewidth',0.6); hold(oCVAxes, 'off');
     axis(oCVAxes, 'equal'); axis(oCVAxes, 'tight'); axis(oCVAxes,'off');
-    oBeatLabel = text(min(min(xx))+0.1,min(min(yy))+0.5, sprintf('%d',k));
+    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',k));
     set(oBeatLabel,'units','normalized');
     set(oBeatLabel,'fontsize',14,'fontweight','bold');
     set(oBeatLabel,'parent',oCVAxes);
-    caxis(oCVAxes, [0 2]);
+    caxis(oCVAxes, [0 1]);
     drawnow; pause(.2);
     [pathstr, name, ext, versn] = fileparts(aFileFull{k});
     sSaveFilePath = fullfile(sSavePath,strcat(name, '_CV.bmp'));
@@ -352,7 +356,7 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
         contourf(oAPDAxes, xxforAPD,yyforAPD,QAPD,APDcbarRange);
         axis(oAPDAxes, 'equal'); axis(oAPDAxes, 'tight'); axis(oAPDAxes, 'off');
         caxis(oAPDAxes, [APDcbarmin APDcbarmax]);
-        oBeatLabel = text(min(min(xx))+0.1,min(min(yy))+0.5, sprintf('%d',k));
+        oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',k));
         set(oBeatLabel,'units','normalized');
         set(oBeatLabel,'fontsize',14,'fontweight','bold');
         set(oBeatLabel,'parent',oAPDAxes);
@@ -434,6 +438,9 @@ end
 % end
 
 %% Create a colour bar for the AT maps
+%get the fileparts of the save path
+aPathFolders = regexp(sSavePath,'\\','split'); 
+sFigureTitle = strcat(char(aPathFolders{end-2}), {' ('}, char(aPathFolders{end-1}), ')');
 oCbarFigure = figure(); oAxes = axes();
 set(oCbarFigure,'paperunits','inches');
 set(oCbarFigure,'paperposition',[0 0 dMontageWidth dMontageHeight]);
@@ -448,6 +455,10 @@ oTitle = get(oColorBar, 'title');
 set(oTitle,'units','normalized');
 set(oTitle,'fontsize',8);
 set(oTitle,'string','Activation Time (ms)','position',[0.5 2]);
+oFigureTitle = text('string', sFigureTitle, 'parent', oColorBar);
+set(oFigureTitle, 'units', 'normalized');
+set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
+set(oFigureTitle, 'position', [0 2.5]);
 %set the paper size
 sSaveFilePath = fullfile(sSavePath,'ATcolorbar.bmp');
 print(oCbarFigure,'-dbmp','-r300',sSaveFilePath);
@@ -468,14 +479,18 @@ set(oCbarFigure,'papersize',[dMontageWidth dMontageHeight]);
 scatter(oAxes,x(idxCV),y(idxCV),16,aCVdata,'filled');
     hold(oAxes, 'on'); quiver(oAxes,x(idxCV),y(idxCV),Vect(idxCV,1),Vect(idxCV,2),'color','k','linewidth',0.6); hold(oAxes, 'off');
 axis(oAxes, 'equal'); axis(oAxes, 'tight'); axis(oAxes,'off');
-caxis([0 2]);
+caxis([0 1]);
 % cbarf([cbarmin cbarmax], floor(cbarmin):1:ceil(cbarmax));
 
-oColorBar = cbarf([0 2], 0:0.2:2, 'horiz');
+oColorBar = cbarf([0 1], 0:0.1:1, 'horiz');
 oTitle = get(oColorBar, 'title');
 set(oTitle,'units','normalized');
 set(oTitle,'fontsize',8);
 set(oTitle,'string','Velocity (m/s)','position',[0.5 2]);
+oFigureTitle = text('string', sFigureTitle, 'parent', oColorBar);
+set(oFigureTitle, 'units', 'normalized');
+set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
+set(oFigureTitle, 'position', [0 2.5]);
 %set the paper size
 sSaveFilePath = fullfile(sSavePath,'CVcolorbar.bmp');
 print(oCbarFigure,'-dbmp','-r300',sSaveFilePath);
@@ -504,6 +519,10 @@ if bPrintAPD
     set(oTitle,'units','normalized');
     set(oTitle,'fontsize',8);
     set(oTitle,'string','Action Potential Duration (ms)','position',[0.5 2]);
+    oFigureTitle = text('string', sFigureTitle, 'parent', oColorBar);
+    set(oFigureTitle, 'units', 'normalized');
+    set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
+    set(oFigureTitle, 'position', [0 2.5]);
     %set the paper size
     sSaveFilePath = fullfile(sSavePath,'APDcolorbar.bmp');
     print(oCbarFigure,'-dbmp','-r300',sSaveFilePath);

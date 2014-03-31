@@ -59,13 +59,14 @@ classdef Pressure < BaseSignal
             oPressure.Status = 'Processed';
         end
         
-        function oPressure = GetPressureFromMATFile(oPressure, sFile)
+        function oPressure = GetPressureFromMATFile(oPressure, sFile, sRecordingType)
             %   Get an entity by loading a mat file that has been saved
             %   previously
             
             %   Load the mat file into the workspace
             oData = oPressure.oDAL.GetEntityFromFile(sFile);
             %   Reload all the properties 
+            oPressure.RecordingType = sRecordingType;
             oPressure.oExperiment = Experiment(oData.oEntity.oExperiment);
             oPressure.Original = oData.oEntity.Original;
             oPressure.TimeSeries = oData.oEntity.TimeSeries;
@@ -75,11 +76,6 @@ classdef Pressure < BaseSignal
             oPressure.Status =  oData.oEntity.Status;
             %this is a hack to allow backwards compatibility with files
             %saved without a RecordingType property
-            if isfield(oData.oEntity,'RecordingType')
-                oPressure.RecordingType = oData.oEntity.RecordingType;
-            else
-                oPressure.RecordingType = 'Extracellular';
-            end
             switch (oPressure.RecordingType)
                 case 'Extracellular'
                     if isfield(oData.oEntity,'oUnemap')

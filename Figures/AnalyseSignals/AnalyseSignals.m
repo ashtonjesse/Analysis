@@ -30,6 +30,7 @@ classdef AnalyseSignals < SubFigure
         BeatSelectionChange;
         SignalEventSelectionChange;
         NewSignalEventCreated;
+        NewBeatInserted;
     end
     
     methods
@@ -39,7 +40,7 @@ classdef AnalyseSignals < SubFigure
             oFigure = oFigure@SubFigure(oParent,'AnalyseSignals',@AnalyseSignals_OpeningFcn);
             
             %Set up beat slider
-            oBeatSliderControl = SlideControl(oFigure,'Select Beat', 'BeatSelectionChange');
+            oBeatSliderControl = SlideControl(oFigure,'Select Beat', {'BeatSelectionChange','NewBeatInserted'});
             iNumBeats = size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
             set(oBeatSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumBeats, 'Value', 1 ,'SliderStep',[1/iNumBeats  0.02]);
@@ -79,8 +80,9 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oPrintFigureMenu, 'callback', @(src, event) oPrintFigureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPlotSinusRateMenu, 'callback', @(src, event) oPlotSinusRateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDeleteBeatMenu, 'callback', @(src, event) oDeleteBeatMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oInsertBeatMenu, 'callback', @(src, event) oInsertBeatMenu_Callback(oFigure, src, event));
             
-            set(oFigure.oGuiHandle.bNextGroup, 'callback', @(src, event) bNextGroup_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.bInsertBeat, 'callback', @(src, event) bInsertBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bPreviousGroup, 'callback', @(src, event) bPreviousGroup_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
             
@@ -260,7 +262,7 @@ classdef AnalyseSignals < SubFigure
              %Notify listeners so that the selected beat can be propagated
              %and update the Slide Control
              oFigure.SelectedBeat = iBeatIndexes{1,1};
-             notify(oFigure,'BeatSelectionChange',DataPassingEvent([],iBeatIndexes{1,1}));
+             notify(oFigure,'BeatSelectionChange',DataPassingEvent([1 size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1)],iBeatIndexes{1,1}));
              oFigure.Replot();
          end
          
@@ -294,27 +296,42 @@ classdef AnalyseSignals < SubFigure
              oFigure.Replot();
          end
          
-         function bNextGroup_Callback(oFigure, src, event)
-             %-------Not implemented right now as no way of easily
-             %selecting channels based on location
+         function bInsertBeat_Callback(oFigure, src, event)
+             %Insert a new beat 
              
-             %Select the next group of channels - where group is
-             %defined by the x and y dimensions specified in the experiment
-             %metadata
-             
-             %Find the max channel currently selected
-             aLocations = MultiLevelSubsRef(oFigure.oDAL.oHelper,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(oFigure.SelectedChannels),'Location');
-             [C iMaxIndex] = max(sum(aLocations,1));
-             iCornerChannel = oFigure.SelectedChannels(iMaxIndex);
-             if iCornerChannel > (oFigure.NumberofChannels - oFigure.SubPlotXdim*oFigure.SubPlotYdim)
-                 %Go back to the start
-                 oFigure.SelectedChannels = 1:oFigure.SubPlotXdim*oFigure.SubPlotYdim;
+             % Find any brushline objects associated with the ElectrodeAxes
+             hBrushLines = findall(oFigure.oGuiHandle.oElectrodeAxes,'tag','Brushing');
+             % Get the Xdata and Ydata attitributes of this
+             brushedData = get(hBrushLines, {'Xdata','Ydata'});
+             % The data that has not been selected is labelled as NaN so get
+             % rid of this
+             if ~isempty(brushedData)
+                 brushedIdx = ~isnan([brushedData{1,1}]);
+                 [row, colIndices] = find(brushedIdx);
+                 if ~isempty(colIndices)
+                     aBeatIndexes = [colIndices(1) colIndices(end)];
+                     dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
+                     oFigure.oParentFigure.oGuiHandle.oUnemap.InsertNewBeat(oFigure.SelectedBeat,aBeatIndexes);
+                 else
+                     %Reset the gui
+                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                     set(oFigure.oGuiHandle.bInsertBeat, 'visible', 'off');
+                     oFigure.Replot();
+                     error('AnalyseSignals.bInsertBeat_Callback:NoSelectedData', 'You need to select data');
+                 end
              else
-                 %Move to the next group
-                 oFigure.SelectedChannels = (iCornerChannel + 1):(iCornerChannel + oFigure.SubPlotXdim*oFigure.SubPlotYdim);
+                 %Reset the gui
+                 brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                 set(oFigure.oGuiHandle.bInsertBeat, 'visible', 'off');
+                 oFigure.Replot();
+                 error('AnalyseSignals.bInsertBeat_Callback:NoSelectedData', 'You need to select data');
              end
-             %replot
+             %Reset the gui
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+             set(oFigure.oGuiHandle.bInsertBeat, 'visible', 'off');
              oFigure.Replot();
+             notify(oFigure,'NewBeatInserted', DataPassingEvent([1, size( ...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1)], oFigure.SelectedBeat));
          end
          
          function bPreviousGroup_Callback(oFigure, src, event)
@@ -337,6 +354,47 @@ classdef AnalyseSignals < SubFigure
              %replot
              oFigure.Replot();
          end
+         
+          function bUpdateBeat_Callback(oFigure, src, event)
+             %Update the currently selected beat
+             
+             % Find any brushline objects associated with the ElectrodeAxes
+             hBrushLines = findall(oFigure.oGuiHandle.oElectrodeAxes,'tag','Brushing');
+             % Get the Xdata and Ydata attitributes of this
+             brushedData = get(hBrushLines, {'Xdata','Ydata'});
+             % The data that has not been selected is labelled as NaN so get
+             % rid of this
+             if ~isempty(brushedData)
+                 brushedIdx = ~isnan([brushedData{1,1}]);
+                 [row, colIndices] = find(brushedIdx);
+                 if ~isempty(colIndices)
+                     aBeatIndexes = [colIndices(1) colIndices(end)];
+                     dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
+                     %                      aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
+                     %                      oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
+                     oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(oFigure.SelectedBeat,aBeatIndexes);
+                 else
+                     %Reset the gui
+                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                     set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+                     oFigure.Replot();
+                     notify(oFigure,'BeatIndexChange');
+                     error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+                 end
+             else
+                 %Reset the gui
+                 brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+                 set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+                 oFigure.Replot();
+                 notify(oFigure,'BeatIndexChange');
+                 error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+             end
+             %Reset the gui
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
+             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
+             oFigure.Replot();
+             notify(oFigure,'BeatIndexChange');
+          end
          
          %% Event listeners
          function ChannelSelectionChange(oFigure,src,event)
@@ -381,7 +439,7 @@ classdef AnalyseSignals < SubFigure
              %Is called when the user selects a new beat using the
              %SlideControl
              oFigure.SelectedBeat = event.Value;
-             notify(oFigure,'BeatSelectionChange',DataPassingEvent([],oFigure.SelectedBeat));
+             notify(oFigure,'BeatSelectionChange',DataPassingEvent([1 size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1)],oFigure.SelectedBeat));
              oFigure.Replot();
              
          end
@@ -392,7 +450,9 @@ classdef AnalyseSignals < SubFigure
              %SlideControl
              %Save the value and pass on the event notification
              oFigure.SelectedTimePoint = event.Value;
-             notify(oFigure,'TimeSelectionChange', DataPassingEvent([],oFigure.SelectedTimePoint));
+             iBeatLength = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,2) - ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,1);
+             notify(oFigure,'TimeSelectionChange', DataPassingEvent([1 iBeatLength],oFigure.SelectedTimePoint));
          end
          
          %% Event Callbacks --------------------------------------
@@ -436,48 +496,7 @@ classdef AnalyseSignals < SubFigure
              notify(oFigure,'NewSignalEventCreated');
          end
          
-         function bUpdateBeat_Callback(oFigure, src, event)
-             %Update the currently selected beat
-             
-             % Find any brushline objects associated with the ElectrodeAxes
-             hBrushLines = findall(oFigure.oGuiHandle.oElectrodeAxes,'tag','Brushing');
-             % Get the Xdata and Ydata attitributes of this
-             brushedData = get(hBrushLines, {'Xdata','Ydata'});
-             % The data that has not been selected is labelled as NaN so get
-             % rid of this
-             if ~isempty(brushedData)
-                 brushedIdx = ~isnan([brushedData{1,1}]);
-                 [row, colIndices] = find(brushedIdx);
-                 if ~isempty(colIndices)
-                     aBeatIndexes = [colIndices(1) colIndices(end)];
-                     dStartTime = oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aBeatIndexes(1));
-                     %                      aNewBeat = oFigure.oParentFigure.oGuiHandle.oUnemap.GetClosestBeat(oFigure.SelectedChannel,dStartTime);
-                     %                      oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(aNewBeat{1,1},aBeatIndexes);
-                     oFigure.oParentFigure.oGuiHandle.oUnemap.UpdateBeatIndexes(oFigure.SelectedBeat,aBeatIndexes);
-                 else
-                     %Reset the gui
-                     brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-                     set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-                     oFigure.Replot();
-                     notify(oFigure,'BeatIndexChange');
-                     error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
-                 end
-             else
-                 %Reset the gui
-                 brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-                 set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-                 oFigure.Replot();
-                 notify(oFigure,'BeatIndexChange');
-                 error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
-             end
-             %Reset the gui
-             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-             set(oFigure.oGuiHandle.bUpdateBeat, 'visible', 'off');
-             oFigure.Replot();
-             notify(oFigure,'BeatIndexChange');
-          end
-         
-         %% Menu Callbacks
+           %% Menu Callbacks
          function oUnusedMenu_Callback(oFigure, src, event)
              
          end
@@ -501,9 +520,9 @@ classdef AnalyseSignals < SubFigure
             addlistener(oBeatPlotFigure,'TimePointChange',@(src,event) oFigure.TimeSlideValueListener(src,event));
             
             %Open a time point slider
-            oTimeSliderControl = SlideControl(oFigure,'Select Time Point','TimeSelectionChange');
-            iBeatLength = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(1,2) - ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(1,1);
+            oTimeSliderControl = SlideControl(oFigure,'Select Time Point',{'TimeSelectionChange'});
+            iBeatLength = oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,2) - ...
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,1);
             set(oTimeSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iBeatLength, 'Value', oFigure.SelectedTimePoint,'SliderStep',[1/iBeatLength  0.02]);
             set(oTimeSliderControl.oGuiHandle.oSliderTxtLeft,'string',1);
@@ -610,6 +629,12 @@ classdef AnalyseSignals < SubFigure
              end
              sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
              oFigure.PrintFigureToFile(sLongDataFileName);
+         end
+         
+         function oInsertBeatMenu_Callback(oFigure, src, event)
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
+             brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
+             set(oFigure.oGuiHandle.bInsertBeat, 'visible', 'on');            
          end
          %% Misc
          function iEventNumber = GetEventNumberFromTag(oFigure, sTag)

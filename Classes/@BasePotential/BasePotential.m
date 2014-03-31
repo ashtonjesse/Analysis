@@ -181,7 +181,8 @@ classdef BasePotential < BaseSignal
         
         function DeleteBeat(oBasePotential, iBeat)
             %Check if there is an electrodes field
-            if strcmpi(class(oBasePotential),'Unemap')
+            sFields = fields(oBasePotential);
+            if max(strcmp(sFields,'Electrodes'))
                 %Loop through the electrodes and delete the beat number
                 %iBeat
                 for i = 1:length(oBasePotential.Electrodes)
@@ -198,6 +199,138 @@ classdef BasePotential < BaseSignal
                     oBasePotential.Processed.BeatIndexes(iBeat+1:end,:));
             end
             
+        end
+        
+         function iIndexes = GetClosestBeat(oBasePotential,iElectrodeNumber,dTime)
+            if strcmp(oBasePotential.Electrodes(1).Status,'Potential');
+                error('BasePotential.GetClosestBeat.VerifyInput:NoProcessedData', 'You need to have processed data');
+            else
+                %Get the start times of all the beats
+                aIntervalStart = oBasePotential.TimeSeries(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(:,1));
+                %Find the index of the closest time to the input time
+                [Value, iMinIndex] = min(abs(aIntervalStart - dTime));
+                %Return the beat index of this time
+                iIndexes = {iMinIndex, oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iMinIndex,:)};
+            end
+         end
+        
+         function [aRateData dPeaks] = CalculateSinusRate(oBasePotential, iElectrodeNumber)
+            %Get the peaks associated with the beat data from this
+            %electrode and make call to GetHeartRateData
+            dPeaks = zeros(size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
+            %Loop through the beats and find max curvature
+            for i = 1:size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1);
+                aInData = oBasePotential.Electrodes(iElectrodeNumber).Processed.Data...
+                    (oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
+                aCurvature = oBasePotential.CalculateCurvature(aInData, 20, 5);
+                [val, loc] = max(aCurvature);
+                %Add the first index of this beat
+                dPeaks(i,1) = loc + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
+            end
+            [aRateData, dPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+        end
+        
+        function [aRateData, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
+            %Take the peaks  supplied and create an array of
+            %discrete heart rates
+            
+            aTimes = oBasePotential.TimeSeries(dPeaks);
+            %Put peaks in pairs
+            dPeaks = dPeaks';
+            dPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
+            %Get the times in sets of intervals
+            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)]; 
+            aIntervals = aNewTimes(2,:) - aNewTimes(1,:);
+            %Put rates into bpm
+            aRates = 60 ./ aIntervals;
+            aRateData = NaN(1,length(oBasePotential.TimeSeries));
+            %Loop through the peaks and insert into aRateTrace
+            for i = 1:size(dPeaks,2)
+                aRateData(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
+            end
+        end
+        
+        function RefreshBeatData(oBasePotential, varargin)
+            %loop through electrodes and refresh data for beat indexes
+            if nargin > 0
+                %user has specified a specific electrode
+                iChannel = varargin{1};
+                oBasePotential.Electrodes(iChannel).Processed.Beats = NaN(length(oBasePotential.Electrodes(iChannel).Processed.Data),1);
+                for j = 1:size(oBasePotential.Electrodes(iChannel).Processed.BeatIndexes,1)
+                    oBasePotential.Electrodes(iChannel).Processed.Beats(oBasePotential.Electrodes(iChannel).Processed.BeatIndexes(j,1): ...
+                        oBasePotential.Electrodes(iChannel).Processed.BeatIndexes(j,2)) = oBasePotential.Electrodes(iChannel).Processed.Data(oBasePotential.Electrodes(iChannel).Processed.BeatIndexes(j,1): ...
+                        oBasePotential.Electrodes(iChannel).Processed.BeatIndexes(j,2));
+                end
+            else
+                oWaitbar = waitbar(0,'Please wait...');
+                iTotal = length(oBasePotential.Electrodes);
+                for i = 1:length(oBasePotential.Electrodes)
+                    oBasePotential.Electrodes(i).Processed.Beats = NaN(length(oBasePotential.Electrodes(i).Processed.Data),1);
+                    for j = 1:size(oBasePotential.Electrodes(i).Processed.BeatIndexes,1)
+                        oBasePotential.Electrodes(i).Processed.Beats(oBasePotential.Electrodes(i).Processed.BeatIndexes(j,1): ...
+                            oBasePotential.Electrodes(i).Processed.BeatIndexes(j,2)) = oBasePotential.Electrodes(i).Processed.Data(oBasePotential.Electrodes(i).Processed.BeatIndexes(j,1): ...
+                            oBasePotential.Electrodes(i).Processed.BeatIndexes(j,2));
+                    end
+                    waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+                end
+                close(oWaitbar);
+            end
+        end
+        
+        function UpdateBeatIndexes(oBasePotential, iBeat, aIndexRange)
+            %Change the beat information to that supplied by the new range
+            oWaitbar = waitbar(0,'Please wait...');
+            iTotal = length(oBasePotential.Electrodes);
+            %Loop through the electrodes
+            for i = 1:iTotal
+                %Get the current range for this beat
+                aCurrentRange = oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat,:);
+                %Reset the current range of this beat to NaN
+                oBasePotential.Electrodes(i).Processed.Beats(aCurrentRange(1):aCurrentRange(2)) = NaN;
+                %Set the new beat values
+                oBasePotential.Electrodes(i).Processed.Beats(aIndexRange(1):aIndexRange(2)) = ...
+                    oBasePotential.Electrodes(i).Processed.Data(aIndexRange(1):aIndexRange(2));
+                %Set the new beat indexes
+                oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat,:) = [aIndexRange(1) aIndexRange(2)];
+                %update the signal events if there are any
+                if isfield(oBasePotential.Electrodes(i),'SignalEvent')
+                    for j = 1:length(oBasePotential.Electrodes(i).SignalEvent)
+                        %Get the relative range indexes
+                        aCurrentRange = oBasePotential.Electrodes(i).SignalEvent(j).Range(iBeat,:) - [aIndexRange(1) aIndexRange(1)];
+                        %set the new range
+                        oBasePotential.Electrodes(i).SignalEvent(j).Range(iBeat,:) = aCurrentRange + aIndexRange(1);
+                        %Update the event index
+                        oBasePotential.MarkEvent(i, j, iBeat);
+                    end
+                end
+                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+            end
+            close(oWaitbar);
+        end
+        
+        function InsertNewBeat(oBasePotential, iPreviousBeat, aNewIndexRange)
+            %Insert a new beat after the specified beat with the specified
+            %beat indexes
+            %Change the beat information to that supplied by the new range
+            oWaitbar = waitbar(0,'Please wait...');
+            iTotal = length(oBasePotential.Electrodes);
+            %Loop through the electrodes
+            for i = 1:iTotal
+                %Increase the size of the beatIndexes array by 1 and load
+                %the old beat indexes
+                aOldBeatIndexes = oBasePotential.Electrodes(i).Processed.BeatIndexes;
+                aNewBeatIndexes = zeros(size(aOldBeatIndexes,1)+1,2);
+                aNewBeatIndexes(iPreviousBeat+1,:) = aNewIndexRange;
+                aNewBeatIndexes(1:iPreviousBeat,:) = aOldBeatIndexes(1:iPreviousBeat,:);
+                aNewBeatIndexes(iPreviousBeat+2:end,:) = aOldBeatIndexes(iPreviousBeat+1:end,:);
+                oBasePotential.Electrodes(i).Processed.BeatIndexes = aNewBeatIndexes;
+                %update the beats array
+                %Set the new beat values
+                oBasePotential.Electrodes(i).Processed.Beats(aNewIndexRange(1):aNewIndexRange(2)) = ...
+                    oBasePotential.Electrodes(i).Processed.Data(aNewIndexRange(1):aNewIndexRange(2));
+                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+            end
+            close(oWaitbar);
         end
     end
     

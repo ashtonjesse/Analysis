@@ -20,11 +20,11 @@ classdef SelectData < SubFigure
         DataSelected;
     end
     methods
-        function oFigure = SelectData(oParent,XData,YData,sOptions)
+        function oFigure = SelectData(oParent,sFigureName, XData,YData,sOptions)
             %% Constructor
-            oFigure = oFigure@SubFigure(oParent,'SelectData',@SelectData_OpeningFcn);
+            oFigure = oFigure@SubFigure(oParent,sFigureName,@SelectData_OpeningFcn);
             
-            set(oFigure.oGuiHandle.oButton, 'callback', @(src, event) oButton_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oReturnButton, 'callback', @(src, event) oReturnButton_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDataCursorTool, 'oncallback', @(src, event) oDataCursorOnTool_Callback(oFigure, src, event));
@@ -87,7 +87,7 @@ classdef SelectData < SubFigure
             deleteme(oFigure);
         end
         
-        function oButton_Callback(oFigure, src, event)
+        function oReturnButton_Callback(oFigure, src, event)
             % Find the brushline object in the figure
             hBrushLine = findall(oFigure.oGuiHandle.(oFigure.sFigureTag),'tag','Brushing');
             % Get the Xdata and Ydata attitributes of this

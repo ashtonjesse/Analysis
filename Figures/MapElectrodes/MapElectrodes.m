@@ -278,6 +278,14 @@ classdef MapElectrodes < SubFigure
                     sSaveCbarFilePath = fullfile(sPathName,'CVcolorbar.bmp');
                     sSaveFilePath = fullfile(sPathName,'CVmontage_cbar.png');
             end
+            aPathFolders = regexp(sPathName,'\\','split');
+            sFigureTitle = char(aPathFolders{end-1});
+            oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+            oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+            oFigureTitle = text('string', sFigureTitle, 'parent', oHandle);
+            set(oFigureTitle, 'units', 'normalized');
+            set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
+            set(oFigureTitle, 'position', [0 3.2]);
             oFigure.PrintFigureToFile(sSaveCbarFilePath);
             sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
                 {' -gravity North -chop 0x2180'},{' -gravity South -chop 0x100'}, {sprintf(' %s', sSaveCbarFilePath)});
@@ -712,7 +720,6 @@ classdef MapElectrodes < SubFigure
                  end
                  %Might need to change this if I start analysing pacing
                  %data but at the moment sinus will always start at 0.
-                 oFigure.cbarmin = 0;
              end
              
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
@@ -724,7 +731,7 @@ classdef MapElectrodes < SubFigure
                  if oFigure.ColourBarVisible
                      %if the colour bar should be visible then make
                      %a new one
-                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
+                     oColorBar = cbarf([0 oFigure.cbarmax], 0:1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                      oTitle = get(oColorBar, 'title');
                      if strcmpi(oFigure.ColourBarOrientation, 'horiz')
                          set(oTitle,'units','normalized');

@@ -51,7 +51,7 @@ classdef Optical < BasePotential
             % Load the experiment
             oOptical.oExperiment = oExperiment;
             %Initialise the Electrodes struct
-            oOptical.Electrodes = struct('Name','','Location',[],'Status','Potential');
+            oOptical.Electrodes = struct('Name','','Location',[],'Status','Potential','Accepted',1);
             %get the data from the file
             oOptical.oDAL.GetOpticalDataFromCSVFile(oOptical, sFileName);
         end

@@ -13,54 +13,27 @@ classdef ThresholdData < SelectData
     %   done. 
     
     properties
-        
+        Peaks;
+        Threshold;
+        YDataInput;
+        XDataInput;
     end
     
+    events
+        ThresholdCalculated;
+    end
 
     methods
         function oFigure = ThresholdData(oParent,XData,YData,sOptions)
             %% Constructor
             oFigure = oFigure@SelectData(oParent,'ThresholdData',XData,YData,sOptions);
-            
-            set(oFigure.oGuiHandle.oButton, 'callback', @(src, event) oButton_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oZoomTool, 'oncallback', @(src, event) oZoomOnTool_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oZoomTool, 'offcallback', @(src, event) oZoomOffTool_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oDataCursorTool, 'oncallback', @(src, event) oDataCursorOnTool_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oDataCursorTool, 'offcallback', @(src, event) oDataCursorOffTool_Callback(oFigure, src, event));
-            
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
-            
-            %Plot the data
-            cla(oFigure.oGuiHandle.oAxes);
-            plot(oFigure.oGuiHandle.oAxes,XData,YData,'k');
-            
-            function SelectData_OpeningFcn(hObject, eventdata, handles, varargin)
-                % This function has no output args, see OutputFcn.
-                % hObject    handle to figure 
-                % eventdata  reserved - to be defined in a future version of MATLAB
-                % handles    structure with handles and user data (see GUIDATA)
-                % varargin   command line arguments to BaselineCorrection (see VARARGIN)
-                for i = 1:size(sOptions,1)
-                    sObject = char(sOptions{i}(1));
-                    sProperty = char(sOptions{i}(2));
-                    if strcmpi(sObject,'oBottomPopUp') && strcmpi(sProperty,'string');
-                        sValue = sOptions{i,1}(3);
-                        sValue = sValue{1};
-                    else
-                        sValue = char(sOptions{i}(3));
-                    end
-                    if strcmpi(sObject,'oAxes') && strcmpi(sProperty,'title')
-                        set(handles.(sObject),sProperty,text('String',sValue));
-                    else
-                        set(handles.(sObject),sProperty,sValue);
-                    end
-                end
-                
-                %Set the output attribute
-                handles.output = hObject;
-                %Update the gui handles 
-                guidata(hObject, handles);
-            end
+            %Override the ReturnButton callback
+            set(oFigure.oGuiHandle.oReturnButton, 'callback', @(src, event) oReturnButton_Callback(oFigure, src, event));
+            %set other callbacks
+            set(oFigure.oGuiHandle.bCalcThreshold, 'callback', @(src, event) bCalcThreshold_Callback(oFigure, src, event));
+            %set properties
+            oFigure.YDataInput = YData;
+            oFigure.XDataInput = XData;
         end
     end
     
@@ -68,14 +41,6 @@ classdef ThresholdData < SelectData
          %% Protected methods inherited from superclass
         function deleteme(oFigure)
             deleteme@BaseFigure(oFigure);
-        end
-        
-        function nValue = GetPopUpSelectionDouble(oFigure,sPopUpMenuTag)
-            nValue = GetPopUpSelectionDouble@BaseFigure(oFigure,sPopUpMenuTag);
-        end
-        
-        function sValue = GetPopUpSelectionString(oFigure,sPopUpMenuTag)
-            sValue = GetPopUpSelectionString@BaseFigure(oFigure,sPopUpMenuTag);
         end
    end
     
@@ -85,7 +50,15 @@ classdef ThresholdData < SelectData
             deleteme(oFigure);
         end
         
-        function oButton_Callback(oFigure, src, event)
+        function oReturnButton_Callback(oFigure, src, event)
+            %Notify listeners and pass the selected data
+            notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+            oFigure.Close_fcn;
+        end
+
+        function bCalcThreshold_Callback(oFigure, src, event)
+            %Calculate the threshold based on the selected data
+            
             % Find the brushline object in the figure
             hBrushLine = findall(oFigure.oGuiHandle.(oFigure.sFigureTag),'tag','Brushing');
             % Get the Xdata and Ydata attitributes of this
@@ -93,30 +66,29 @@ classdef ThresholdData < SelectData
             % The data that has not been selected is labelled as NaN so get
             % rid of this
             brushedIdx = ~isnan(brushedData{1});
+            XData = brushedData{1}(brushedIdx);
+            YData = brushedData{2}(brushedIdx);
             %Get the popup selection
-            sSelection = oFigure.GetPopUpSelectionDouble('oBottomPopUp');
-            %Notify listeners and pass the selected data
-            notify(oFigure,'DataSelected',DataSelectedEvent(brushedData{1}(brushedIdx),brushedData{2}(brushedIdx),brushedIdx,sSelection));
-            oFigure.Close_fcn;
-        end
-        
-        function oDataCursorOnTool_Callback(oFigure, src, event)
-            %Turn brushing on so that the user can select a range of data
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
-        end
-        
-        function oDataCursorOffTool_Callback(oFigure, src, event)
-            %Turn brushing on so that the user can select a range of data
-            brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
-        end
-        
-        function oZoomOnTool_Callback(oFigure, src, event)
-            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag), 'on');
-        end
-        
-        function oZoomOffTool_Callback(oFigure, src, event)
-            zoom(oFigure.oGuiHandle.(oFigure.sFigureTag), 'off');
+            dSelection = double(oFigure.GetPopUpSelectionDouble('oBottomPopUp'));
+            
+            % Calculate the standard deviation of the selected data
+            dStandardDeviation = std(YData);
+            oFigure.Threshold = mean(oFigure.YDataInput) + ...
+                (dSelection*dStandardDeviation);
+            
+            %Get the peaks of the Curvature above threshold
+            %need a BaseSignal class for this... bit cludgy
+            oSignal = BaseSignal();
+            [aPeaks,aLocations] = oSignal.GetPeaks(oFigure.YDataInput, oFigure.Threshold);
+            clear oSignal;
+            %save the peaks
+            oFigure.Peaks = [aPeaks ; aLocations];
+            %Plot the peaks
+            cla(oFigure.oGuiHandle.oAxes);
+            plot(oFigure.oGuiHandle.oAxes,oFigure.XDataInput,oFigure.YDataInput,'k');
+            hold(oFigure.oGuiHandle.oAxes,'on');
+            plot(oFigure.oGuiHandle.oAxes, oFigure.XDataInput(aLocations),aPeaks,'*g');
+            hold(oFigure.oGuiHandle.oAxes,'off');
         end
     end
 end

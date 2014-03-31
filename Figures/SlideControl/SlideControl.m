@@ -21,7 +21,11 @@ classdef SlideControl < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             %Add one so the figure knows when it's parent has been deleted
             addlistener(oFigure.oParentFigure, 'FigureDeleted', @(src,event) oFigure.ParentFigureDeleted(src, event));
-            addlistener(oFigure.oParentFigure, sEvent, @(src,event) oFigure.SlideSelectionChange(src, event));
+            %Add listeners to all specified events
+            for i = 1:length(sEvent)
+                addlistener(oFigure.oParentFigure, char(sEvent{i}), @(src,event) oFigure.SlideSelectionChange(src, event));
+            end
+            
             
             % --- Executes just before BaselineCorrection is made visible.
             function SlideControl_OpeningFcn(hObject, eventdata, handles, varargin)
@@ -40,10 +44,12 @@ classdef SlideControl < SubFigure
     end
     
     methods (Access = public)
-        function SetSliderValue(oFigure,dValue)
-            %Set the slider value
-            
-            set(oFigure.oGuiHandle.oSlider,'Value',floor(dValue));
+        function SetSliderValue(oFigure, aRange, dValue)
+            %Set the slider value and range
+            set(oFigure.oGuiHandle.oSliderTxtLeft, 'string', sprintf('%d',aRange(1)));
+            set(oFigure.oGuiHandle.oSliderTxtRight, 'string', sprintf('%d',aRange(2)));
+            set(oFigure.oGuiHandle.oSlider, 'Min', aRange(1), 'Max', ...
+                aRange(2), 'Value', floor(dValue) ,'SliderStep',[1/aRange(2)  0.02]);
             set(oFigure.oGuiHandle.oSliderEdit,'String',floor(dValue));
         end
         
@@ -73,7 +79,8 @@ classdef SlideControl < SubFigure
         end
          
         function SlideSelectionChange(oFigure, src, event)
-            oFigure.SetSliderValue(event.Value);
+            
+            oFigure.SetSliderValue(event.ArrayData, event.Value);
         end
     end
     

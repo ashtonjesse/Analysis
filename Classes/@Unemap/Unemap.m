@@ -55,10 +55,6 @@ classdef Unemap < BasePotential
             aOutData = SplineSmoothData@BasePotential(oUnemap, aInData, varargin);
         end
         
-        function aOutData = FilterData(oUnemap, aInData, sFilterType, varargin)
-            aOutData = FilterData@BasePotential(oUnemap, aInData, sFilterType, varargin);
-        end
-        
         function aOutData = RemoveLinearInterpolation(oUnemap, aInData, iOrder)
             aOutData = RemoveLinearInterpolation@BasePotential(oUnemap, aInData, iOrder);
         end
@@ -175,50 +171,6 @@ classdef Unemap < BasePotential
             %Split again into the Electrodes
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',cell2mat(aOutData(1)));
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
-        end
-        
-        function iIndexes = GetClosestBeat(oUnemap,iElectrodeNumber,dTime)
-            if strcmp(oUnemap.Electrodes(1).Status,'Potential');
-                error('Unemap.GetClosestBeat.VerifyInput:NoProcessedData', 'You need to have processed data');
-            else
-                %Get the start times of all the beats
-                aIntervalStart = oUnemap.TimeSeries(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(:,1));
-                %Find the index of the closest time to the input time
-                [Value, iMinIndex] = min(abs(aIntervalStart - dTime));
-                %Return the beat index of this time
-                iIndexes = {iMinIndex, oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iMinIndex,:)};
-            end
-        end
-        
-        function UpdateBeatIndexes(oUnemap, iBeat, aIndexRange)
-            %Change the beat information to that supplied by the new range
-            oWaitbar = waitbar(0,'Please wait...');
-            iTotal = length(oUnemap.Electrodes);
-            %Loop through the electrodes
-            for i = 1:iTotal
-                %Get the current range for this beat
-                aCurrentRange = oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:);
-                %Reset the current range of this beat to NaN
-                oUnemap.Electrodes(i).Processed.Beats(aCurrentRange(1):aCurrentRange(2)) = NaN;
-                %Set the new beat values
-                oUnemap.Electrodes(i).Processed.Beats(aIndexRange(1):aIndexRange(2)) = ...
-                    oUnemap.Electrodes(i).Processed.Data(aIndexRange(1):aIndexRange(2));
-                %Set the new beat indexes
-                oUnemap.Electrodes(i).Processed.BeatIndexes(iBeat,:) = [aIndexRange(1) aIndexRange(2)];
-                %update the signal events if there are any
-                if isfield(oUnemap.Electrodes(i),'SignalEvent')
-                    for j = 1:length(oUnemap.Electrodes(i).SignalEvent)
-                        %Get the relative range indexes
-                        aCurrentRange = oUnemap.Electrodes(i).SignalEvent(j).Range(iBeat,:) - [aIndexRange(1) aIndexRange(1)];
-                        %set the new range
-                        oUnemap.Electrodes(i).SignalEvent(j).Range(iBeat,:) = aCurrentRange + aIndexRange(1);
-                        %Update the event index
-                        oUnemap.MarkEvent(i, j, iBeat);
-                    end
-                end
-                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
-            end
-            close(oWaitbar);
         end
         
         function ProcessArrayData(oUnemap, aInOptions)
@@ -584,43 +536,7 @@ classdef Unemap < BasePotential
                 end
             end
         end
-        
-        function [aRateData dPeaks] = CalculateSinusRate(oUnemap, iElectrodeNumber)
-            %Get the peaks associated with the beat data from this
-            %electrode and make call to GetHeartRateData
-            dPeaks = zeros(size(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
-            %Loop through the beats and find max curvature
-            for i = 1:size(oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1);
-                aInData = oUnemap.Electrodes(iElectrodeNumber).Processed.Data...
-                    (oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
-                aCurvature = oUnemap.CalculateCurvature(aInData, 20, 5);
-                [val, loc] = max(aCurvature);
-                %Add the first index of this beat
-                dPeaks(i,1) = loc + oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
-            end
-            [aRateData, dPeaks] = oUnemap.GetHeartRateData(dPeaks);
-        end
-        
-        function [aRateData, dPeaks] = GetHeartRateData(oUnemap,dPeaks)
-            %Take the peaks  supplied and create an array of
-            %discrete heart rates
-            
-            aTimes = oUnemap.TimeSeries(dPeaks);
-            %Put peaks in pairs
-            dPeaks = dPeaks';
-            dPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
-            %Get the times in sets of intervals
-            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)]; 
-            aIntervals = aNewTimes(2,:) - aNewTimes(1,:);
-            %Put rates into bpm
-            aRates = 60 ./ aIntervals;
-            aRateData = NaN(1,length(oUnemap.TimeSeries));
-            %Loop through the peaks and insert into aRateTrace
-            for i = 1:size(dPeaks,2)
-                aRateData(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
-            end
-        end
-        
+       
         function NormaliseBeat(oUnemap, iBeat)
             %Normalise the specified beat making the most negative value 0
             %and the most positive value 1.

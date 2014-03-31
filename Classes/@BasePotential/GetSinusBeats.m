@@ -38,7 +38,7 @@ for j = 2:n;
         iLastPeak = aPeaks(2,j);
         iPeakCount = iPeakCount + 1;
     else
-        if iPeakCount >= 4
+        if iPeakCount >= 2
             %must have found the end of a beat
             %Add some padding to the beginning and end 
             iLastPeak = iLastPeak + iBlank;
@@ -62,8 +62,8 @@ for j = 2:n;
     iCurrentPeak = aPeaks(2,j);
 end
 %Run for the last beat
-if iPeakCount > 4
-    iLastPeak = iLastPeak + iBlank;
+if iPeakCount >= 2
+    iLastPeak = min(iLastPeak + iBlank,length(aInData));
     iFirstPeak = iFirstPeak - iBlank/2;
     aThisBeat = aInData(iFirstPeak:iLastPeak,:);
     %     aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
@@ -74,14 +74,15 @@ if iPeakCount > 4
     [Val, iIndex] = max(aPeaks(1,iFirstIndex:j));
     %     aMaxPeaks = [aMaxPeaks ; aPeaks(2,iFirstIndex+iIndex-1)];
     aMaxPeaks(iBeatCount) = aPeaks(2,iFirstIndex+iIndex-1);
+    iBeatCount = iBeatCount + 1;
 end
 %Fill in the end of the vector with NaNs if required
 % if size(aBeats,1) < p
 %     aBeats = [aBeats ; NaN(p - size(aBeats,1),q)];
 % end
 %Trim the zeros from the end
-aBeatIndices = aBeatIndices(1:iBeatCount - 1,:); 
-aMaxPeaks = aMaxPeaks(1:iBeatCount - 1); 
+aBeatIndices = aBeatIndices(1:iBeatCount-1,:); 
+aMaxPeaks = aMaxPeaks(1:iBeatCount-1); 
 %output the beats.
 aOutData = {aBeats,aBeatIndices};
 

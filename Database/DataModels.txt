@@ -81,7 +81,7 @@ BaseImage: (base level of inheritance)
 oImage.Data
 oImage.Name
 
-Pressure:
+Pressure: (BaseSignal)
 oPressure.oExperiment
 oPressure.Status
 oPressure.Original.Data
@@ -96,7 +96,7 @@ oPressure.Phrenic.Integral
 oPressure.oRecording
 oPressure.RecordingType
 
-Optical:
+Optical: (BasePotential)
 oOptical.oExperiment
 oOptical.TimeSeries
 oOptical.Electrodes
