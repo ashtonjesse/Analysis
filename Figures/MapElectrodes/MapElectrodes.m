@@ -49,6 +49,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oToggleColourBarMenu, 'callback', @(src, event) oToggleColourBarMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleElectrodeMarkerMenu, 'callback', @(src, event) oToggleElectrodeMarkerMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRotateArrayMenu, 'callback', @(src, event) oRotateArrayMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSaveATMenu, 'callback', @(src, event) oSaveATMenu_Callback(oFigure, src, event));
             
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
@@ -226,6 +227,31 @@ classdef MapElectrodes < SubFigure
             oFigure.oParentFigure.SelectedBeat = iStartBeat;
         end
         
+        function oSaveATMenu_Callback(oFigure, src, event)
+            %get the beat indexes and activation times to save
+            aSignalEvents = oFigure.oDAL.oHelper.MultiLevelSubsRef(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'SignalEvent','Index');
+            oDataToWrite = horzcat(aSignalEvents,oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).SignalEvent(1).Range);
+            %choose location to save to
+            [sDataFileName,sDataPathName]=uiputfile('*.txt','Select a location for the text file');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName))
+                return
+            end
+            
+            %Get the full file name
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            %build header cell array
+            aRowHeader = cell2mat({oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(:).Name});
+            aRowHeader = reshape(aRowHeader,5,size(aSignalEvents,2));
+            aRowHeader = cellstr(aRowHeader');
+            aRowHeader{size(aSignalEvents,2)+1} = 'LowerRange';
+            aRowHeader{size(aSignalEvents,2)+2} = 'UpperRange';
+            %save data to txt file
+            FID = oFigure.oDAL.oHelper.ExportDataToTextFile(sLongDataFileName,aRowHeader,oDataToWrite,'%6.0d');
+            %change to current directory
+            cd(sDataPathName);
+        end
+        
         % -----------------------------------------------------------------
         function oMontageMenu_Callback(oFigure, src, event)
             %Get the save file path
@@ -332,7 +358,7 @@ classdef MapElectrodes < SubFigure
                         aRowHeader = cellstr(aRowHeader');
                         aRowData = cell2mat({oFigure.Activation.Beats(:).CVApprox});
                         aRowData = aRowData';
-                        oFigure.oDAL.oHelper.ExportDataToTextFile(sOutFile,aRowHeader,aRowData(:,idxCV));
+                        oFigure.oDAL.oHelper.ExportDataToTextFile(sOutFile,aRowHeader,aRowData(:,idxCV),'%5.2f');
                 end
             end
         end

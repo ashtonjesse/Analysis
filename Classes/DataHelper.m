@@ -276,7 +276,7 @@ classdef DataHelper
              end
         end
        
-        function fid = ExportDataToTextFile(sfilename, aRowIDs, aRowData)
+        function fid = ExportDataToTextFile(sfilename, aRowIDs, aRowData, sFormat)
             %This function writes out the input data to a text file
             %open a new text file for writing
             %loop through the rows and write out the data with the
@@ -286,8 +286,8 @@ classdef DataHelper
             fprintf(fid,'%s',aRowIDs{end});
             fprintf(fid,'%s\n','');
             for i = 1:size(aRowData,1)
-                fprintf(fid,'%5.2f,',aRowData(i,1:end-1));
-                fprintf(fid,'%5.2f',aRowData(i,end));
+                fprintf(fid,strcat(sFormat,','),aRowData(i,1:end-1));
+                fprintf(fid,sFormat,aRowData(i,end));
                 fprintf(fid,'%s\n','');
             end
             fclose(fid);
