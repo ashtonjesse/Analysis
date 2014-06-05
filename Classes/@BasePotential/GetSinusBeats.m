@@ -38,7 +38,7 @@ for j = 2:n;
         iLastPeak = aPeaks(2,j);
         iPeakCount = iPeakCount + 1;
     else
-        if iPeakCount >= 2
+        if iPeakCount >= 4
             %must have found the end of a beat
             %Add some padding to the beginning and end 
             iLastPeak = iLastPeak + iBlank;

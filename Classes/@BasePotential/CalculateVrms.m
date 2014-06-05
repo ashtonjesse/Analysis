@@ -1,4 +1,4 @@
-function CalculateVrms(oUnemap, varargin)
+function CalculateVrms(oBasePotential, varargin)
 % This function takes up to 3 inputs (not including the oBasePotential BasePotential class object). Depending on the
 % inputs supplied it either calculates a straight RMS or calculates an RMS
 % and smooths this over a iNumberofPoints point 
@@ -10,13 +10,13 @@ function CalculateVrms(oUnemap, varargin)
 
 
 %Check if there is Processed.Data
-if isnan(oUnemap.Electrodes(1).Processed.Data(1))
+if isnan(oBasePotential.Electrodes(1).Processed.Data(1))
 
     %Calculate Vrms of the original data
     %aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Potential');
-    aData = cell2mat({oUnemap.Electrodes(oUnemap.RMS.Electrodes).Potential});
+    aData = cell2mat({oBasePotential.Electrodes(oBasePotential.RMS.Electrodes).Potential});
     % Get the dimensions
-    x = length(oUnemap.TimeSeries);
+    x = length(oBasePotential.TimeSeries);
     y = size(aData,2);
     
     % Initialise the aVrms array
@@ -28,11 +28,11 @@ if isnan(oUnemap.Electrodes(1).Processed.Data(1))
     end
 else
     %Calculate Vrms of the processed data
-    aData = MultiLevelSubsRef(DataHelper,oUnemap.Electrodes(oUnemap.RMS.Electrodes),'Processed','Data');
+    aData = MultiLevelSubsRef(DataHelper,oBasePotential.Electrodes(oBasePotential.RMS.Electrodes),'Processed','Data');
     %aData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data');
     
     % Get the dimensions
-    x = length(oUnemap.TimeSeries);
+    x = length(oBasePotential.TimeSeries);
     y = size(aData,2);
     
     % Initialise the aVrms array
@@ -52,19 +52,19 @@ if ~isempty(varargin) && size(varargin,2) == 3
     
     switch (sAlgorithm) 
         case 'SavitzkyGolay'
-            oUnemap.RMS.Smoothed = sgolayfilt(aVrms,iOrder,iNumberofPoints);
+            oBasePotential.RMS.Smoothed = sgolayfilt(aVrms,iOrder,iNumberofPoints);
         case 'MovingAverage'
-            oUnemap.RMS.Smoothed= fCalculateMovingAverage(aVrms,iNumberofPoints);
+            oBasePotential.RMS.Smoothed= fCalculateMovingAverage(aVrms,iNumberofPoints);
         otherwise
             error('BasePotential.CalculateVrms:unknowncase', ...
                 'Wrong input to algorithm selection');
     end
     %Save the characteristics of the smoothing
-    oUnemap.RMS.Smoothing = sAlgorithm;
-    oUnemap.RMS.PolyOrder = iOrder;
-    oUnemap.RMS.WindowSize = iNumberofPoints;
+    oBasePotential.RMS.Smoothing = sAlgorithm;
+    oBasePotential.RMS.PolyOrder = iOrder;
+    oBasePotential.RMS.WindowSize = iNumberofPoints;
 else
-     oUnemap.RMS.Values = aVrms;
+     oBasePotential.RMS.Values = aVrms;
 end
 
 return

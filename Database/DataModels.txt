@@ -11,9 +11,7 @@ oUnemap.RMS.WindowSize
 oUnemap.RMS.Curvature.Values
 oUnemap.RMS.Curvature.Peaks
 oUnemap.RMS.Curvature.Threshold
-oUnemap.RMS.HeartRate.Peaks
-oUnemap.RMS.HeartRate.Threshold
-
+oUnemap.RMS.Curvature.SDMultiplier
 
 Electrodes: (not wrapped by a class)
 Electrodes(i).Accepted
@@ -88,11 +86,14 @@ oPressure.Original.Data
 oPressure.Processed.Data
 oPressure.TimeSeries.Original
 oPressure.TimeSeries.Processed
+oPressure.TimeSeries.Status
 oPressure.RefSignal.Original
 oPressure.RefSignal.Processed
+oPressure.RefSignal.Status
 oPressure.Phrenic.Original
 oPressure.Phrenic.Processed
 oPressure.Phrenic.Integral
+oPressure.Phrenic.Status
 oPressure.oRecording
 oPressure.RecordingType
 

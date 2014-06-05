@@ -65,55 +65,55 @@ classdef BasePotential < BaseSignal
         function ProcessElectrodeData(oBasePotential, iChannel, aInOptions)
             % makes a call to the inherited processing method for the
             % specified channel
-             for j = 1:size(aInOptions,2)
-                 %Loop through the entries in aInOptions - an input
-                 %struct that contains processing procedures to run and
-                 %and their inputs
-                 switch(aInOptions(j).Procedure)
-                     case 'RemoveMedianAndFitPolynomial'
-                         iOrder = aInOptions(j).Inputs;
-                         [aOutData, aBaselinePolynomial] = ...
-                             oBasePotential.RemoveMedianAndFitPolynomial(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iOrder);
-                         oBasePotential.Electrodes(iChannel).Processed.Data = aOutData;
-                         oBasePotential.Electrodes(iChannel).Processed.BaselinePolyOrder = iOrder;
-                         oBasePotential.Electrodes(iChannel).Processed.BaselinePoly = aBaselinePolynomial;
-                         oBasePotential.FinishProcessing(iChannel);
-                     case 'SplineSmoothData'
-                         iOrder = aInOptions(j).Inputs;
-                         oBasePotential.Electrodes(iChannel).Processed.Data = ...
-                             oBasePotential.SplineSmoothData(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iOrder);
-                         oBasePotential.FinishProcessing(iChannel);
-                     case 'KeepWaveletScales'
-                         iScalesToKeep = aInOptions(j).Inputs;
-                         oBasePotential.Electrodes(iChannel).Processed.Data = ...
-                             oBasePotential.ComputeDWTFilteredSignalsKeepingScales(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iScalesToKeep);
-                         oBasePotential.Electrodes(iChannel).Processed.WaveletScalesKept= iScalesToKeep;
-                         oBasePotential.FinishProcessing(iChannel);
-                     case 'FilterData'
-                         if strcmp(aInOptions(j).Inputs{1,1},'50HzNotch')
-                             dSamplingFreq = aInOptions(j).Inputs{1,2};
-                             oBasePotential.Electrodes(iChannel).Processed.Data = ...
-                                 oBasePotential.FilterData(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,'50HzNotch',dSamplingFreq);
-                             oBasePotential.Electrodes(iChannel).Processed.Filter = '50HzNotch';
-                         elseif strcmp(aInOptions(j).Inputs{1,1},'SovitzkyGolay')
-                             iOrder = aInOptions(j).Inputs{1,2};
-                             iWindowSize = aInOptions(j).Inputs{1,3};
-                             oBasePotential.Electrodes(iChannel).Processed.Data = ...
-                                 oBasePotential.FilterData(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,'SovitzkyGolay',iOrder,iWindowSize);
-                             oBasePotential.Electrodes(iChannel).Processed.Filter = 'SovitzkyGolay';
-                             oBasePotential.Electrodes(iChannel).Processed.WindowSize = iWindowSize;
-                             oBasePotential.Electrodes(iChannel).Processed.iOrder = iOrder;
-                         end
-                         oBasePotential.FinishProcessing(iChannel);
-                     case 'RemoveLinearInterpolation'
-                         iOrder = aInOptions(j).Inputs;
-                         oBasePotential.Electrodes(iChannel).Processed.Data = ...
-                             oBasePotential.RemoveLinearInterpolation(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iOrder);
-                     case 'ClearData'
-                         oBasePotential.ClearProcessedData(iChannel);
-                 end
-             end
-        end        
+            for j = 1:size(aInOptions,2)
+                %Loop through the entries in aInOptions - an input
+                %struct that contains processing procedures to run and
+                %and their inputs
+                switch(aInOptions(j).Procedure)
+                    case 'RemoveMedianAndFitPolynomial'
+                        iOrder = aInOptions(j).Inputs;
+                        [aOutData, aBaselinePolynomial] = ...
+                            oBasePotential.RemoveMedianAndFitPolynomial(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iOrder);
+                        oBasePotential.Electrodes(iChannel).Processed.Data = aOutData;
+                        oBasePotential.Electrodes(iChannel).Processed.BaselinePolyOrder = iOrder;
+                        oBasePotential.Electrodes(iChannel).Processed.BaselinePoly = aBaselinePolynomial;
+                        oBasePotential.FinishProcessing(iChannel);
+                    case 'SplineSmoothData'
+                        iOrder = aInOptions(j).Inputs;
+                        oBasePotential.Electrodes(iChannel).Processed.Data = ...
+                            oBasePotential.SplineSmoothData(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iOrder);
+                        oBasePotential.FinishProcessing(iChannel);
+                    case 'KeepWaveletScales'
+                        iScalesToKeep = aInOptions(j).Inputs;
+                        oBasePotential.Electrodes(iChannel).Processed.Data = ...
+                            oBasePotential.ComputeDWTFilteredSignalsKeepingScales(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iScalesToKeep);
+                        oBasePotential.Electrodes(iChannel).Processed.WaveletScalesKept= iScalesToKeep;
+                        oBasePotential.FinishProcessing(iChannel);
+                    case 'FilterData'
+                        if strcmp(aInOptions(j).Inputs{1,1},'50HzNotch')
+                            dSamplingFreq = aInOptions(j).Inputs{1,2};
+                            oBasePotential.Electrodes(iChannel).Processed.Data = ...
+                                oBasePotential.FilterData(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,'50HzNotch',dSamplingFreq);
+                            oBasePotential.Electrodes(iChannel).Processed.Filter = '50HzNotch';
+                        elseif strcmp(aInOptions(j).Inputs{1,1},'SovitzkyGolay')
+                            iOrder = aInOptions(j).Inputs{1,2};
+                            iWindowSize = aInOptions(j).Inputs{1,3};
+                            oBasePotential.Electrodes(iChannel).Processed.Data = ...
+                                oBasePotential.FilterData(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,'SovitzkyGolay',iOrder,iWindowSize);
+                            oBasePotential.Electrodes(iChannel).Processed.Filter = 'SovitzkyGolay';
+                            oBasePotential.Electrodes(iChannel).Processed.WindowSize = iWindowSize;
+                            oBasePotential.Electrodes(iChannel).Processed.iOrder = iOrder;
+                        end
+                        oBasePotential.FinishProcessing(iChannel);
+                    case 'RemoveLinearInterpolation'
+                        iOrder = aInOptions(j).Inputs;
+                        oBasePotential.Electrodes(iChannel).Processed.Data = ...
+                            oBasePotential.RemoveLinearInterpolation(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,iOrder);
+                    case 'ClearData'
+                        oBasePotential.ClearProcessedData(iChannel);
+                end
+            end
+        end
         
         function FinishProcessing(oBasePotential,iChannel)
             %A function to call after applying some processing steps
@@ -152,7 +152,7 @@ classdef BasePotential < BaseSignal
                 oBasePotential.Electrodes(iElectrodeNumber).Processed.Slope = ...
                     oBasePotential.CalculateSlope(oBasePotential.Electrodes(iElectrodeNumber).Processed.(sDataType),5,3);
             elseif nargin > 1
-                 %A datatype has been specified
+                %A datatype has been specified
                 sDataType = char(varargin{1});
                 if strcmp(oBasePotential.Electrodes(1).Status,'Potential');
                     error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
@@ -201,7 +201,7 @@ classdef BasePotential < BaseSignal
             
         end
         
-         function iIndexes = GetClosestBeat(oBasePotential,iElectrodeNumber,dTime)
+        function iIndexes = GetClosestBeat(oBasePotential,iElectrodeNumber,dTime)
             if strcmp(oBasePotential.Electrodes(1).Status,'Potential');
                 error('BasePotential.GetClosestBeat.VerifyInput:NoProcessedData', 'You need to have processed data');
             else
@@ -212,9 +212,9 @@ classdef BasePotential < BaseSignal
                 %Return the beat index of this time
                 iIndexes = {iMinIndex, oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iMinIndex,:)};
             end
-         end
+        end
         
-         function [aRateData dPeaks] = CalculateSinusRate(oBasePotential, iElectrodeNumber)
+        function [aRateData dPeaks] = CalculateSinusRate(oBasePotential, iElectrodeNumber)
             %Get the peaks associated with the beat data from this
             %electrode and make call to GetHeartRateData
             dPeaks = zeros(size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
@@ -227,26 +227,46 @@ classdef BasePotential < BaseSignal
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
             end
-            [aRateData, dPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            [aRateData, aRates, dPeaks] = oBasePotential.GetHeartRateData(dPeaks);
         end
         
-        function [aRateData, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
+        function [aRateTrace, aRates, dPeaks] = CalculateSinusRateFromRMS(oBasePotential)
+            %calculate the sinus rate from RMS data instead
+            dPeaks = zeros(size(oBasePotential.Electrodes(1).Processed.BeatIndexes,1),1);
+            %Loop through the beats and find max curvature
+            for i = 1:size(oBasePotential.Electrodes(1).Processed.BeatIndexes,1);
+                aInData = oBasePotential.RMS.Smoothed...
+                    (oBasePotential.Electrodes(1).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(1).Processed.BeatIndexes(i,2));
+                aCurvature = oBasePotential.CalculateCurvature(aInData, 20, 5);
+                [val, loc] = max(aCurvature);
+                
+                %Add the first index of this beat
+                dPeaks(i,1) = loc + oBasePotential.Electrodes(1).Processed.BeatIndexes(i,1);
+            end
+
+            [aRateTrace, aRates, dPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+        end
+        
+        function [aRateTrace, aRates, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
             %Take the peaks  supplied and create an array of
             %discrete heart rates
             
             aTimes = oBasePotential.TimeSeries(dPeaks);
+            %aTimes = aTimes';
             %Put peaks in pairs
-            dPeaks = dPeaks';
+            if size(dPeaks,1) > size(dPeaks,2)
+                dPeaks = dPeaks';
+            end
             dPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
             %Get the times in sets of intervals
-            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)]; 
+            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)];
             aIntervals = aNewTimes(2,:) - aNewTimes(1,:);
             %Put rates into bpm
             aRates = 60 ./ aIntervals;
-            aRateData = NaN(1,length(oBasePotential.TimeSeries));
+            aRateTrace = NaN(1,length(oBasePotential.TimeSeries));
             %Loop through the peaks and insert into aRateTrace
             for i = 1:size(dPeaks,2)
-                aRateData(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
+                aRateTrace(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
             end
         end
         

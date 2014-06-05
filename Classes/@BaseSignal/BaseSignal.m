@@ -102,7 +102,7 @@ classdef BaseSignal < BaseEntity
             % by iScales
             OutData = zeros(length(aInData),length(aScales));
             for i = 1:length(aScales)
-                OutData(:,i) = DWTFilterRemoveScales(aInData, aScales(i),aScales(i));
+                OutData(:,i) = DWTFilterRemoveScales(aInData, aScales(i));
             end
         end
     end

@@ -39,12 +39,12 @@ classdef Pressure < BaseSignal
             %This performs a truncation on the current pressure data 
             
             %Truncate the time series
-            oPressure.TimeSeries.(oPressure.Status) = oPressure.TimeSeries.(oPressure.Status)(bIndexesToKeep);
+            oPressure.TimeSeries.(oPressure.TimeSeries.Status) = oPressure.TimeSeries.(oPressure.TimeSeries.Status)(bIndexesToKeep);
             
             %Truncate the original  data
             oPressure.(oPressure.Status).Data = oPressure.(oPressure.Status).Data(bIndexesToKeep);
-            oPressure.RefSignal.(oPressure.Status) = oPressure.RefSignal.(oPressure.Status)(bIndexesToKeep);
-            oPressure.Phrenic.(oPressure.Status) = oPressure.Phrenic.(oPressure.Status)(bIndexesToKeep);
+            oPressure.RefSignal.(oPressure.RefSignal.Status) = oPressure.RefSignal.(oPressure.RefSignal.Status)(bIndexesToKeep);
+            oPressure.Phrenic.(oPressure.Phrenic.Status) = oPressure.Phrenic.(oPressure.Phrenic.Status)(bIndexesToKeep);
         end
         
         function ResampleOriginalData(oPressure, dNewFrequency)
@@ -56,6 +56,8 @@ classdef Pressure < BaseSignal
             oPressure.Phrenic.Processed = resample(oPressure.Phrenic.Original, dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
             oPressure.TimeSeries.Processed = [1:1:size(oPressure.Processed.Data,1)] * (1/dNewFrequency);
+            oPressure.TimeSeries.Status = 'Processed';
+            oPressure.RefSignal.Status = 'Processed';
             oPressure.Status = 'Processed';
         end
         
@@ -85,6 +87,12 @@ classdef Pressure < BaseSignal
                     end
                 case 'Optical'
                     oPressure.oRecording = Optical(oData.oEntity.oRecording);
+            end
+            %another hack to allow backwards compatibility
+            if ~isfield(oPressure.TimeSeries,'Status')
+                oPressure.TimeSeries.Status = oPressure.Status;
+                oPressure.RefSignal.Status = oPressure.Status;
+                oPressure.Phrenic.Status = oPressure.Status;
             end
         end
         
@@ -125,7 +133,9 @@ classdef Pressure < BaseSignal
                 oPressure.RefSignal.Name = oPressure.oExperiment.PerfusionPressure.RefSignalName;
                 oPressure.Phrenic.Original = aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn);
             end
-            
+            oPressure.TimeSeries.Status = 'Original';
+            oPressure.RefSignal.Status = 'Original';
+            oPressure.Phrenic.Status = 'Original';
         end       
         
     end

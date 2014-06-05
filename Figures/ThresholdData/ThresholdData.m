@@ -34,6 +34,7 @@ classdef ThresholdData < SelectData
             %set properties
             oFigure.YDataInput = YData;
             oFigure.XDataInput = XData;
+            
         end
     end
     
@@ -52,7 +53,16 @@ classdef ThresholdData < SelectData
         
         function oReturnButton_Callback(oFigure, src, event)
             %Notify listeners and pass the selected data
-            notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+            %check if the threshold is based on a curvature calculation or
+            %has just been entered via the edit box
+            if strcmp(get(oFigure.oGuiHandle.bCalcThreshold,'visible'),'on')
+                notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+            else
+                oFigure.Threshold = oFigure.GetEditInputDouble('oEdit');
+                oFigure.GetPeaksAboveThreshold();
+                notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+            end
+            
             oFigure.Close_fcn;
         end
 
@@ -75,7 +85,20 @@ classdef ThresholdData < SelectData
             dStandardDeviation = std(YData);
             oFigure.Threshold = mean(oFigure.YDataInput) + ...
                 (dSelection*dStandardDeviation);
-            
+            oFigure.GetPeaksAboveThreshold();
+            %Plot the peaks
+            cla(oFigure.oGuiHandle.oAxes);
+            plot(oFigure.oGuiHandle.oAxes,oFigure.XDataInput,oFigure.YDataInput,'k');
+            hold(oFigure.oGuiHandle.oAxes,'on');
+            plot(oFigure.oGuiHandle.oAxes, oFigure.XDataInput(oFigure.Peaks(2,:)),oFigure.Peaks(1,:),'*g');
+            hold(oFigure.oGuiHandle.oAxes,'off');
+        end
+        
+        
+    end
+    
+    methods (Access = private)
+        function GetPeaksAboveThreshold(oFigure)
             %Get the peaks of the Curvature above threshold
             %need a BaseSignal class for this... bit cludgy
             oSignal = BaseSignal();
@@ -83,12 +106,6 @@ classdef ThresholdData < SelectData
             clear oSignal;
             %save the peaks
             oFigure.Peaks = [aPeaks ; aLocations];
-            %Plot the peaks
-            cla(oFigure.oGuiHandle.oAxes);
-            plot(oFigure.oGuiHandle.oAxes,oFigure.XDataInput,oFigure.YDataInput,'k');
-            hold(oFigure.oGuiHandle.oAxes,'on');
-            plot(oFigure.oGuiHandle.oAxes, oFigure.XDataInput(aLocations),aPeaks,'*g');
-            hold(oFigure.oGuiHandle.oAxes,'off');
         end
     end
 end

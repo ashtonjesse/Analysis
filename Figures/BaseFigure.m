@@ -99,6 +99,9 @@ classdef BaseFigure < handle
             if nargin == 2
                 sEditTag = char(varargin{1});
                 aString = get(oFigure.oGuiHandle.(sEditTag),'String');
+                if iscell(aString)
+                    aString = aString{1};
+                end
             elseif nargin == 3
                 oParent = varargin{1};
                 oChildren = get(oParent,'children');
