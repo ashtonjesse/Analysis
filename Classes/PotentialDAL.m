@@ -231,6 +231,18 @@ classdef PotentialDAL < BaseDAL
             %Get the Timeseries data
             oOptical.TimeSeries = [0:1:size(aData,1)-1]*(1/oOptical.oExperiment.Optical.SamplingRate);
         end
+        
+        function GetSignalEventInformationFromTextFile(oPotentialDAL, oBasePotential, sFilePath)
+            %Read the data from the specified file and put in the
+            %appropriate places for signal event indexes and range
+            
+            %load data from file
+            aOutData = oPotentialDAL.oHelper.ReadDataFromTextFile(sFilePath,'%s');
+            aEventData = cellfun(@str2num,aOutData.Body);
+            %assumes that the last two columns are range information
+            oBasePotential.Electrodes = oBasePotential.oDAL.oHelper.MultiLevelSubsAsgn(oBasePotential.Electrodes,'SignalEvent','Index',aEventData(:,1:end-2));
+            oBasePotential.Electrodes = oBasePotential.oDAL.oHelper.MultiLevelSubsAsgn(oBasePotential.Electrodes,'SignalEvent','Range',aEventData(:,end-1:end));
+        end
     end
 end
 

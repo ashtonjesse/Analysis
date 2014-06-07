@@ -44,6 +44,9 @@ classdef BeatPlot < SubFigure
             set(oFigure.oGuiHandle.btnRefreshSignalEvent,  'callback', @(src,event) oFigure.btnRefreshSignalEvent_callback(src, event));
             set(oFigure.oGuiHandle.oFileMenu,  'callback', @(src,event) oFigure.oUnused_Callback(src, event));
             set(oFigure.oGuiHandle.oPrintMenu,  'callback', @(src,event) oFigure.oPrintMenu_Callback(src, event));
+            set(oFigure.oGuiHandle.oSaveEventMenu, 'callback', @(src, event) oSaveEventMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oLoadEventMenu, 'callback', @(src, event) oLoadEventMenu_Callback(oFigure, src, event));
+            
             %Set callbacks and other functions
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             
@@ -126,6 +129,51 @@ classdef BeatPlot < SubFigure
             %An event listener callback
             %Is called when the user selects a new time point
             oFigure.PlotBeat();
+        end
+        
+        function oSaveEventMenu_Callback(oFigure, src, event)
+            %get the beat indexes and activation times to save
+            aSignalEvents = oFigure.oDAL.oHelper.MultiLevelSubsRef(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'SignalEvent','Index');
+            oDataToWrite = horzcat(aSignalEvents,oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).SignalEvent(1).Range);
+            %choose location to save to
+            [sDataFileName,sDataPathName]=uiputfile('*.txt','Select a location for the text file');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName))
+                return
+            end
+            
+            %Get the full file name
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            %build header cell array
+            aRowHeader = cell2mat({oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(:).Name});
+            aRowHeader = reshape(aRowHeader,5,size(aSignalEvents,2));
+            aRowHeader = cellstr(aRowHeader');
+            aRowHeader{size(aSignalEvents,2)+1} = 'LowerRange';
+            aRowHeader{size(aSignalEvents,2)+2} = 'UpperRange';
+            %save data to txt file
+            FID = oFigure.oDAL.oHelper.ExportDataToTextFile(sLongDataFileName,aRowHeader,oDataToWrite,'%6.0u,');
+            %change to current directory
+            cd(sDataPathName);
+        end
+        
+        function oLoadEventMenu_Callback(oFigure, src, event)
+            %load data from text file and save to appropriate locations in
+            %oUnemap structure
+            %Call built-in file dialog to select filename
+            [sDataFileName,sDataPathName]=uigetfile('*.txt','Select a file containing signal event indexes and ranges');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                return
+            end
+            
+            %Get the full file name
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            %Read the data in to the appropriate location in oUnemap
+            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.oDAL.GetSignalEventInformationFromTextFile(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap,sLongDataFileName);
+            %refresh analysesignals and mapelectrodes figures
+            oFigure.PlotBeat();
+            notify(oFigure,'SignalEventSelected',DataPassingEvent([],oFigure.SelectedEventID));
+            disp('Loaded new signal event times successfully');
         end
      end
      

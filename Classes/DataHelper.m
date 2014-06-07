@@ -286,10 +286,34 @@ classdef DataHelper
             fprintf(fid,'%s',aRowIDs{end});
             fprintf(fid,'%s\n','');
             for i = 1:size(aRowData,1)
-                fprintf(fid,strcat(sFormat,','),aRowData(i,1:end-1));
-                fprintf(fid,sFormat,aRowData(i,end));
+                fprintf(fid,sFormat,aRowData(i,1:end));
                 fprintf(fid,'%s\n','');
             end
+            fclose(fid);
+        end
+        
+        function aOutData = ReadDataFromTextFile(sFilename,sFormat)
+            %This function reads data from a text file and saves the data
+            %to the output variable
+            %it assumes that the first row is a header
+            %loop through the rows and read in the data
+            fid = fopen(sFilename,'r');
+            %get the header
+            sHeader = fgetl(fid);
+            aHeader = regexp(sHeader,',','split');
+            %get the body
+            sBody = fscanf(fid,sFormat);
+            aBody = regexp(sBody,',','split');
+            %remove the last element as this will be empty
+            aBody= aBody(1:end-1);
+            %get the number of rows
+            nRows = length(aBody)/length(aHeader);
+            %reshape the body data
+            aBodyData = reshape(aBody,length(aHeader),nRows);
+            aBodyData = aBodyData';
+            aOutData = struct('Header',[],'Body',[]);
+            aOutData.Header = aHeader;
+            aOutData.Body = aBodyData;
             fclose(fid);
         end
     end

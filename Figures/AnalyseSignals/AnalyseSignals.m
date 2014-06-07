@@ -426,6 +426,7 @@ classdef AnalyseSignals < SubFigure
          function SignalEventSelected(oFigure, src, event)
              %Pass on notification
              oFigure.SelectedEventID = event.Value;
+             oFigure.Replot();
              notify(oFigure,'SignalEventSelectionChange',DataPassingEvent([],event.Value));
          end
          
