@@ -101,7 +101,7 @@ classdef DataHelper
                     %Get the size of the first level arrays
                     [u v] = size([aStruct.(sFirstField)]);
                     aData =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{1:u 1:b}}));
-                case 3
+                case {3,4}
                     %Get the inputs of which there should be a structure
                     %and then two fields
                     %Suits a situation where there is an array of structs
@@ -115,12 +115,17 @@ classdef DataHelper
                     sFirstField = char(varargin(1,2));
                     %The second fied, will be indexed
                     sSecondField = char(varargin(1,3));
+                    if size(varargin,2) == 4
+                        iIndex = cell2mat(varargin(1,4));
+                    else
+                        iIndex = 1;
+                    end
                     %Get the size of the struct and index all of the
                     %elements
                     [a b] = size(aStruct);
                     %try to access the specified fields
                     try 
-                        aFirstLevel =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{1:b}}));
+                        aFirstLevel =  subsref([aStruct.(sFirstField)],struct('type','()','subs',{{iIndex 1:b}}));
                     catch ex
                         aData = [];
                         return
@@ -163,7 +168,7 @@ classdef DataHelper
                         end
                         aOutStruct = aStruct;
                     end
-                case 4
+                case {4,5}
                     %Get the inputs
                     %The struct to index
                     aStruct = cell2mat(varargin(1,1));
@@ -173,18 +178,22 @@ classdef DataHelper
                     sSecondField = char(varargin(1,3));
                     %The data to assign
                     aInData = cell2mat(varargin(1,4));
-                    
+                    if size(varargin,2) == 5
+                        iIndex = cell2mat(varargin(1,5));
+                    else
+                        iIndex = 1;
+                    end
                     %Get the size of the struct and index all of the
                     %elements
                     [a b] = size(aInData);
                     [x y] = size(aStruct);
                     if b == y
                         for i = 1:b;
-                            aStruct(i).(sFirstField).(sSecondField) = aInData(:,i);
+                            aStruct(i).(sFirstField)(iIndex).(sSecondField) = aInData(:,i);
                         end
                     else
                         for i = 1:y;
-                            aStruct(i).(sFirstField).(sSecondField) = aInData;
+                            aStruct(i).(sFirstField)(iIndex).(sSecondField) = aInData;
                         end
                     end
                     aOutStruct = aStruct;

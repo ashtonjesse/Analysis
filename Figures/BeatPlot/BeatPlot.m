@@ -28,6 +28,8 @@ classdef BeatPlot < SubFigure
             addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.BeatSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.BeatSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'BeatIndexChange',@(src,event) oFigure.BeatSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'SignalEventSave',@(src,event) oFigure.oSaveEventMenu_Callback(src, event));
+            
             %Add a listener so the figure knows when a user has made a time
             %point selection
             addlistener(oFigure.oParentFigure,'TimeSelectionChange',@(src,event) oFigure.TimeSelectionListener(src, event));
@@ -133,8 +135,8 @@ classdef BeatPlot < SubFigure
         
         function oSaveEventMenu_Callback(oFigure, src, event)
             %get the beat indexes and activation times to save
-            aSignalEvents = oFigure.oDAL.oHelper.MultiLevelSubsRef(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'SignalEvent','Index');
-            oDataToWrite = horzcat(aSignalEvents,oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).SignalEvent(1).Range);
+            aSignalEvents = oFigure.oDAL.oHelper.MultiLevelSubsRef(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'SignalEvent','Index',oFigure.SelectedEventID);
+            oDataToWrite = horzcat(aSignalEvents,oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).SignalEvent(oFigure.SelectedEventID).Range);
             %choose location to save to
             [sDataFileName,sDataPathName]=uiputfile('*.txt','Select a location for the text file');
             %Make sure the dialogs return char objects
@@ -169,7 +171,8 @@ classdef BeatPlot < SubFigure
             %Get the full file name
             sLongDataFileName=strcat(sDataPathName,sDataFileName);
             %Read the data in to the appropriate location in oUnemap
-            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.oDAL.GetSignalEventInformationFromTextFile(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap,sLongDataFileName);
+            oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.oDAL.GetSignalEventInformationFromTextFile(...
+                oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap,oFigure.SelectedEventID,sLongDataFileName);
             %refresh analysesignals and mapelectrodes figures
             oFigure.PlotBeat();
             notify(oFigure,'SignalEventSelected',DataPassingEvent([],oFigure.SelectedEventID));

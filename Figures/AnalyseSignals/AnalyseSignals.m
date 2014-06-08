@@ -31,6 +31,7 @@ classdef AnalyseSignals < SubFigure
         SignalEventSelectionChange;
         NewSignalEventCreated;
         NewBeatInserted;
+        SignalEventSave;
     end
     
     methods
@@ -456,6 +457,10 @@ classdef AnalyseSignals < SubFigure
              notify(oFigure,'TimeSelectionChange', DataPassingEvent([1 iBeatLength],oFigure.SelectedTimePoint));
          end
          
+         function SaveSignalEvent(oFigure, src, event)
+             notify(oFigure,'SignalEventSave');
+         end
+         
          %% Event Callbacks --------------------------------------
          function SubtractEnvelope(oFigure,src,event)
              %Carries out an envelope subtraction neighbourhood action
@@ -509,6 +514,7 @@ classdef AnalyseSignals < SubFigure
             %made a channel selection
             addlistener(oMapElectrodesFigure,'ChannelGroupSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
             addlistener(oMapElectrodesFigure,'ElectrodeSelected',@(src,event) oFigure.ElectrodeSelected(src, event));
+            addlistener(oMapElectrodesFigure,'SaveButtonPressed',@(src,event) oFigure.SaveSignalEvent(src, event));
          end
          
          function oBeatWindowMenu_Callback(oFigure, src, event)

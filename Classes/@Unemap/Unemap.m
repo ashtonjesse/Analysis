@@ -1177,13 +1177,13 @@ classdef Unemap < BasePotential
                 iEvent = 1;
             end
             %Specify the processed beat indexes as the default range
-            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Range = oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes;
-            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Label.Colour = char(varargin{1});
-            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Type = char(varargin{2});
-            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Method = char(varargin{3});
+            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Range = oUnemap.Electrodes(iElectrodeNumber).Processed.BeatIndexes;
+            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Label.Colour = char(varargin{1});
+            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Type = char(varargin{2});
+            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Method = char(varargin{3});
             %initialise and build ID
-            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).ID = oUnemap.MakeEventID(char(varargin{1}), ...
-                oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Type(1),oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Method);
+            oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).ID = oUnemap.MakeEventID(char(varargin{1}), ...
+                oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Type(1),oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Method);
             if size(varargin,2) == 4
                 %A beat number has been specified so mark event just
                 %for this beat (otherwise all beats)

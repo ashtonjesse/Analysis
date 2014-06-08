@@ -21,6 +21,7 @@ classdef MapElectrodes < SubFigure
     events
         ChannelGroupSelection;
         ElectrodeSelected;
+        SaveButtonPressed;
     end
     
     methods
@@ -79,6 +80,16 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotData();
             %Set default selection
             oFigure.SelectedChannels = 1:length(oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
+            %set the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) ThisKeyPressFcn(oFigure, src, event));
+            %save the old keypressfcn
+            oldKeyPressFcnHook = get(oFigure.oGuiHandle.(oFigure.sFigureTag), 'KeyPressFcn');
+            %disable the listeners hold
+            hManager = uigetmodemanager(oFigure.oGuiHandle.(oFigure.sFigureTag));
+            set(hManager.WindowListenerHandles,'Enable','off');
+            %reset the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', oldKeyPressFcnHook);
+            
             % --- Executes just before BaselineCorrection is made visible.
             function MapElectrodes_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -111,6 +122,13 @@ classdef MapElectrodes < SubFigure
      end
     
      methods (Access = public)
+         function ThisKeyPressFcn(oFigure, src, event)
+             switch event.Key
+                case 's'
+                    notify(oFigure,'SaveButtonPressed');
+             end
+         end
+        
          function oFigure = Close_fcn(oFigure, src, event)
              deleteme(oFigure);
          end
