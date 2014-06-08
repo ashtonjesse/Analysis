@@ -515,6 +515,7 @@ classdef AnalyseSignals < SubFigure
             addlistener(oMapElectrodesFigure,'ChannelGroupSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
             addlistener(oMapElectrodesFigure,'ElectrodeSelected',@(src,event) oFigure.ElectrodeSelected(src, event));
             addlistener(oMapElectrodesFigure,'SaveButtonPressed',@(src,event) oFigure.SaveSignalEvent(src, event));
+            addlistener(oMapElectrodesFigure,'BeatChange',@(src,event) oFigure.BeatSlideValueListener(src, event));
          end
          
          function oBeatWindowMenu_Callback(oFigure, src, event)

@@ -22,6 +22,7 @@ classdef MapElectrodes < SubFigure
         ChannelGroupSelection;
         ElectrodeSelected;
         SaveButtonPressed;
+        BeatChange;
     end
     
     methods
@@ -125,7 +126,14 @@ classdef MapElectrodes < SubFigure
          function ThisKeyPressFcn(oFigure, src, event)
              switch event.Key
                 case 's'
+                    %save the signal event times
                     notify(oFigure,'SaveButtonPressed');
+                 case 'leftarrow'
+                     %shift to the previous beat
+                     notify(oFigure,'BeatChange',DataPassingEvent([],oFigure.oParentFigure.SelectedBeat-1));
+                 case 'rightarrow'
+                     %shift to the next beat
+                     notify(oFigure,'BeatChange',DataPassingEvent([],oFigure.oParentFigure.SelectedBeat+1));
              end
          end
         
