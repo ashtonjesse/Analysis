@@ -46,11 +46,12 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oExportToTextMenu, 'callback', @(src, event) oExportToTextMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCVScatterMenu, 'callback', @(src, event) oCVScatterMenu_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.oRefreshActivationMenu, 'callback', @(src, event) oRefreshActivationMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oRefreshEventMenu, 'callback', @(src, event) oRefreshEventMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oMontageMenu, 'callback', @(src, event) oMontageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleColourBarMenu, 'callback', @(src, event) oToggleColourBarMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleElectrodeMarkerMenu, 'callback', @(src, event) oToggleElectrodeMarkerMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRotateArrayMenu, 'callback', @(src, event) oRotateArrayMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oRefreshBeatEventMenu, 'callback', @(src, event) oRefreshBeatEventMenu_Callback(oFigure, src, event));
 
             
             %Sets the figure close function. This lets the class know that
@@ -134,6 +135,8 @@ classdef MapElectrodes < SubFigure
                  case 'rightarrow'
                      %shift to the next beat
                      notify(oFigure,'BeatChange',DataPassingEvent([],oFigure.oParentFigure.SelectedBeat+1));
+                 case 'r'
+                     oFigure.RefreshActivationData(oFigure.oParentFigure.SelectedBeat);
              end
          end
         
@@ -389,10 +392,16 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotData(0);
         end
         
-        function oRefreshActivationMenu_Callback(oFigure, src, event)
+        function oRefreshEventMenu_Callback(oFigure, src, event)
             %Refresh the data
             oFigure.RefreshActivationData();
         end
+        
+        function oRefreshBeatEventMenu_Callback(oFigure, src, event)
+            %Refresh the map data just for the currently selected beat
+            oFigure.RefreshActivationData(oFigure.oParentFigure.SelectedBeat);
+        end
+        
         % -----------------------------------------------------------------
         function oUpdateMenu_Callback(oFigure, src, event)
             % Find the brushline object in the figure
@@ -484,7 +493,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID);
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour', oFigure.oParentFigure.SelectedEventID,[],[]);
             end
             
             %Update the plot type
@@ -631,13 +640,25 @@ classdef MapElectrodes < SubFigure
              oFigure.PlotData();
          end
          
-         function RefreshActivationData(oFigure)
+         function RefreshActivationData(oFigure,varargin)
              %Choose which routine to call.
-             if strcmpi(oFigure.PlotType,'Activation2DScatter')
-                 oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID);
-             elseif strcmpi(oFigure.PlotType,'Activation2DContour')
-                 oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour',oFigure.oParentFigure.SelectedEventID);
+             if size(varargin,2) == 1
+                 %a beat has been specified
+                 iBeatIndex = cell2mat(varargin(1,1));
+                 if strcmpi(oFigure.PlotType,'Activation2DScatter')
+                     oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID,oFigure.oParentFigure.SelectedBeat,oFigure.Activation);
+                 elseif strcmpi(oFigure.PlotType,'Activation2DContour')
+                     oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour',oFigure.oParentFigure.SelectedEventID,oFigure.oParentFigure.SelectedBeat,oFigure.Activation);
+                 end
+             else
+                 %a beat has not been specified 
+                 if strcmpi(oFigure.PlotType,'Activation2DScatter')
+                     oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID,[],[]);
+                 elseif strcmpi(oFigure.PlotType,'Activation2DContour')
+                     oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour',oFigure.oParentFigure.SelectedEventID,[],[]);
+                 end
              end
+             
              %Plot a 2D activation map
              oFigure.PlotData(0);
          end
