@@ -19,6 +19,7 @@ classdef AnalyseSignals < SubFigure
         Plots = [];
         PlotLimits = [];
         SelectedEventID;
+        EventFilePath=[];
     end
         
     events
@@ -31,7 +32,7 @@ classdef AnalyseSignals < SubFigure
         SignalEventSelectionChange;
         NewSignalEventCreated;
         NewBeatInserted;
-        SignalEventSave;
+        SignalEventLoaded;
     end
     
     methods
@@ -82,6 +83,8 @@ classdef AnalyseSignals < SubFigure
             set(oFigure.oGuiHandle.oPlotSinusRateMenu, 'callback', @(src, event) oPlotSinusRateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDeleteBeatMenu, 'callback', @(src, event) oDeleteBeatMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oInsertBeatMenu, 'callback', @(src, event) oInsertBeatMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oSaveEventMenu, 'callback', @(src, event) oSaveEventMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oLoadEventMenu, 'callback', @(src, event) oLoadEventMenu_Callback(oFigure, src, event));
             
             set(oFigure.oGuiHandle.bInsertBeat, 'callback', @(src, event) bInsertBeat_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.bPreviousGroup, 'callback', @(src, event) bPreviousGroup_Callback(oFigure, src, event));
@@ -91,14 +94,25 @@ classdef AnalyseSignals < SubFigure
             %the figure wants to close and thus the class should cleanup in
             %memory as well
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) KeyPress_fcn(oFigure, src, event));
             
+            %set the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) ThisKeyPressFcn(oFigure, src, event));
+            %save the old keypressfcn
+            oldKeyPressFcnHook = get(oFigure.oGuiHandle.(oFigure.sFigureTag), 'KeyPressFcn');
+            %set zoom callback
+            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
+            %disable the listeners hold
+            hManager = uigetmodemanager(oFigure.oGuiHandle.(oFigure.sFigureTag));
+            set(hManager.WindowListenerHandles,'Enable','off');
+            %reset the keypressfcn
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', oldKeyPressFcnHook);
            
             %Set default selection
             oFigure.SelectedChannels = 1:length(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
+            if isfield(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1),'SignalEvent')
+                oFigure.SelectedEventID = 1;
+            end
             
-            %set zoom callback
-            set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             %Set annotation on
             oFigure.Annotate = 1;
             %Draw and fill plots
@@ -144,13 +158,9 @@ classdef AnalyseSignals < SubFigure
     
      methods (Access = public)
          %% Ui control callbacks
-         function KeyPress_fcn(oFigure, src, event)
+         function ThisKeyPressFcn(oFigure, src, event)
              %Handles key press events
              switch event.Key
-                 case 'n'
-                     bNextGroup_Callback(oFigure, oFigure.oGuiHandle.bNextGroup, []);
-                 case 'p'
-                     bPreviousGroup_Callback(oFigure, oFigure.oGuiHandle.bPreviousGroup, []);
                  case 'r'
                      bAcceptChannel_Callback(oFigure, oFigure.oGuiHandle.bRejectChannel, []);
              end
@@ -457,10 +467,6 @@ classdef AnalyseSignals < SubFigure
              notify(oFigure,'TimeSelectionChange', DataPassingEvent([1 iBeatLength],oFigure.SelectedTimePoint));
          end
          
-         function SaveSignalEvent(oFigure, src, event)
-             notify(oFigure,'SignalEventSave');
-         end
-         
          %% Event Callbacks --------------------------------------
          function SubtractEnvelope(oFigure,src,event)
              %Carries out an envelope subtraction neighbourhood action
@@ -514,7 +520,7 @@ classdef AnalyseSignals < SubFigure
             %made a channel selection
             addlistener(oMapElectrodesFigure,'ChannelGroupSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
             addlistener(oMapElectrodesFigure,'ElectrodeSelected',@(src,event) oFigure.ElectrodeSelected(src, event));
-            addlistener(oMapElectrodesFigure,'SaveButtonPressed',@(src,event) oFigure.SaveSignalEvent(src, event));
+            addlistener(oMapElectrodesFigure,'SaveButtonPressed',@(src,event) oFigure.oSaveEventMenu_Callback(src, event));
             addlistener(oMapElectrodesFigure,'BeatChange',@(src,event) oFigure.BeatSlideValueListener(src, event));
          end
          
@@ -642,8 +648,53 @@ classdef AnalyseSignals < SubFigure
          function oInsertBeatMenu_Callback(oFigure, src, event)
              brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'on');
              brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'red');
-             set(oFigure.oGuiHandle.bInsertBeat, 'visible', 'on');            
+             set(oFigure.oGuiHandle.bInsertBeat, 'visible', 'on');
          end
+         
+         function oSaveEventMenu_Callback(oFigure, src, event)
+             if isempty(event) && ~isempty(oFigure.SelectedEventID)
+                 %the event has been called from the menu so open a file
+                 %save dialog
+                 %choose location to save to
+                 [sDataFileName,sDataPathName]=uiputfile('*.txt','Select a location for the event text file');
+                 %Make sure the dialogs return char objects
+                 if (~ischar(sDataFileName))
+                     return
+                 end
+                 
+                 %Get the full file name
+                 oFigure.EventFilePath = strcat(sDataPathName,sDataFileName);
+                 %save the event
+                 oFigure.SaveEvent(oFigure.EventFilePath);
+             elseif ~isempty(event) && ~isempty(oFigure.SelectedEventID)
+                 %save the value passed in the event
+                 oFigure.EventFilePath = char(event.Value);
+                 %save the event
+                 oFigure.SaveEvent(oFigure.EventFilePath);
+             end
+         end
+         
+         function oLoadEventMenu_Callback(oFigure, src, event)
+             %load data from text file and save to appropriate locations in
+             %oUnemap structure
+             %Call built-in file dialog to select filename
+             [sDataFileName,sDataPathName]=uigetfile('*.txt','Select a file containing signal event indexes and ranges');
+             %Make sure the dialogs return char objects
+             if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                 return
+             end
+             
+             %Get the full file name
+             sLongDataFileName=strcat(sDataPathName,sDataFileName);
+             %Read the data in to the appropriate location in oUnemap
+             oFigure.oParentFigure.oGuiHandle.oUnemap.oDAL.GetSignalEventInformationFromTextFile(...
+                 oFigure.oParentFigure.oGuiHandle.oUnemap,oFigure.SelectedEventID,sLongDataFileName);
+             %refresh analysesignals and mapelectrodes figures
+             oFigure.PlotBeat();
+             notify(oFigure,'SignalEventLoaded',DataPassingEvent([],oFigure.SelectedEventID));
+             fprintf('Loaded event file at %s\n', sLongDataFileName);
+         end
+         
          %% Misc
          function iEventNumber = GetEventNumberFromTag(oFigure, sTag)
              %Find the event number specified by the input handle tag
@@ -660,7 +711,7 @@ classdef AnalyseSignals < SubFigure
          function Replot(oFigure,varargin)
              %Make sure the current figure is AnalyseSignals
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
-%              oWaitbar = waitbar(0,'Please wait...');
+             %              oWaitbar = waitbar(0,'Please wait...');
              if isempty(varargin)
                  oFigure.PlotBeatOrElectrode();
              else
@@ -677,7 +728,23 @@ classdef AnalyseSignals < SubFigure
              oFigure.GetZoomLimits(oFigure.oGuiHandle.oElectrodeAxes);
              oFigure.ApplyZoomLimits('XLim');
              oFigure.CheckRejectToggleButton();
-%              close(oWaitbar);
+             %              close(oWaitbar);
+         end
+         
+         function SaveEvent(oFigure, sFilePath)
+             %get the beat indexes and activation times to save
+             aSignalEvents = oFigure.oDAL.oHelper.MultiLevelSubsRef(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes,'SignalEvent','Index',oFigure.SelectedEventID);
+             oDataToWrite = horzcat(aSignalEvents,oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).SignalEvent(oFigure.SelectedEventID).Range);
+            
+             %build header cell array
+             aRowHeader = cell2mat({oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(:).Name});
+             aRowHeader = reshape(aRowHeader,5,size(aSignalEvents,2));
+             aRowHeader = cellstr(aRowHeader');
+             aRowHeader{size(aSignalEvents,2)+1} = 'LowerRange';
+             aRowHeader{size(aSignalEvents,2)+2} = 'UpperRange';
+             %save data to txt file
+             FID = oFigure.oDAL.oHelper.ExportDataToTextFile(sFilePath,aRowHeader,oDataToWrite,'%6.0u,');
+             fprintf('Event file saved successfully to %s\n', sFilePath);
          end
      end
      

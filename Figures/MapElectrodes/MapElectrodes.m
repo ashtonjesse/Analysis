@@ -73,6 +73,7 @@ classdef MapElectrodes < SubFigure
             %Add a listener so the figure knows when a signal event
             %selection change has been made
             addlistener(oFigure.oParentFigure,'SignalEventSelectionChange',@(src,event) oFigure.SignalEventSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'SignalEventLoaded',@(src,event) oFigure.SignalEventSelectionListener(src, event));
             %Set plot position and plot type 
             oFigure.PlotPosition = [0.05 0.05 0.88 0.88];
             oFigure.PlotType = 'JustElectrodes';
@@ -128,7 +129,9 @@ classdef MapElectrodes < SubFigure
              switch event.Key
                 case 's'
                     %save the signal event times
-                    notify(oFigure,'SaveButtonPressed');
+                    if ~isempty(oFigure.oParentFigure.EventFilePath)
+                        notify(oFigure,'SaveButtonPressed',DataPassingEvent([],oFigure.oParentFigure.EventFilePath));
+                    end
                  case 'leftarrow'
                      %shift to the previous beat
                      notify(oFigure,'BeatChange',DataPassingEvent([],oFigure.oParentFigure.SelectedBeat-1));
