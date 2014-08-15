@@ -151,6 +151,8 @@ classdef BasePotential < BaseSignal
                 %Perform on processed data
                 oBasePotential.Electrodes(iElectrodeNumber).Processed.Slope = ...
                     oBasePotential.CalculateSlope(oBasePotential.Electrodes(iElectrodeNumber).Processed.(sDataType),5,3);
+                oBasePotential.Electrodes(iElectrodeNumber).Processed.Curvature = ...
+                    oBasePotential.CalculateCurvature(oBasePotential.Electrodes(iElectrodeNumber).Processed.(sDataType),20,5);
             elseif nargin > 1
                 %A datatype has been specified
                 sDataType = char(varargin{1});
@@ -161,6 +163,8 @@ classdef BasePotential < BaseSignal
                 for i = 1:size(oBasePotential.Electrodes,2)
                     oBasePotential.Electrodes(i).Processed.Slope = ...
                         oBasePotential.CalculateSlope(oBasePotential.Electrodes(i).Processed.(sDataType),5,3);
+                    oBasePotential.Electrodes(i).Processed.Curvature = ...
+                        oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.(sDataType),20,5);
                 end
             else
                 %No electrode number has been specified so loop through
@@ -173,6 +177,8 @@ classdef BasePotential < BaseSignal
                 for i = 1:iLength
                     oBasePotential.Electrodes(i).Processed.Slope = ...
                         oBasePotential.CalculateSlope(oBasePotential.Electrodes(i).Processed.Data,5,3);
+                    oBasePotential.Electrodes(i).Processed.Curvature = ...
+                        oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.Data,20,5);
                     waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                 end
                 close(oWaitbar);
@@ -251,9 +257,13 @@ classdef BasePotential < BaseSignal
             %Take the peaks  supplied and create an array of
             %discrete heart rates
             
-            aTimes = oBasePotential.TimeSeries(dPeaks);
+            
             %aTimes = aTimes';
             %Put peaks in pairs
+            aTimes = oBasePotential.TimeSeries(dPeaks);
+            if size(aTimes,1) > size(aTimes,2)
+                aTimes = aTimes';
+            end
             if size(dPeaks,1) > size(dPeaks,2)
                 dPeaks = dPeaks';
             end
@@ -272,7 +282,7 @@ classdef BasePotential < BaseSignal
         
         function RefreshBeatData(oBasePotential, varargin)
             %loop through electrodes and refresh data for beat indexes
-            if nargin > 0
+            if nargin > 0 && ~isempty(varargin)
                 %user has specified a specific electrode
                 iChannel = varargin{1};
                 oBasePotential.Electrodes(iChannel).Processed.Beats = NaN(length(oBasePotential.Electrodes(iChannel).Processed.Data),1);

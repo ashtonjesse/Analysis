@@ -7,31 +7,46 @@ clear all;
 close all;
 % 
 % %get a list of the csv files in the directory
-sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\1129baro008\APD50\';
-sSavePath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\1129baro008\APD50\';
-bPrintAPD = true;
-iSecondMapToCompare = 25;
-iMontageX = 5;%5
-iMontageY = 10;%9
-
-
+sFilesPath = 'F:\PhD\Experiments\Auckland\InSituPrep\20140624\20140624baro004\APD1\';
+sSavePath = 'F:\PhD\Experiments\Auckland\InSituPrep\20140624\20140624baro004\APD1\';
 sFormat = 'csv';
 % %Get the full path names of all the  files in the directory
 aFileFull = fGetFileNamesOnly(sFilesPath,strcat('*.',sFormat));
-rowdim = 100;
-coldim = 101;
+
+bPrintAPD = false;
+iMontageX = 5;%5
+iMontageY = 7;%9
+
+iFirstBeat = 90;
+iLabelStartBeat = iFirstBeat;
+iLastBeat = iFirstBeat  + iMontageX*iMontageY - 1;
+iFirstBeatToPlot = iFirstBeat;
+iLastBeatToPlot = iLastBeat;
+iFirstIndex = 20;
+iFirstBeatToPlot = iFirstBeatToPlot - iFirstIndex + 1;
+iLastBeatToPlot = iLastBeatToPlot - iFirstIndex + 1;
+if iLastBeatToPlot > length(aFileFull)
+    iLastBeatToPlot = length(aFileFull);
+end
+%Used for APDs only
+iSecondMapToCompare = 10;
+iSecondMapToCompare = iSecondMapToCompare - iFirstIndex + 1;
+
+rowdim = 44;
+coldim = 41;%add one to the number of columns in the csv file
 %Open the first file to get some info out (assumes that all the maps in
 %this directory have the same shape)
-[aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(aFileFull{1},rowdim,coldim,6);
+[aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(aFileFull{1},rowdim,coldim,7);
 aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
 [rowIndices colIndices] = find(aActivationTimes > 0);
 aATPoints = aActivationTimes > 0;
 AT = aActivationTimes(aATPoints);
+AT(AT < 1) = NaN;
 %normalise the ATs to first activation
 [C I] = min(AT);
 AT = single(AT - AT(I));
 AT = double(AT);
-dRes = 0.25;
+dRes = 0.190;
 dInterpDim = dRes/4;
 x = dRes .* rowIndices;
 y = dRes .* colIndices;
@@ -95,15 +110,57 @@ set(oATAxes,'Box','off');
 % set(oTitle,'units','normalized');
 % set(oTitle,'fontsize',14,'fontweight','bold');
 %create beat label
-aLabelPosition = [min(min(xx))+0.2, max(max(yy))-0.5];
-oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',1));
+%aLabelPosition = [min(min(xx))+0.2, max(max(yy))-0.5];%for top left
+aLabelPosition = [min(min(xx))+0.2, min(min(yy))+0.5];%for bottom left
+oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iLabelStartBeat));
+set(oBeatLabel,'units','normalized');
+set(oBeatLabel,'fontsize',14,'fontweight','bold');
+set(oBeatLabel,'parent',oATAxes);
+
+%clear the axes as I don't actually want to print this map (as it is always
+%the first file, not iFirstBeatToPlot)
+[aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(aFileFull{iFirstBeatToPlot},rowdim,coldim,6);
+aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
+%dispose of the data that has been excluded in the ROI
+AT = aActivationTimes(aATPoints);
+
+AT(AT < 1) = NaN;
+%normalise the ATs to first activation
+[C I] = min(AT);
+AT = single(AT - AT(I));
+AT = double(AT);
+
+% %     plot the activation field
+F=TriScatteredInterp(x,y,AT);
+QAT = F(xx,yy);
+contourf(oATAxes, xx,yy,QAT,cbarRange);
+caxis(oATAxes, [cbarmin cbarmax]);
+axis(oATAxes, 'equal'); axis(oATAxes, 'tight');
+set(oATAxes,'FontUnits','points');
+set(oATAxes,'FontSize',6);
+aYticks = str2num(get(oATAxes,'yticklabel'));
+aYticks = aYticks - aYticks(1);
+aYtickstring = cellstr(num2str(aYticks));
+for i=1:length(aYticks)
+    %Check if the label has a decimal place and hide this label
+    if ~isempty(strfind(char(aYtickstring{i}),'.'))
+        aYtickstring{i} = '';
+    end
+end
+set(oATAxes,'xticklabel',[]);
+set(oATAxes,'xtickmode','manual');
+set(oATAxes,'yticklabel', char(aYtickstring));
+set(oATAxes,'ytickmode','manual');
+set(oATAxes,'Box','off');
+aLabelPosition = [min(min(xx))+0.2, min(min(yy))+0.5];%for bottom left
+oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iLabelStartBeat));
 set(oBeatLabel,'units','normalized');
 set(oBeatLabel,'fontsize',14,'fontweight','bold');
 set(oBeatLabel,'parent',oATAxes);
 
 %Print figure    
 drawnow; pause(.2);
-[pathstr, name, ext, versn] = fileparts(aFileFull{1});
+[pathstr, name, ext, versn] = fileparts(aFileFull{iFirstBeatToPlot});
 sSaveFilePath = fullfile(sSavePath,strcat(name, '_AT.bmp'));
 print(oATFigure,'-dbmp','-r300',sSaveFilePath)
 fprintf('Printed figure %s\n', sSaveFilePath);
@@ -150,7 +207,7 @@ set(oCVAxes,'yticklabel', char(aYtickstring));
 set(oCVAxes,'ytickmode','manual');
 set(oCVAxes,'Box','off');
 %set up beat label
-oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',1));
+oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iLabelStartBeat));
 set(oBeatLabel,'units','normalized');
 set(oBeatLabel,'fontsize',14,'fontweight','bold');
 set(oBeatLabel,'parent',oCVAxes);
@@ -178,13 +235,13 @@ sCVMapDosString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\mont
 
 %% Prepare for CVtxt file 
 %The row header is the row index and col index appended together 
-rowString = num2str(rowIndices);
-colString = num2str(colIndices);
+rowString = num2str(rowIndices,'%2.2i');
+colString = num2str(colIndices,'%2.2i');
 aCVRowHeader = horzcat(rowString,colString);
 %convert to cell array of strings
 aCVRowHeader = cellstr(aCVRowHeader);
 %Initialise array to hold loop data
-aCVDataToWrite = zeros(min(length(aFileFull),iMontageX*iMontageY),length(aCVRowHeader),'double');
+aCVDataToWrite = zeros(iLastBeatToPlot - iFirstBeatToPlot + 1,length(aCVRowHeader),'double');
 %Select just the data that belongs to a recording point
 aCVDataToWrite(1,:) = CV;
 
@@ -200,7 +257,7 @@ if bPrintAPD
     aAPDRowHeader = strread(num2str(aAPDRowHeader),'%s');
     aAPDRowHeader = aAPDRowHeader';
     %Initialise array to hold loop data
-    aAPDDataToWrite = zeros(min(length(aFileFull),iMontageX*iMontageY),length(aAPDRowHeader),'double');
+    aAPDDataToWrite = zeros(iLastBeatToPlot - iFirstBeatToPlot + 1,length(aAPDRowHeader),'double');
     %Select just the data that belongs to a recording point
     aAPDDataToWrite(1,:) = aCurrentAPD(aDataPoints);
     
@@ -277,7 +334,7 @@ if bPrintAPD
     % set(oTitle,'units','normalized');
     % set(oTitle,'fontsize',14,'fontweight','bold');
     %create beat label
-    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',1));
+    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iLabelStartBeat));
     set(oBeatLabel,'units','normalized');
     set(oBeatLabel,'fontsize',14,'fontweight','bold');
     set(oBeatLabel,'parent',oAPDAxes);
@@ -290,9 +347,10 @@ if bPrintAPD
     fprintf('Printed figure %s\n', sSaveFilePath);
     sAPDMapDosString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\montage.exe ', {sprintf(' %s',sSaveFilePath)});
 end
-
+iBeatCount = 1;
 %% loop through the list of files and read in the data
-for k = 2:min(length(aFileFull),iMontageX*iMontageY)
+for k = iFirstBeatToPlot+1:iLastBeatToPlot
+    iBeatCount = iBeatCount + 1;
 %     %get the data from this file 
     [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(aFileFull{k},rowdim,coldim,6);
     %actually turns out the data needs to be rotated for display
@@ -312,7 +370,7 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
     contourf(oATAxes, xx,yy,QAT,cbarRange);
     caxis(oATAxes, [cbarmin cbarmax]);
     axis(oATAxes, 'equal'); axis(oATAxes, 'tight'); axis(oATAxes, 'off');
-    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',k));
+    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iFirstIndex+k-1));
     set(oBeatLabel,'units','normalized');
     set(oBeatLabel,'fontsize',14,'fontweight','bold');
     set(oBeatLabel,'parent',oATAxes);
@@ -326,7 +384,7 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
         
     %Get Cv data with neighbourhood 24
     [CV,Vect]=ReComputeCV([x,y],AT,24,0.1);
-    aCVDataToWrite(k,:) = CV;
+    aCVDataToWrite(iBeatCount,:) = CV;
     idxCV = find(~isnan(CV));
     aCVdata = CV(idxCV);
     aCVdata(aCVdata > 1) = 1;
@@ -335,7 +393,7 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
     scatter(oCVAxes,x(idxCV),y(idxCV),14,aCVdata,'filled');
     hold(oCVAxes, 'on'); quiver(oCVAxes,x(idxCV),y(idxCV),Vect(idxCV,1),Vect(idxCV,2),'color','k','linewidth',0.6); hold(oCVAxes, 'off');
     axis(oCVAxes, 'equal'); axis(oCVAxes, 'tight'); axis(oCVAxes,'off');
-    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',k));
+    oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iFirstIndex+k-1));
     set(oBeatLabel,'units','normalized');
     set(oBeatLabel,'fontsize',14,'fontweight','bold');
     set(oBeatLabel,'parent',oCVAxes);
@@ -349,14 +407,14 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
     %Plot APD
     if bPrintAPD
         aCurrentAPD = rot90(aAPDs(:,1:end-1),-1);
-        aAPDDataToWrite(k,:) = aCurrentAPD(aDataPoints);
+        aAPDDataToWrite(iBeatCount,:) = aCurrentAPD(aDataPoints);
         APD = aCurrentAPD(aDataPoints);
         F=TriScatteredInterp(xforAPD,yforAPD,APD);
         QAPD = F(xxforAPD,yyforAPD);
         contourf(oAPDAxes, xxforAPD,yyforAPD,QAPD,APDcbarRange);
         axis(oAPDAxes, 'equal'); axis(oAPDAxes, 'tight'); axis(oAPDAxes, 'off');
         caxis(oAPDAxes, [APDcbarmin APDcbarmax]);
-        oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',k));
+        oBeatLabel = text(aLabelPosition(1), aLabelPosition(2), sprintf('%d',iFirstIndex+k-1));
         set(oBeatLabel,'units','normalized');
         set(oBeatLabel,'fontsize',14,'fontweight','bold');
         set(oBeatLabel,'parent',oAPDAxes);
@@ -391,10 +449,10 @@ for k = 2:min(length(aFileFull),iMontageX*iMontageY)
 %     fprintf('Printed data for %s\n', name);
 end
 % % Write out CV data
-DataHelper.ExportDataToTextFile(strcat(sSavePath,'CVData.txt'),aCVRowHeader,aCVDataToWrite);
+DataHelper.ExportDataToTextFile(strcat(sSavePath,'Beats',sprintf('%d',iFirstBeat),'to',sprintf('%d',iLastBeat),'_CVData.txt'),aCVRowHeader,aCVDataToWrite,'%5.2f',true);
 % % Write out APD data
 if bPrintAPD
-    DataHelper.ExportDataToTextFile(strcat(sSavePath,'APDData.txt'),aAPDRowHeader,aAPDDataToWrite);
+    DataHelper.ExportDataToTextFile(strcat(sSavePath,'Beats',sprintf('%d',iFirstBeat),'to',sprintf('%d',iLastBeat),'_APDData.txt'),aAPDRowHeader,aAPDDataToWrite,'%5.2f',true);
 end
 
 %montage the AT maps
@@ -466,9 +524,11 @@ sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.
         {' -gravity North -chop 0x2070'},{' -gravity South -chop 0x143'}, {sprintf(' %s', sSaveFilePath)});
 sStatus = dos(char(sChopString{1}));
 sColorBarImage = sSaveFilePath;
-sSaveFilePath = fullfile(sSavePath,'ATMapmontage_cbar.png');
+sSaveFilePath = fullfile(sSavePath,strcat('Beats',sprintf('%d',iFirstBeat),'to',sprintf('%d',iLastBeat),'_ATMapmontage_cbar.png'));
 sAppend = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sColorBarImage)}, ...
         {sprintf(' %s', sSavePath)}, 'ATMapmontage.png',{' -append'}, {sprintf(' %s', sSaveFilePath)});
+sStatus = dos(char(sAppend{1}));
+sAppend = strcat('del',{sprintf(' %s', sSavePath)}, 'ATMapmontage.png');
 sStatus = dos(char(sAppend{1}));
 
 %% Create a colour bar for the CV maps
@@ -498,9 +558,11 @@ sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.
         {' -gravity North -chop 0x2070'},{' -gravity South -chop 0x143'}, {sprintf(' %s', sSaveFilePath)});
 sStatus = dos(char(sChopString{1}));
 sColorBarImage = sSaveFilePath;
-sSaveFilePath = fullfile(sSavePath,'CVMapmontage_cbar.png');
+sSaveFilePath = fullfile(sSavePath,strcat('Beats',sprintf('%d',iFirstBeat),'to',sprintf('%d',iLastBeat),'_CVMapmontage_cbar.png'));
 sAppend = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sColorBarImage)}, ...
         {sprintf(' %s', sSavePath)}, 'CVMapmontage.png',{' -append'}, {sprintf(' %s', sSaveFilePath)});
+sStatus = dos(char(sAppend{1}));
+sAppend = strcat('del',{sprintf(' %s', sSavePath)}, 'CVMapmontage.png');
 sStatus = dos(char(sAppend{1}));
 
 %% Create a colour bar for the APD maps
@@ -530,8 +592,10 @@ if bPrintAPD
         {' -gravity North -chop 0x2070'},{' -gravity South -chop 0x143'}, {sprintf(' %s', sSaveFilePath)});
     sStatus = dos(char(sChopString{1}));
     sColorBarImage = sSaveFilePath;
-    sSaveFilePath = fullfile(sSavePath,'APDMapmontage_cbar.png');
+    sSaveFilePath = fullfile(sSavePath,strcat('Beats',sprintf('%d',iFirstBeat),'to',sprintf('%d',iLastBeat),'_APDMapmontage_cbar.png'));
     sAppend = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sColorBarImage)}, ...
         {sprintf(' %s', sSavePath)}, 'APDMapmontage.png',{' -append'}, {sprintf(' %s', sSaveFilePath)});
+    sStatus = dos(char(sAppend{1}));
+    sAppend = strcat('del',{sprintf(' %s', sSavePath)}, 'APDMapmontage.png');
     sStatus = dos(char(sAppend{1}));
 end

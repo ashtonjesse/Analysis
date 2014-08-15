@@ -28,17 +28,17 @@ aBeatIndices = zeros(n,2);
 aBeats = NaN(p,q);
 %Initialise an array to hold the maximum values of each beat
 aMaxPeaks = zeros(n,1);
-iBlank = 80;
+iBlank = 40;
 %Loop through the peaks
 for j = 2:n;
     %If the next peak is greater than 150 more than the current
     %peak then the next group of peaks must be reached so save
     %the first and last peaks of the last group in aBeats.
-    if aPeaks(2,j) < (iCurrentPeak + 50)
+    if aPeaks(2,j) < (iCurrentPeak + 30)
         iLastPeak = aPeaks(2,j);
         iPeakCount = iPeakCount + 1;
     else
-        if iPeakCount >= 4
+        if iPeakCount >= 2
             %must have found the end of a beat
             %Add some padding to the beginning and end 
             iLastPeak = iLastPeak + iBlank;

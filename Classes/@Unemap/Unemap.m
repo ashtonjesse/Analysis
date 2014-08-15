@@ -291,8 +291,12 @@ classdef Unemap < BasePotential
             
             %Get the shape of the array information in the form that is
             %suitable for DataHelper.ColToArray
-            iRows = oUnemap.oExperiment.Unemap.NumberOfPlugs * oUnemap.oExperiment.Plot.Electrodes.xDim;
-            iColumns = oUnemap.oExperiment.Plot.Electrodes.yDim;
+            %             iRows = oUnemap.oExperiment.Unemap.NumberOfPlugs * oUnemap.oExperiment.Plot.Electrodes.xDim;
+            aLocs = cell2mat({oUnemap.Electrodes(:).Location});
+            aLocs = aLocs';
+            iRows = max(aLocs(:,1));
+            iColumns = max(aLocs(:,2));
+            %             iColumns = oUnemap.oExperiment.Plot.Electrodes.yDim;
             oWaitbar = waitbar(0,'Please wait...');
             iLength = length(oUnemap.TimeSeries);
             
@@ -321,8 +325,10 @@ classdef Unemap < BasePotential
                     %Initialise array to hold calculated envelopes
                     aEnvelopeData = zeros(size(aArrayData,1),size(aArrayData,2));
                 case 'CentralDifference'
-                    %Get the data for the selected channels
+                    %                     %Get the data for the selected channels
                     aArrayData = oUnemap.SelectAcceptedChannelData(oUnemap.Electrodes,'Processed','Data','FillRejectedColumns');
+                    aFullCoords = cell2mat({oUnemap.Electrodes(:).Coords});
+                    aFullCoords = aFullCoords';
                     %Get location data
                     aXData = zeros(size(aArrayData,2),1);
                     aYData = zeros(size(aArrayData,2),1);
@@ -384,7 +390,7 @@ classdef Unemap < BasePotential
                         %neighbourhood
                         %Take a transpose because the colfilt moves down
                         %then across and I want it to do the opposite.
-                        aReshapedArray = aReshapedArray.'; 
+                        aReshapedArray = aReshapedArray.';
                         aCentralDifference = colfilt(aReshapedArray,dKernelBounds,'sliding',@CalculateCentralDifference);
                         %Undo transpose
                         aCentralDifference = aCentralDifference.';

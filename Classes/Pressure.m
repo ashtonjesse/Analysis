@@ -58,6 +58,8 @@ classdef Pressure < BaseSignal
             oPressure.TimeSeries.Processed = [1:1:size(oPressure.Processed.Data,1)] * (1/dNewFrequency);
             oPressure.TimeSeries.Status = 'Processed';
             oPressure.RefSignal.Status = 'Processed';
+            oPressure.Phrenic.Status = 'Processed';
+            
             oPressure.Status = 'Processed';
         end
         

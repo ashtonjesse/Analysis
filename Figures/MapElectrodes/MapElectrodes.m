@@ -779,7 +779,7 @@ classdef MapElectrodes < SubFigure
              [C, oContour] = contourf(oMapAxes,oFigure.Activation.x,oFigure.Activation.y,oFigure.Activation.Beats(iBeat).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
              caxis([oFigure.cbarmin oFigure.cbarmax]);
              colormap(oMapAxes, colormap(flipud(colormap(jet))));
-             if oHandle < 0
+             if oHandle < 0 
                  if oFigure.ColourBarVisible
                      %if the colour bar should be visible then make
                      %a new one
@@ -806,7 +806,7 @@ classdef MapElectrodes < SubFigure
                      delete(oHandle);
                      set(oMapAxes,'userdata',[]);
                      set(oMapAxes,'Position',oFigure.PlotPosition);
-                     oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
+                     oColorBar = cbarf([0 oFigure.cbarmax], 0:1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                      oTitle = get(oColorBar, 'title');
                      if strcmpi(oFigure.ColourBarOrientation, 'horiz')
                          set(oTitle,'units','normalized');
@@ -940,7 +940,7 @@ classdef MapElectrodes < SubFigure
              %              set(oTitle,'fontsize',22,'fontweight','bold');
          end
          
-         function PlotPotential(oFigure, oMapAxes)
+         function PlotPotential(oFigure, oMapAxes, bUpdateColorBar)
              %Make sure the current figure is MapElectrodes
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              %Get the selected beat
@@ -961,7 +961,7 @@ classdef MapElectrodes < SubFigure
                      if oHandle < 0
                          oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
                      end
-                     if oHandle < 0
+                     if oHandle < 0 || bUpdateColorBar
                          %Get a new min and max
                          oFigure.cbarmax = 0; 
                          oFigure.cbarmin = 2000; %arbitrary
@@ -982,6 +982,7 @@ classdef MapElectrodes < SubFigure
                              end
                          end
                      end
+                     oFigure.cbarmax = 0;
                      %Assuming the potential field has been normalised.
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
                      contourf(oMapAxes,oFigure.Potential.x,oFigure.Potential.y,oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
@@ -990,10 +991,17 @@ classdef MapElectrodes < SubFigure
                          if oFigure.ColourBarVisible
                              %if the colour bar should be visible then make
                              %a new one
-                             oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax));
+                             oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
                              oTitle = get(oColorBar, 'title');
-                             set(oTitle,'units','normalized');
-                             set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
+                             if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                                 set(oTitle,'units','normalized');
+                                 set(oTitle,'fontsize',8);
+                                 set(oTitle,'string','Potential (V)','position',[0.5 2.5]);
+                             else
+                                 set(oTitle,'units','normalized');
+                                 set(oTitle,'fontsize',12);
+                                 set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
+                             end
                          end
                      else
                          if ~oFigure.ColourBarVisible
@@ -1002,9 +1010,25 @@ classdef MapElectrodes < SubFigure
                              delete(oHandle);
                              set(oMapAxes,'userdata',[]);
                              set(oMapAxes,'Position',oFigure.PlotPosition);
+                         elseif bUpdateColorBar
+                             delete(oHandle);
+                             set(oMapAxes,'userdata',[]);
+                             set(oMapAxes,'Position',oFigure.PlotPosition);
+                             oColorBar = cbarf([oFigure.cbarmin oFigure.cbarmax], floor(oFigure.cbarmin):1:ceil(oFigure.cbarmax),oFigure.ColourBarOrientation);
+                             oTitle = get(oColorBar, 'title');
+                             if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                                 set(oTitle,'units','normalized');
+                                 set(oTitle,'fontsize',8);
+                                 set(oTitle,'string','Potential (V)','position',[0.5 2.5]);
+                             else
+                                 set(oTitle,'units','normalized');
+                                 set(oTitle,'fontsize',12);
+                                 set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
+                             end
                          else
                              oTitle = get(oHandle, 'title');
                              set(oTitle,'units','normalized');
+                             set(oTitle,'fontsize',12);
                              set(oTitle,'string','Potential (V)','position',[0.5 1.02]);
                          end
                      end
