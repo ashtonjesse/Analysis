@@ -45,11 +45,17 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oSmoothPressureMenu, 'callback', @(src, event) oSmoothPressureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateRefMenu, 'callback', @(src, event) oTruncateRefMenu_Callback(oFigure, src, event));
             
-            set(oFigure.oGuiHandle.cb1, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.cb2, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.cb3, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.cb4, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
-            set(oFigure.oGuiHandle.cb5, 'callback', @(src, event) oSelection_Callback(oFigure, src, event));
+            %get the children that belong to oExperimentPanel to set
+            %properties
+            oChildren = get(oFigure.oGuiHandle.oExperimentPanel,'children');
+            for i = 1:length(oChildren)
+                set(oChildren(i), 'callback', @(src, event) oExperimentSelection_Callback(oFigure, src, event));
+            end
+            %repeat for RecordingPanel
+            oChildren = get(oFigure.oGuiHandle.oRecordingPanel,'children');
+            for i = 1:length(oChildren)
+                set(oChildren(i), 'callback', @(src, event) oRecordingSelection_Callback(oFigure, src, event));
+            end
             
             set(oFigure.oGuiHandle.oChannelSelector, 'callback', @(src, event) oChannelSelector_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oHRSignalSelector, 'callback', @(src, event) oHRSignalSelector_Callback(oFigure, src, event));
@@ -170,15 +176,32 @@ classdef PressureAnalysis < SubFigure
             oPlot = oFigure.Plots(aIndex);
         end
         
-        function oSelection_Callback(oFigure, src, event)
+        function oExperimentSelection_Callback(oFigure, src, event)
             %Reset the selected experiments
             oFigure.SelectedExperiments = [];
+            %get the children
+            oCheckBoxes = get(oFigure.oGuiHandle.oExperimentPanel,'children');
             %Loop through the checkboxes and check their value
-            for i = 1:5
-                dValue = get(oFigure.oGuiHandle.(sprintf('cb%d',i)),'value');
-                dVisible = get(oFigure.oGuiHandle.(sprintf('cb%d',i)),'visible');
+            for i = 1:length(oCheckBoxes)
+                dValue = get(oCheckBoxes(i),'value');
+                dVisible = get(oCheckBoxes(i),'visible');
                 if dValue && strcmp(dVisible,'on')
                     oFigure.SelectedExperiments = [oFigure.SelectedExperiments , i];
+                end
+            end
+        end
+        
+        function oRecordingSelection_Callback(oFigure, src, event)
+            %Reset the selected experiments
+            oFigure.SelectedRecordings = [];
+            %get the children
+            oCheckBoxes = get(oFigure.oGuiHandle.oRecordingPanel,'children');
+            %Loop through the checkboxes and check their value
+            for i = 1:length(oCheckBoxes)
+                dValue = get(oCheckBoxes(i),'value');
+                dVisible = get(oCheckBoxes(i),'visible');
+                if dValue && strcmp(dVisible,'on')
+                    oFigure.SelectedRecordings = [oFigure.SelectedRecordings , i];
                 end
             end
         end
@@ -531,16 +554,30 @@ classdef PressureAnalysis < SubFigure
                     %Get the unemap reference data
                     oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
                 elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical') && isempty(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
-                    [sDataFileName,sDataPathName]=uigetfile('*.*','Select a CSV file that contains an optical transmembrane recording',oFigure.DefaultPath);
-                    %Make sure the dialogs return char objects
-                    if (~ischar(sDataFileName) && ~ischar(sDataPathName))
-                        return
+                    [sDataFileName,sDataPathName]=uigetfile('*.*','Select a CSV file that contains an optical transmembrane recording',oFigure.DefaultPath,'MultiSelect','on');
+                    %check if multiple files were selected
+                    if iscell(sDataFileName)
+                        %Make sure the dialogs return char objects
+                        if (isempty(sDataFileName) && ~ischar(sDataPathName))
+                            return
+                        end
+                        %get the optical data
+                        for i = 1:length(sDataFileName)
+                            sLongDataFileName=strcat(sDataPathName,char(sDataFileName{i}));
+                            oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Entity = GetOpticalRecordingFromCSVFile(Optical,sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                        end
+                    else
+                        %Make sure the dialogs return char objects
+                        if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                            return
+                        end
+                        %Check the extension
+                        sLongDataFileName=strcat(sDataPathName,sDataFileName);
+                        
+                        %Get the optical reference data
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = GetOpticalRecordingFromCSVFile(Optical,sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
                     end
-                    %Check the extension
-                    sLongDataFileName=strcat(sDataPathName,sDataFileName);
                     
-                    %Get the optical reference data
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = GetOpticalRecordingFromCSVFile(Optical,sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
                 elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical') && ...
                     isfield(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes,'Processed') && ...
                     isfield(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Processed,'Beats')
@@ -767,11 +804,11 @@ classdef PressureAnalysis < SubFigure
         
         function PlotPressure(oFigure,oAxesHandle)
             %Reset the visibility of the events
-            set(oFigure.oGuiHandle.cb1,'visible','off');
-            set(oFigure.oGuiHandle.cb2,'visible','off');
-            set(oFigure.oGuiHandle.cb3,'visible','off');
-            set(oFigure.oGuiHandle.cb4,'visible','off');
-            set(oFigure.oGuiHandle.cb5,'visible','off');
+            set(oFigure.oGuiHandle.cbExp1,'visible','off');
+            set(oFigure.oGuiHandle.cbExp2,'visible','off');
+            set(oFigure.oGuiHandle.cbExp3,'visible','off');
+            set(oFigure.oGuiHandle.cbExp4,'visible','off');
+            
             %Plot the pressure trace(s).
             hold(oAxesHandle, 'on');
             ymax = 0;

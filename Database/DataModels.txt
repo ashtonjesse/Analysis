@@ -94,8 +94,8 @@ oPressure.Phrenic.Original
 oPressure.Phrenic.Processed
 oPressure.Phrenic.Integral
 oPressure.Phrenic.Status
-oPressure.oRecording
-oPressure.RecordingType
+oPressure.oRecording.Entity
+oPressure.oRecording.Type
 
 Optical: (BasePotential)
 oOptical.oExperiment
