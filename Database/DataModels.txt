@@ -26,6 +26,7 @@ Electrodes(i).SignalEvent(j).Method
 Electrodes(i).SignalEvent(j).Label.Colour
 Electrodes(i).SignalEvent(j).ID
 Electrodes(i).Processed.Slope
+Electrodes(i).Processed.Integral %%currently only used by oPhrenic.Electrodes
 Electrodes(i).Processed.EnvelopeSubtracted
 Electrodes(i).Processed.Envelope
 Electrodes(i).Processed.CentralDifference
@@ -90,14 +91,16 @@ oPressure.TimeSeries.Status
 oPressure.RefSignal.Original
 oPressure.RefSignal.Processed
 oPressure.RefSignal.Status
-oPressure.Phrenic.Original
-oPressure.Phrenic.Processed
-oPressure.Phrenic.Integral
-oPressure.Phrenic.Status
-oPressure.oRecording.Entity
-oPressure.oRecording.Type
+oPressure.oPhrenic
+oPressure.oRecording
+oPressure.RecordingType
 
 Optical: (BasePotential)
 oOptical.oExperiment
 oOptical.TimeSeries
 oOptical.Electrodes
+
+Phrenic: (BasePotential)
+oPhrenic.oExperiment
+oPhrenic.Electrodes
+oPhrenic.TimeSeries

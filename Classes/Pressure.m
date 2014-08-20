@@ -9,16 +9,22 @@ classdef Pressure < BaseSignal
         TimeSeries = [];
         RefSignal = [];
         Processed = [];
-        Phrenic = [];
+        oPhrenic = [];
         Status = 'Original';
         oRecording = [];
         RecordingType = 'Extracellular';
     end
     
     methods
-        function oPressure = Pressure()
+        function oPressure = Pressure(varargin)
             %% Constructor
             oPressure = oPressure@BaseSignal();
+            if nargin == 1
+                if isstruct(varargin{1}) || isa(varargin{1},'Unemap')
+                    oPressureStruct = varargin{1};
+                    oPressure.oPhrenic = Phrenic(oPressureStruct.Phrenic);
+                end
+            end
         end
     end
     
@@ -39,12 +45,14 @@ classdef Pressure < BaseSignal
             %This performs a truncation on the current pressure data 
             
             %Truncate the time series
-            oPressure.TimeSeries.(oPressure.TimeSeries.Status) = oPressure.TimeSeries.(oPressure.TimeSeries.Status)(bIndexesToKeep);
-            
+            aCurrentTimeSeries = oPressure.TimeSeries.(oPressure.TimeSeries.Status);
+            oPressure.TimeSeries.(oPressure.TimeSeries.Status) = aCurrentTimeSeries(bIndexesToKeep);
+            oPressure.oPhrenic.TimeSeries = aCurrentTimeSeries(bIndexesToKeep);
             %Truncate the original  data
             oPressure.(oPressure.Status).Data = oPressure.(oPressure.Status).Data(bIndexesToKeep);
             oPressure.RefSignal.(oPressure.RefSignal.Status) = oPressure.RefSignal.(oPressure.RefSignal.Status)(bIndexesToKeep);
-            oPressure.Phrenic.(oPressure.Phrenic.Status) = oPressure.Phrenic.(oPressure.Phrenic.Status)(bIndexesToKeep);
+            oPressure.oPhrenic.Electrodes.(oPressure.oPhrenic.Electrodes.Status).Data = ...
+                oPressure.oPhrenic.Electrodes.(oPressure.oPhrenic.Electrodes.Status).Data(bIndexesToKeep);
         end
         
         function ResampleOriginalData(oPressure, dNewFrequency)
@@ -53,13 +61,11 @@ classdef Pressure < BaseSignal
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
             oPressure.RefSignal.Processed = resample(oPressure.RefSignal.Original, dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
-            oPressure.Phrenic.Processed = resample(oPressure.Phrenic.Original, dNewFrequency, ...
+            oPressure.oPhrenic.ResampleData(dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
             oPressure.TimeSeries.Processed = [1:1:size(oPressure.Processed.Data,1)] * (1/dNewFrequency);
             oPressure.TimeSeries.Status = 'Processed';
             oPressure.RefSignal.Status = 'Processed';
-            oPressure.Phrenic.Status = 'Processed';
-            
             oPressure.Status = 'Processed';
         end
         
@@ -76,7 +82,7 @@ classdef Pressure < BaseSignal
             oPressure.TimeSeries = oData.oEntity.TimeSeries;
             oPressure.Processed = oData.oEntity.Processed;
             oPressure.RefSignal = oData.oEntity.RefSignal;
-            oPressure.Phrenic = oData.oEntity.Phrenic;
+            oPressure.oPhrenic = Phrenic(oData.oEntity.oPhrenic);
             oPressure.Status =  oData.oEntity.Status;
             %this is a hack to allow backwards compatibility with files
             %saved without a RecordingType property
@@ -94,7 +100,6 @@ classdef Pressure < BaseSignal
             if ~isfield(oPressure.TimeSeries,'Status')
                 oPressure.TimeSeries.Status = oPressure.Status;
                 oPressure.RefSignal.Status = oPressure.Status;
-                oPressure.Phrenic.Status = oPressure.Status;
             end
         end
         
@@ -126,18 +131,17 @@ classdef Pressure < BaseSignal
                 oPressure.Original.Data = [oPressure.Original.Data ; aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn)];
                 oPressure.TimeSeries.Original = [oPressure.TimeSeries.Original ; oPressure.TimeSeries.Original(end) + aFileContents(:,1)];
                 oPressure.RefSignal.Original = [oPressure.RefSignal.Original ; aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn)];
-                oPressure.Phrenic.Original = [oPressure.Phrenic.Original ; aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn)];
+                oPressure.oPhrenic.Electrodes.Potential.Data = [oPressure.oPhrenic.Electrodes.Potential.Data ; aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn)];
             else
                 %load it for the first time
                 oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);
                 oPressure.TimeSeries.Original = aFileContents(:,1);
                 oPressure.RefSignal.Original = aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn);
                 oPressure.RefSignal.Name = oPressure.oExperiment.PerfusionPressure.RefSignalName;
-                oPressure.Phrenic.Original = aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn);
+                oPressure.oPhrenic = Phrenic(oPressure.oExperiment,aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn),oPressure.TimeSeries.Original);
             end
             oPressure.TimeSeries.Status = 'Original';
             oPressure.RefSignal.Status = 'Original';
-            oPressure.Phrenic.Status = 'Original';
         end       
         
     end

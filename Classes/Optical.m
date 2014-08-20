@@ -7,6 +7,7 @@ classdef Optical < BasePotential
         oExperiment;
         Electrodes = [];
         TimeSeries = [];
+        Name;
     end
     
     methods

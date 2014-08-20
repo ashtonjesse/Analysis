@@ -105,6 +105,29 @@ classdef BaseSignal < BaseEntity
                 OutData(:,i) = DWTFilterRemoveScales(aInData, aScales(i));
             end
         end
+        
+        function OutData = ResampleSignal(oBaseSignal, aInData, dNewSamplingRate, dOldSamplingRate)
+            OutData = resample(aInData,dNewSamplingRate, dOldSamplingRate);
+        end
+        
+        function OutData = ComputeRectifiedBinIntegral(oBaseSignal,aInData, iBinSize)
+            %initialise variables
+            OutData = zeros(length(aInData),1);
+            dIntegrand = 0;
+            iBinCount = 1;
+            for i = 1:length(OutData)
+                if (iBinCount * iBinSize) == i
+                    %compute the integrand for the next bin
+                    iStart = (iBinSize * (iBinCount-1) + 1);
+                    iEnd = iStart + iBinSize;
+                    %rectification through taking absolute value
+                    dSum = sum(abs(aInData(iStart:iEnd)));
+                    dIntegrand = dSum / iBinSize;
+                    iBinCount = iBinCount + 1;
+                end
+                OutData(i) = dIntegrand;
+            end
+        end
     end
 end
 
