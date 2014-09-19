@@ -94,7 +94,9 @@ classdef Pressure < BaseSignal
                         oPressure.oRecording = Unemap(oData.oEntity.oRecording);
                     end
                 case 'Optical'
-                    oPressure.oRecording = Optical(oData.oEntity.oRecording);
+                    for i = 1:length(oData.oEntity.oRecording)
+                        oPressure.oRecording = [oPressure.oRecording Optical(oData.oEntity.oRecording(i))];
+                    end
             end
             %another hack to allow backwards compatibility
             if ~isfield(oPressure.TimeSeries,'Status')

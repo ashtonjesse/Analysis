@@ -243,7 +243,13 @@ classdef PressureAnalysis < SubFigure
         function DeleteSelectedBeat(oFigure)
             %Delete the currently selected beat
             if ~isempty(oFigure.SelectedBeat)
-                oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.DeleteBeat(oFigure.SelectedBeat);
+                switch (oFigure.SignalToUseForBeatDetection)
+                    case {'Optical Signal','VRMS'}
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.DeleteBeat(oFigure.SelectedBeat);
+                    case 'Phrenic'
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.DeleteBeat(oFigure.SelectedBeat);
+                end
+                
             end
             oFigure.SelectedBeat = [];
             %replot
@@ -257,8 +263,7 @@ classdef PressureAnalysis < SubFigure
             %Get the current axes and selected limit
             oCurrentAxes = event.Axes;
             oXLim = get(oCurrentAxes,'XLim');
-            oYLim = get(oCurrentAxes,'YLim');
-            oFigure.CurrentZoomLimits = [oXLim ; oYLim];
+            oFigure.CurrentZoomLimits(1,:) = oXLim;
             %Apply to axes
             dIndex = find([oFigure.Plots(:).ID] == oCurrentAxes);
             %get copy of plots
@@ -323,9 +328,10 @@ classdef PressureAnalysis < SubFigure
                         {'oReturnButton','string','Done'} ; ...
                         {'oAxes','title','Curvature'}};
                 case 'Optical Signal'
-                    aTimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries;
-                    aData = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.CalculateCurvature(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Status).Data,20,5);
+                    aTimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).TimeSeries;
+                    aData = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).CalculateCurvature(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data,20,5);
                     aOptions = {{'oInstructionText','string','Select a range of data during quiescence'} ; ...
                         {'oBottomText','string','How many standard deviations to apply?'} ; ...
                         {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
@@ -334,14 +340,13 @@ classdef PressureAnalysis < SubFigure
                 case 'Phrenic'
                      %set variables for call to ThresholdFigure
                     aTimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries;
-                    aData = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Status).Data;
-                    aOptions = {{'oInstructionText','string','Enter a threshold value to use'} ; ...
-                        {'oBottomText','visible','off'} ; ...
-                        {'oBottomPopUp','visible','off'} ; ...
-                        {'oEditText','string','Threshold value to use'} ; ...
-                        {'bCalcThreshold','visible','off'} ; ...
-                        {'oReturnButton','string','Done'}};
+                    aData = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.CalculateCurvature(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Status).Data,20,5);
+                    aOptions = {{'oInstructionText','string','Select a range of data during quiescence'} ; ...
+                        {'oBottomText','string','How many standard deviations to apply?'} ; ...
+                        {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
+                        {'oReturnButton','string','Done'} ; ...
+                        {'oAxes','title','Curvature'}};
             end
             oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aData, aOptions);
             %Add a listener so that the figure knows when a user has
@@ -359,19 +364,19 @@ classdef PressureAnalysis < SubFigure
             %oPressure.oRecording (there will always be one of these)
             switch (oFigure.SignalToUseForBeatDetection)
                 case {'VRMS','Optical Signal'}
-                    [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.GetSinusBeats(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Status).Data, ...
+                    [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).GetSinusBeats(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data, ...
                         event.ArrayData);
                     
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Processed.Beats = cell2mat(aOutData(1));
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Processed.BeatIndexes = cell2mat(aOutData(2));
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.Beats = cell2mat(aOutData(1));
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.BeatIndexes = cell2mat(aOutData(2));
                     
                     %get the plot id associated with Optical Reference
-                    bIndex = strcmp('Optical Signal', {oFigure.Plots(:).Name});
-                    if max(bIndex) > 0
-                        oFigure.Plots(bIndex).Name = 'Optical Signal With Beats';
-                    end
+                    %                     bIndex = strcmp('Optical Signal', {oFigure.Plots(:).Name});
+                    %                     if max(bIndex) > 0
+                    %                         oFigure.Plots(bIndex).Name = 'Optical Signal With Beats';
+                    %                     end
                 case 'Phrenic'
                     [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.GetSinusBeats(...
                         oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.(...
@@ -399,7 +404,7 @@ classdef PressureAnalysis < SubFigure
             %Smooth the signal being used for beat detection
             aInOptions = struct('Procedure','','Inputs',cell(1,1));
             aInOptions.Procedure = 'FilterData';
-            aInOptions.Inputs = {'SovitzkyGolay',3,19};
+            aInOptions.Inputs = {'SovitzkyGolay',3,25};%19
             
             if strcmp(oFigure.RecordingType,'Extracellular')
                 switch (oFigure.SignalToUseForBeatDetection)
@@ -438,9 +443,9 @@ classdef PressureAnalysis < SubFigure
                         %Status should now be processed
                         oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.Status = 'Processed';
                     case 'Optical Signal'
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.ProcessElectrodeData(1, aInOptions);
-                        if isfield(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Processed,'Beats')
-                            oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.RefreshBeatData();
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).ProcessElectrodeData(1, aInOptions);
+                        if isfield(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed,'Beats')
+                            oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).RefreshBeatData();
                         end
                     case 'Phrenic'
                         oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.ProcessElectrodeData(1, aInOptions);
@@ -545,8 +550,8 @@ classdef PressureAnalysis < SubFigure
         end
         
         function oTruncateRefMenu_Callback(oFigure, src, event)
-            oSelectDataFigure = SelectData(oFigure,'SelectData',oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.TimeSeries,...
-                oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.Electrodes.Status).Data,...
+            oSelectDataFigure = SelectData(oFigure,'SelectData',oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).TimeSeries,...
+                oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data,...
                 {{'oInstructionText','string','Select a range of data to truncate.'} ; ...
                 {'oBottomText','visible','off'} ; ...
                 {'oBottomPopUp','visible','off'} ; ...
@@ -614,18 +619,23 @@ classdef PressureAnalysis < SubFigure
                         if (~ischar(sDataFileName) && ~ischar(sDataPathName))
                             return
                         end
-                        %Check the extension
-                        sLongDataFileName=strcat(sDataPathName,sDataFileName);
-                        
-                        %Get the optical reference data
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Entity = GetOpticalRecordingFromCSVFile(Optical,sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                        oChildren = get(oFigure.oGuiHandle.oRecordingPanel,'children');
+                        %get the optical data
+                        sLongDataFileName=strcat(sDataPathName,char(sDataFileName));
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = ...
+                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                        sResult = regexp(char(sDataFileName),'_');
+                        sFileName = char(sDataFileName);
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Name = sFileName(1:sResult(1)-1);
+                        set(oChildren(1), 'visible', 'on', 'string', strcat(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Name,'_',oFigure.Colours(1)));
                     end
-                    
-                elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical') && ...
-                    isfield(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes,'Processed') && ...
-                    isfield(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Processed,'Beats')
-                    bIndex = strcmp('Optical Signal', {oFigure.Plots(:).Name});
-                    oFigure.Plots(bIndex).Name = 'Optical Signal With Beats';
+                elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical')
+                    %just put checkboxes for each oRecording
+                    %get the recordings checkboxes
+                    oChildren = get(oFigure.oGuiHandle.oRecordingPanel,'children');
+                    for i = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
+                        set(oChildren(i), 'visible', 'on', 'string', strcat(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name,'_',oFigure.Colours(i)));
+                    end
                 end
                 
                 %Plot the data
@@ -725,9 +735,9 @@ classdef PressureAnalysis < SubFigure
             %to keep.
             bIndexes = ~bIndexes;
             %Truncate data that is not selected
-            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.Electrodes.Status).Data = ...
-            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.Electrodes.Status).Data(bIndexes);
-            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.TimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording.TimeSeries(bIndexes);
+            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data = ...
+            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data(bIndexes);
+            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).TimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments).oRecording(oFigure.SelectedRecordings(1)).TimeSeries(bIndexes);
             oFigure.Replot();
         end
         
@@ -780,20 +790,38 @@ classdef PressureAnalysis < SubFigure
                         oFigure.PlotPressure(oPlots(i).ID);
                     case 'Reference Signal'
                         oFigure.PlotRefSignal(oPlots(i).ID);
-                    case {'Unemap Reference Signal', 'Optical Signal'}
+                    case 'Unemap Reference Signal'
                         oFigure.PlotRecordingRefSignal(oPlots(i).ID);
                     case 'Electrode'
                         oFigure.PlotElectrode(oPlots(i).ID,oFigure.SelectedElectrode, ...
                             transpose(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries));
                     case 'Heart Rate'
-                        oFigure.PlotHeartRate(oPlots(i).ID);
+                        switch (oFigure.SignalToUseForBeatDetection)
+                            case 'Phrenic'
+                                oFigure.PlotHeartRate(oPlots(i).ID, oFigure.oParentFigur.oGuiHandle.oPressure.oPhrenic);
+                            case 'Optical Signal'
+                                hold(oPlots(i).ID,'on');
+                                oFigure.CurrentZoomLimits(2,:) = [999, 0];
+                                for j = 1:length(oFigure.SelectedRecordings)
+                                    oFigure.PlotHeartRate(oPlots(i).ID, oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)));
+                                end
+                                hold(oPlots(i).ID,'off');
+                        end
                     case 'Phrenic Integral'
                         oFigure.PlotIntegral(oPlots(i).ID);
-                    case 'Phrenic'
+                    case 'Phrenic Signal'
                         oFigure.PlotPhrenic(oPlots(i).ID);
-                    case 'Optical Signal With Beats'
-                        oFigure.PlotElectrode(oPlots(i).ID,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes(1),...
-                            transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries));
+                    case 'Optical Signal'
+                        hold(oPlots(i).ID,'on');
+                        ymax = 0;
+                        ymin = 999;
+                        for j = 1:length(oFigure.SelectedRecordings)
+                            ymax = max(ymax, max(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes.Processed.Data));
+                            ymin = min(ymin, min(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes.Processed.Data));
+                            oFigure.PlotElectrode(oPlots(i).ID,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes(1),...
+                                transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).TimeSeries),oFigure.Colours(oFigure.SelectedRecordings(j)), ymin, ymax);
+                        end
+                        hold(oPlots(i).ID,'off');
                     case 'Phrenic Signal With Beats'
                         oFigure.PlotElectrode(oPlots(i).ID,oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes(1),...
                             transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries));
@@ -923,49 +951,49 @@ classdef PressureAnalysis < SubFigure
             
         end
         
-        function PlotElectrode(oFigure, oAxesHandle, oElectrode, aTime)
+        function PlotElectrode(oFigure, oAxesHandle, oElectrode, aTime, sColour, ymin, ymax)
             %Plot the selected electrode
             aProcessedData = oElectrode.Processed.Data;
-            aBeatData = oElectrode.Processed.Beats;
-            aBeatIndexes = oElectrode.Processed.BeatIndexes;
-            
-            %case 'Extracellular'
-            %  aTime = transpose(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries);
-            
-            %Get these values so that we can place text in the
-            %right place and give the axes dimensions
-            YMax = max(aProcessedData);
-            YMin = min(aProcessedData);
+            %check for beats
+            if isfield(oElectrode.Processed,'Beats')
+                aBeatData = oElectrode.Processed.Beats;
+                aBeatIndexes = oElectrode.Processed.BeatIndexes;
+            end
             
             %Plot all the data
             if oElectrode.Accepted
                 %If the signal is accepted then plot it as black
-                plot(oAxesHandle,aTime,aProcessedData,'k');
-                ylim(oAxesHandle,[YMin - 0.2, YMax + 0.2]);
-                hold(oAxesHandle,'on');
-                plot(oAxesHandle,aTime,aBeatData,'-g');
-                if ~isempty(oFigure.SelectedBeat)
-                    %Get the currently selected beat
-                    aSelectedBeat = aBeatData(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
-                    aSelectedTime = aTime(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
-                    plot(oAxesHandle,aSelectedTime,aSelectedBeat,'-b');
+                plot(oAxesHandle,aTime,aProcessedData,sColour);
+                ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
+                if isfield(oElectrode.Processed,'Beats')
+                    plot(oAxesHandle,aTime,aBeatData,'-g');
+                    if ~isempty(oFigure.SelectedBeat)
+                        %Get the currently selected beat
+                        aSelectedBeat = aBeatData(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
+                        aSelectedTime = aTime(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
+                        plot(oAxesHandle,aSelectedTime,aSelectedBeat,'-b');
+                    end
                 end
-                hold(oAxesHandle,'off');
             else
                 %The signal is not accepted so plot it as red
                 %without beats
                 plot(oAxesHandle,aTime,aProcessedData,'-r');
-                ylim(oAxesHandle,[YMin - 0.2, YMax + 0.2]);
+                ylim(oAxesHandle,[ymin - 0.2, ymax + 0.2]);
             end
+            
             switch (oFigure.SignalToUseForBeatDetection)
                 case {'Reference Signal', 'Unemap Reference Signal', 'VRMS'}
                     oLabel = ylabel(oAxesHandle, ['Electrogram', 10, '(V)']);
                 case 'Optical Signal'
                     oLabel = ylabel(oAxesHandle, 'Optical Signal');
-                    set(oAxesHandle, 'buttondownfcn', @(src, event)  oSelectedBeat_Callback(oFigure, src, event));
+                    if isfield(oElectrode.Processed,'Beats')
+                        set(oAxesHandle, 'buttondownfcn', @(src, event)  oSelectedOpticalBeat_Callback(oFigure, src, event));
+                    end
                 case 'Phrenic'
                     oLabel = ylabel(oAxesHandle, 'Phrenic (V)');
-                    set(oAxesHandle, 'buttondownfcn', @(src, event)  oSelectedBeat_Callback(oFigure, src, event));
+                    if isfield(oElectrode.Processed,'Beats')
+                        set(oAxesHandle, 'buttondownfcn', @(src, event)  oSelectedPhrenicBeat_Callback(oFigure, src, event));
+                    end
             end
             set(oLabel, 'FontUnits', 'points');
             set(oLabel,'FontSize',oFigure.FontSize);
@@ -993,13 +1021,13 @@ classdef PressureAnalysis < SubFigure
             set(oLabel,'FontSize',oFigure.FontSize);
         end
         
-        function oSelectedBeat_Callback(oFigure, src, event)
+        function oSelectedOpticalBeat_Callback(oFigure, src, event)
             oPoint = get(src,'currentpoint');
             xDim = oPoint(1,1);
-            iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.GetClosestBeat(1,xDim);
+            iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).GetClosestBeat(1,xDim);
             %Update the selected beat
-            if abs(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries(...
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Electrodes.Processed.BeatIndexes(iBeatIndexes{1,1},1)) - xDim) > 5
+            if abs(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).TimeSeries(...
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.BeatIndexes(iBeatIndexes{1,1},1)) - xDim) > 5
                 oFigure.SelectedBeat = [];
             else
                 oFigure.SelectedBeat = iBeatIndexes{1,1};
@@ -1007,63 +1035,59 @@ classdef PressureAnalysis < SubFigure
             oFigure.Replot();
         end
         
-        function PlotHeartRate(oFigure, oAxesHandle)
+        function oSelectedPhrenicBeat_Callback(oFigure, src, event)
+            oPoint = get(src,'currentpoint');
+            xDim = oPoint(1,1);
+            iBeatIndexes = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.GetClosestBeat(1,xDim);
+            %Update the selected beat
+            if abs(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries(...
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Processed.BeatIndexes(iBeatIndexes{1,1},1)) - xDim) > 5
+                oFigure.SelectedBeat = [];
+            else
+                oFigure.SelectedBeat = iBeatIndexes{1,1};
+            end
+            oFigure.Replot();
+        end
+        
+        function PlotHeartRate(oFigure, oAxesHandle, oRecording)
             %get electrode index
             if strcmp(oFigure.RecordingType, 'Extracellular')
                     switch (oFigure.SignalToUseForBeatDetection)
                         case {'Unemap Reference Signal','Reference Signal'}
-                            [aRateData aRates dPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.GetHeartRateData(oFigure.Peaks(2,:));
-                            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries, aRateData,'k');
+                            [aRateData aRates dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
+                            plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
                         case 'VRMS'
-                            [aRateData aRates dPeaks] = oFigure.oParentFigure.oGuiHandle.oUnemap.CalculateSinusRateFromRMS();
-                            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, aRateData,'k');
+                            [aRateData aRates dPeaks] = oRecording.CalculateSinusRateFromRMS();
+                            plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
                     end
             elseif strcmp(oFigure.RecordingType,'Optical')
-                switch (oFigure.SignalToUseForBeatDetection)
-                    case 'Phrenic'
-                        [aRateData dPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.CalculateSinusRate(1);
-                        plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries, aRateData,'k');
-                    case 'Optical Signal'
-                        [aRateData dPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.CalculateSinusRate(1);
-                        plot(oAxesHandle, oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries, aRateData,'k');
-                end
-                    
+                [aRateData dPeaks] = oRecording.CalculateSinusRate(1);
+                plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
             end
-            YMin = min(aRateData);
-            YMax = max(aRateData);
+            YMin = min(oFigure.CurrentZoomLimits(2,1),min(aRateData));
+            YMax = max(oFigure.CurrentZoomLimits(2,2),max(aRateData));
+            oFigure.CurrentZoomLimits(2,:) = [YMin, YMax];
             ylim(oAxesHandle,[YMin - 10, YMax + 10]);
             oLabel = ylabel(oAxesHandle,['Sinus', 10, 'Rate (bpm)']);
             set(oLabel, 'FontUnits', 'points');
             set(oLabel,'FontSize',oFigure.FontSize);
             if strcmp(oFigure.RecordingType, 'Extracellular')
                 for k = 4:4:length(dPeaks)
-                    oBeatLabel = text(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries(dPeaks(1,k)),aRateData(dPeaks(1,k-1))+5, num2str(k));%-50
+                    oBeatLabel = text(oRecording.TimeSeries(dPeaks(1,k)),aRateData(dPeaks(1,k-1))+5, num2str(k));%-50
                     set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
                     set(oBeatLabel,'FontSize',4);
                     set(oBeatLabel,'parent',oAxesHandle);
                 end
             elseif strcmp(oFigure.RecordingType,'Optical')
-                switch (oFigure.SignalToUseForBeatDetection)
-                    case 'Phrenic'
-                        for k = 4:4:length(dPeaks)
-                            if ((oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries(dPeaks(1,k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
-                                    (oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries(dPeaks(1,k)-50) < oFigure.CurrentZoomLimits(1,2)))
-                                oBeatLabel = text(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries(dPeaks(1,k)-50),aRateData(dPeaks(1,k-1))+2, num2str(k));%+300,+5
-                                set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
-                                set(oBeatLabel,'FontSize',4);
-                                set(oBeatLabel,'parent',oAxesHandle);
-                            end
-                        end
-                    case 'Optical Signal'
-                        for k = 4:4:length(dPeaks)
-                            if ((oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries(dPeaks(1,k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
-                                    (oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries(dPeaks(1,k)-50) < oFigure.CurrentZoomLimits(1,2)))
-                                oBeatLabel = text(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.TimeSeries(dPeaks(1,k)-50),aRateData(dPeaks(1,k-1))+2, num2str(k));%+300,+5
-                                set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
-                                set(oBeatLabel,'FontSize',4);
-                                set(oBeatLabel,'parent',oAxesHandle);
-                            end
-                        end
+                for k = 4:4:length(dPeaks)
+                    if ((oRecording.TimeSeries(dPeaks(1,k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
+                            (oRecording.TimeSeries(dPeaks(1,k)-50) < oFigure.CurrentZoomLimits(1,2)))
+                        oBeatLabel = text(oRecording.TimeSeries(dPeaks(1,k)-50),aRateData(dPeaks(1,k-1))+2, num2str(k));%+300,+5
+                        set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
+                        set(oBeatLabel,'FontSize',4);
+                        set(oBeatLabel,'parent',oAxesHandle);
+                    end
+                    
                 end
             end
         end
@@ -1103,7 +1127,10 @@ classdef PressureAnalysis < SubFigure
                             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Original.Data;
                         oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Processed = ...
                             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Original;
+                        oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Phrenic.Electrodes.Processed.Data = ...
+                            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Phrenic.Electrodes.Original.Data;
                         oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Status = 'Processed';
+                        oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Phrenic.Electrodes.Status = 'Processed';
                     end
                 end
             end

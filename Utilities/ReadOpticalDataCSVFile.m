@@ -4,7 +4,7 @@ function [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOptical
 %pixels for a given beat
 
 %Initialise the output arrays
-aHeaderInfo = struct('startframe',0,'endframe',0,'ActivationTimeMode','maximal dV/dt','RepolarisationMark','%');
+aHeaderInfo = struct('startframe',0,'endframe',0,'BaselineRange',0,'ActivationTimeMode','half-maximal amplitude','RepolarisationMark','%');
 aActivationTimes = zeros(rowdim,coldim,'double');
 aRepolarisationTimes = zeros(rowdim,coldim,'double');
 aAPDs = zeros(rowdim,coldim,'double');
@@ -19,6 +19,8 @@ for i = 1:iHeaderLines;
             aHeaderInfo.startframe = str2double(splitstring{2});
         case 'end frm'
             aHeaderInfo.endframe = str2double(splitstring{2});
+        case 'BaseLine setting'
+            aHeaderInfo.BaselineRange = cell2mat(textscan(char(splitstring{2}),' Range(%d-%d)Mean'));
         case 'Repolarization Time(%)'
             aHeaderInfo.RepolarisationMark = char(splitstring{2});
         case 'Start'

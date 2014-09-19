@@ -34,7 +34,7 @@ for j = 2:n;
     %If the next peak is greater than 150 more than the current
     %peak then the next group of peaks must be reached so save
     %the first and last peaks of the last group in aBeats.
-    if aPeaks(2,j) < (iCurrentPeak + 30)
+    if aPeaks(2,j) < (iCurrentPeak + 50)
         iLastPeak = aPeaks(2,j);
         iPeakCount = iPeakCount + 1;
     else
