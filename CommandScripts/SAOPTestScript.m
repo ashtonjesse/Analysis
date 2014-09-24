@@ -1,83 +1,90 @@
 clear all;
 
-% % % %Read in the csv file containing all the optical data 
-aOAP = ReadOpticalTimeDataCSVFile('G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\baro002a_s3x3_waveEach_whole.csv',6);
-sFilePath = 'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\APD30\';
-% [sDataFileName,sDataPathName]=uigetfile('*.*','Select a file that contain optical transmembrane recordings',sFilePath);
-% % % Make sure the dialogs return char objects
-% if (isempty(sDataFileName) && ~ischar(sDataPathName))
-%     break
-% end
-% 
-% load(strcat(sDataPathName,sDataFileName));
+% % % %Read in the file containing all the optical data 
+[sFileName,sPathName]=uigetfile('*.*','Select a file that contain optical transmembrane recordings');
+sFileName = strcat(sPathName,sFileName);
+% % Make sure the dialogs return char objects
+if (isempty(sFileName) && ~ischar(sFileName))
+    break
+end
+%check the extension
+[pathstr, name, ext, versn] = fileparts(sFileName);
+if strcmpi(ext,'.csv')
+    aOAP = ReadOpticalTimeDataCSVFile(sFileName,6);
+elseif strcmpi(ext,'.mat')
+    load(sFileName);
+end
 
-%load the beat data
-[sBeatFileName,sBeatPathName]=uigetfile('*.*','Select a CSV files that contain optical beat data',sFilePath);
+%load the beat data because at first I want the baseline range as defined
+%by this file
+[sBeatFileName,sBeatPathName]=uigetfile('*.*','Select a CSV files that contain optical beat data');
 %Make sure the dialogs return char objects
 if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
     break
 end
 %Get the beat information
 [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(strcat(sBeatPathName,sBeatFileName),40,41,7);
-%Save locations where the AT is updated
-aLocationsToPlot = zeros(size(aOAP.Locations));
-dUpdatedPoints = 1;
+
 %loop through the locations in this data and adjust the activation times
 for i = 1:length(aOAP.Locations(1,:))
     %get current location info
-    dXLoc = aOAP.Locations(1,i);
-    dYLoc = aOAP.Locations(2,i);
+    dRowLoc = aOAP.Locations(1,i);
+    dColLoc = aOAP.Locations(2,i);
     aData = -aOAP.Data(:,i);
     aSlope = fCalculateMovingSlope(aData,5,3);
     aCurvature = fCalculateMovingSlope(aSlope,5,3);
         
     % %Replace arrays with subsets
     aThisData = aData(aHeaderInfo.startframe:aHeaderInfo.endframe);
-    aSlope = aSlope(aHeaderInfo.startframe:aHeaderInfo.endframe);
-    aCurvature = aCurvature(aHeaderInfo.startframe:aHeaderInfo.endframe);
+    aThisSlope = aSlope(aHeaderInfo.startframe:aHeaderInfo.endframe);
+    aThisCurvature = aCurvature(aHeaderInfo.startframe:aHeaderInfo.endframe);
     %find peaks and locations of the slope
-    [aSlopePeaks, aSlopeLocations] = fFindPeaks(aSlope);
+    [aSlopePeaks, aSlopeLocations] = fFindPeaks(aThisSlope);
     %get the value and location of the maximum
     [dMaxSlopePeak iMaxSlopeIndex] = max(aSlopePeaks);
     %find peaks and locations of the curvature
-    [aCurvaturePeaks, aCurvatureLocations] = fFindPeaks(aCurvature);
+    [aCurvaturePeaks, aCurvatureLocations] = fFindPeaks(aThisCurvature);
     %get the value and location of the curvature
     [dMaxCurvaturePeak iMaxCurvatureIndex] = max(aCurvaturePeaks);
     
-    %Get the boolean results to test whether there is a curvature peak between
-    %the max slope peak and the slope peak following this one
-    bResult1 = aCurvatureLocations > aSlopeLocations(iMaxSlopeIndex);
-    bResult2 = aCurvatureLocations < aSlopeLocations(iMaxSlopeIndex+1);
-    bResult = and(bResult1,bResult2);
-    dCurrentAT = aActivationTimes(dXLoc, dYLoc) - aHeaderInfo.startframe + 1;
-    %test if the AT should be updated
-    if aCurvaturePeaks(bResult) > 20
-        aActivationTimes(dXLoc, dYLoc) = aSlopeLocations(iMaxSlopeIndex) + aHeaderInfo.startframe - 1;
-        figure();
-        subplot(3,1,1);
-        plot(aThisData,'k');
-        title(sprintf('Location %s',sprintf('%d%d',dXLoc,dYLoc)));
-        hold on;
-        %plot a green marker for the 50%AP AT
-        plot(dCurrentAT, aThisData(dCurrentAT), 'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',6);
-        %plot a red marker for the slope based estimation of AT
-        plot(aSlopeLocations(iMaxSlopeIndex), aThisData(aSlopeLocations(iMaxSlopeIndex)),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','r','MarkerSize',6);
-        %Calculate what half max amplitude should be and plot this
-        dBaselineValue = mean(aData(aHeaderInfo.BaselineRange(1):aHeaderInfo.BaselineRange(2)));
-        dDiff = dBaselineValue + (max(aThisData) - dBaselineValue)/2;
-        bDiffResult = aThisData > dDiff;
-        iNewAT = find(bDiffResult,1,'first');
-        plot(iNewAT, aThisData(iNewAT),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','b','MarkerSize',6);
-        hold off;
-        subplot(3,1,2);
-        plot(aSlope,'r');
-        subplot(3,1,3);
-        plot(aCurvature,'b');
-        %         aLocationsToPlot(:,dUpdatedPoints) = [dXLoc ; dYLoc];
-        %         dUpdatedPoints = dUpdatedPoints + 1;
-    end
+    %     %Get the boolean results to test whether there is a curvature peak between
+    %     %the max slope peak and the slope peak following this one
+    %     bResult1 = aCurvatureLocations > aSlopeLocations(iMaxSlopeIndex);
+    %     bResult2 = aCurvatureLocations < aSlopeLocations(iMaxSlopeIndex+1);
+    %     bResult = and(bResult1,bResult2);
+    
+    %get current AT for this beat based on BV algorithm
+    dCurrentAT = aActivationTimes(dRowLoc, dColLoc) - aHeaderInfo.startframe + 2;
+    %     aActivationTimes(dXLoc, dYLoc) = aSlopeLocations(iMaxSlopeIndex) +
+    %     aHeaderInfo.startframe - 1;
+    
+    figure();
+    oDataAxes = subplot(3,1,1);
+    plot(aThisData,'k');
+    title(sprintf('Location %s',sprintf('%d%d',dRowLoc,dColLoc)));
+    hold on;
+    % %     plot a green marker for the 50%AP AT
+    plot(dCurrentAT, aThisData(dCurrentAT), 'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',8);
+    % %     plot a red marker for the slope based estimation of AT
+    plot(aSlopeLocations(iMaxSlopeIndex), aThisData(aSlopeLocations(iMaxSlopeIndex)),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','r','MarkerSize',6);
+    % %     Calculate what half max amplitude should be and plot this
+    dBaselineValue = mean(aData(aHeaderInfo.BaselineRange(1):aHeaderInfo.BaselineRange(2)));
+    [dMaxData iMaxDataIndex] = max(aThisData);
+    dDiff = dBaselineValue + (dMaxData - dBaselineValue)/2;
+    aDiffResult = aThisData - dDiff;
+    [dMin iNewAT] = min(abs(aDiffResult(1:iMaxDataIndex)));
+    plot(iNewAT, aThisData(iNewAT),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','b','MarkerSize',2);
+    line([1 length(aThisData)],[max(aThisData) max(aThisData)],'parent',oDataAxes,'color','b','linestyle','-');
+    line([1 length(aThisData)],[dBaselineValue dBaselineValue],'parent',oDataAxes,'color','b','linestyle','-');
+    hold off;
+    subplot(3,1,2);
+    plot(aThisSlope,'r');
+    subplot(3,1,3);
+    plot(aThisCurvature,'b');
+    
+    
 end
-% aLocationsToPlot = aLocationsToPlot(:,1:dUpdatedPoints-1);
+
 % aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
 
 % iMontageX = 4;
@@ -159,17 +166,3 @@ end
 % set(oBeatLabel,'units','normalized');
 % set(oBeatLabel,'fontsize',14,'fontweight','bold');
 % set(oBeatLabel,'parent',oATAxes);
-
-% %overlay a plot with the updated points
-% oOverlayAxes = axes('parent',oATFigure);
-% scatter(oOverlayAxes, aLocationsToPlot(1,:), aLocationsToPlot(2,:),'Marker','+','MarkerEdgeColor','k','LineWidth',2);
-% set(oATFigure,'paperposition',[0 0 dWidth dHeight])
-% set(oATFigure,'papersize',[dWidth dHeight])
-% set(oATAxes,'units','normalized');
-% set(oOverlayAxes,'outerposition',get(oATAxes,'outerposition'));
-% set(oOverlayAxes, 'Position', get(oATAxes,'position'));
-% axis(oOverlayAxes, 'equal'); axis(oOverlayAxes, 'tight');
-% set(oOverlayAxes,'xticklabel',[]);
-% set(oOverlayAxes,'yticklabel', []);
-% set(oOverlayAxes,'Box','off');
-% set(oOverlayAxes,'color','none');

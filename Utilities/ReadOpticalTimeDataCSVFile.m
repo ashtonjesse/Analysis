@@ -27,22 +27,12 @@ tline = fgets(fid);
 for i = 2:length(splitstring)-1
     sPixel = regexprep(char(splitstring{i}),'[','');
     [~,~,~,~,~,~,sPixel] = regexpi(sPixel,']');
-    aOAP.Locations(1,i-1) = str2double(sPixel{2}); 
-    aOAP.Locations(2,i-1) = str2double(sPixel{1}); 
+    aOAP.Locations(1,i-1) = str2double(sPixel{1}) + 1;%Data is 0-based, Matlab is 1-based so have to add 1
+    aOAP.Locations(2,i-1) = str2double(sPixel{2}) + 1; 
 end
-%get and discard line
-tline = fgets(fid);
-
-iLineCount = 1;
-while ~feof(fid)
-    tline = fgets(fid);
-    [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
-    if length(splitstring) > 1
-        aData = str2double(splitstring);
-        aOAP.Data(iLineCount,:) = aData(2:end-1);
-    end
-    iLineCount = iLineCount + 1;
-end
-fprintf('Got data for file %s\n',sFilePath);
+%close the file
 fclose(fid);
+%Read the data
+aData = dlmread(sFilePath, ',', iHeaderLines+2, 1);
+aOAP.Data = aData(:,1:end-1);
 end
