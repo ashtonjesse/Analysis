@@ -16,11 +16,12 @@ for i = 1:iHeaderLines;
     [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
     switch (splitstring{1})
         case 'start frm'
-            aHeaderInfo.startframe = str2double(splitstring{2});
+            aHeaderInfo.startframe = str2double(splitstring{2}) + 1;
         case 'end frm'
-            aHeaderInfo.endframe = str2double(splitstring{2});
+            aHeaderInfo.endframe = str2double(splitstring{2}) + 1;
         case 'BaseLine setting'
             aHeaderInfo.BaselineRange = cell2mat(textscan(char(splitstring{2}),' Range(%d-%d)Mean'));
+            aHeaderInfo.BaselineRange = aHeaderInfo.BaselineRange + 1; %data is 0 based, matlab is 1 based.
         case 'Repolarization Time(%)'
             aHeaderInfo.RepolarisationMark = char(splitstring{2});
         case 'Start'

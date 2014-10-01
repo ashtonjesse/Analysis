@@ -27,8 +27,8 @@ tline = fgets(fid);
 for i = 2:length(splitstring)-1
     sPixel = regexprep(char(splitstring{i}),'[','');
     [~,~,~,~,~,~,sPixel] = regexpi(sPixel,']');
-    aOAP.Locations(1,i-1) = str2double(sPixel{1});
-    aOAP.Locations(2,i-1) = str2double(sPixel{2}); 
+    aOAP.Locations(1,i-1) = str2double(sPixel{1});%col
+    aOAP.Locations(2,i-1) = str2double(sPixel{2}); %row
 end
 %close the file
 fclose(fid);

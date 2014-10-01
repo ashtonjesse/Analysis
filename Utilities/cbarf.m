@@ -120,8 +120,10 @@ W=25;
 dW=20;
 if newCbar
   if isVertical
-    ax0Pos = [ap(1) ap(2) ap(3)-dW-W  ap(4)];
-    axPos  = [ap(1)+ap(3)-W  ap(2) W ap(4)];
+      dW = 50;
+      W=30;
+      ax0Pos = [ap(1) ap(2) ap(3)-dW-W  ap(4)];
+      axPos  = [ap(1)+ap(3)-dW  ap(2) W ap(4)];
   else
     ax0Pos = [ap(1) ap(2)+dW+W+dW ap(3) ap(4)-dW-W-dW];
     axPos  = [ap(1) ap(2) ap(3) W];
@@ -162,7 +164,7 @@ i2=find(L<Mv); i2=i2(end);
 addUp  = 0;
 addBot = 0;
 if L(end) < Mv, addUp  = 1; end
-if L(1)   > mv, addBot = 1; end
+if L(1)   >= mv, addBot = 1; end
 
 % draw the rectangles:
 Nrec=1;

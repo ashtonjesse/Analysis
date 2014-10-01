@@ -13,21 +13,20 @@ if strcmpi(ext,'.csv')
     aOAP = ReadOpticalTimeDataCSVFile(sFileName,6);
 elseif strcmpi(ext,'.mat')
     load(sFileName);
+    aOAP = aThisOAP;
 end
 
-N = length(aOAP.Data(:,1));
-aXDFT = zeros(N/2+1,size(aOAP.Data,2));
+N = length(aOAP.Data(1:end-1,1));
 aPSDX = zeros(N/2+1,size(aOAP.Data,2));
+aPSDXTukey = zeros(N/2+1,size(aOAP.Data,2));
 for i = 1:size(aOAP.Data,2)
-    xdft = fft(-aOAP.Data(:,i));
-    xdft = xdft(1:floor(N/2+1));
-    aXDFT(:,i) = xdft;
-    psdx =(1/(780*N)).*abs(xdft).^2;%
-    psdx(2:end-1) = 2*psdx(2:end-1);
-    aPSDX(:,i) = psdx;
+    [aPSDX(:,i) Fxx] = periodogram(-aOAP.Data(1:end-1,i),rectwin(N),N,780);
+    [aPSDXTukey(:,i) Fxx] = periodogram(-aOAP.Data(1:end-1,i),tukeywin(N,0.5),N,780);
 end
-dNoisePower = mean(mean(aPSDX(6027:end,:),2));
-MeanPSDX = mean(aPSDX,2)./dNoisePower;
-freq = 0:780/N:780/2;
+MeanPSDX = mean(aPSDX,2);
+MeanPSDXTukey = mean(aPSDXTukey,2);
 figure();
-plot(freq,10*log10(MeanPSDX)); grid on;
+plot(Fxx,10*log10(MeanPSDX),'k'); 
+grid on; hold on;
+plot(Fxx,10*log10(MeanPSDXTukey),'r'); 
+hold off;
