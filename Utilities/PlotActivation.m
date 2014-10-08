@@ -1,4 +1,4 @@
-function [oATFigure oATAxes] = PlotActivation(aActivationTimes,sBeatFileName,aPaceSettersToPlot,aLocationsToPlot)
+function [oATFigure oATAxes] = PlotActivation(aActivationTimes,sBeatFileName,aPaceSettersToPlot,aLocationsToPlot,aPoints)
 iMontageX = 1;
 iMontageY = 1;
 aActivationTimes = aActivationTimes(:,1:end-1);
@@ -99,9 +99,10 @@ set(oOverlayAxes,'xticklabel',[]);
 set(oOverlayAxes,'yticklabel', []);
 set(oOverlayAxes,'Box','off');
 set(oOverlayAxes,'color','none');
-for i = 1:size(aLocationsToPlot,2)
-    oLabel = text(xLocs(i) - 0.2, yLocs(i) + 0.1, ...
-        sprintf('%d,%d',aLocationsToPlot(2,i)-1,aLocationsToPlot(1,i)-1));
+iPointIndices = find(aLocationsToPlot(3,:));
+for i = 1:length(iPointIndices)
+    oLabel = text(xLocs(iPointIndices(i)) - 0.2, yLocs(iPointIndices(i)) + 0.1, ...
+        sprintf('%d%d',aLocationsToPlot(2,iPointIndices(i))-1,aLocationsToPlot(1,iPointIndices(i))-1));
     set(oLabel,'FontWeight','bold','FontUnits','normalized');
     set(oLabel,'FontSize',0.012);
     set(oLabel,'parent',oOverlayAxes);
