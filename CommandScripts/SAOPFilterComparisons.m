@@ -10,15 +10,29 @@ close all;
 %     aOAP = [];
 %     %remap file indices
 %     sFiles = cell(size(sFileName));
+%     % Format for 20140821baro002
+%     %     sFiles{1} = sFileName{5};
+%     %     sFiles{2} = sFileName{4};
+%     %     sFiles{3} = sFileName{1};
+%     %     sFiles{4} = sFileName{2};
+%     %     sFiles{5} = sFileName{3};
+%     %     sFiles{6} = sFileName{9};
+%     %     sFiles{7} = sFileName{6};
+%     %     sFiles{8} = sFileName{7};
+%     %     sFiles{9} = sFileName{8};
+%     
+%     % Format for temporal filter sets
 %     sFiles{1} = sFileName{5};
-%     sFiles{2} = sFileName{4};
-%     sFiles{3} = sFileName{1};
-%     sFiles{4} = sFileName{2};
-%     sFiles{5} = sFileName{3};
-%     sFiles{6} = sFileName{9};
-%     sFiles{7} = sFileName{6};
-%     sFiles{8} = sFileName{7};
-%     sFiles{9} = sFileName{8};
+%     sFiles{2} = sFileName{1};
+%     sFiles{3} = sFileName{2};
+%     sFiles{4} = sFileName{3};
+%     sFiles{5} = sFileName{4};
+%     sFiles{6} = sFileName{6};
+%     sFiles{7} = sFileName{7};
+%     sFiles{8} = sFileName{8};
+%     sFiles{9} = sFileName{9};
+%     
+%     % Format for spatial filter sets
 %     %     sFiles{1} = sFileName{3};
 %     %     sFiles{2} = sFileName{8};
 %     %     sFiles{3} = sFileName{7};
@@ -47,54 +61,67 @@ close all;
 %     end
 %     
 % end
-% %% load the beat data
-% [sBeatFileName,sBeatPathName]=uigetfile('*.*','Select CSV file(s) that contain optical beat data','multiselect','on');
-% % %Make sure the dialogs return char objects
-% 
-% if iscell(sBeatFileName)
-%     %Make sure the dialogs return char objects
-%     if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
-%         break
-%     end
-%     %remap file indices
-%     sFiles = cell(size(sBeatFileName));
-%     sFiles{1} = sBeatFileName{5};
-%     sFiles{2} = sBeatFileName{4};
-%     sFiles{3} = sBeatFileName{1};
-%     sFiles{4} = sBeatFileName{2};
-%     sFiles{5} = sBeatFileName{3};
-%     sFiles{6} = sBeatFileName{9};
-%     sFiles{7} = sBeatFileName{6};
-%     sFiles{8} = sBeatFileName{7};
-%     sFiles{9} = sBeatFileName{8};
-%     %     sFiles{1} = sBeatFileName{3};
-%     %     sFiles{2} = sBeatFileName{8};
-%     %     sFiles{3} = sBeatFileName{7};
-%     %     sFiles{4} = sBeatFileName{6};
-%     %     sFiles{5} = sBeatFileName{5};
-%     %     sFiles{6} = sBeatFileName{4};
-%     %     sFiles{7} = sBeatFileName{2};
-%     %     sFiles{8} = sBeatFileName{1};
-%     sBeatFileName = sFiles;
-%     
-%     %intialise arrays to hold beat information
-%     rowdim = 42;
-%     coldim = 41;
-%     aAllActivationTimes = zeros(rowdim,coldim,length(sBeatFileName));
-%     aAllRepolarisationTimes = zeros(rowdim,coldim,length(sBeatFileName));
-%     aAllAPDs = zeros(rowdim,coldim,length(sBeatFileName));
-%     %get the beat data
-%     for i = 1:length(sBeatFileName)
-%         sLongDataFileName=strcat(sBeatPathName,char(sBeatFileName{i}));
-%         [aHeaderInfo aAllActivationTimes(:,:,i) aAllRepolarisationTimes(:,:,i) aAllAPDs(:,:,i)] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
-%     end
-% else
-%     if (~ischar(sBeatFileName) && ~ischar(sBeatPathName))
-%         break
-%     end
-%     %get the beat data
-%     [aHeaderInfo aAllActivationTimes aAllRepolarisationTimes aAllAPDs] = ReadOpticalDataCSVFile(strcat(sBeatPathName,sBeatFileName),rowdim,coldim,7);
-% end
+%% load the beat data
+[sBeatFileName,sBeatPathName]=uigetfile('*.*','Select CSV file(s) that contain optical beat data','multiselect','on');
+% %Make sure the dialogs return char objects
+
+if iscell(sBeatFileName)
+    %Make sure the dialogs return char objects
+    if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
+        break
+    end
+    %remap file indices
+    sFiles = cell(size(sBeatFileName));
+    % format for 20140821baro002
+    %     sFiles{1} = sBeatFileName{5};
+    %     sFiles{2} = sBeatFileName{4};
+    %     sFiles{3} = sBeatFileName{1};
+    %     sFiles{4} = sBeatFileName{2};
+    %     sFiles{5} = sBeatFileName{3};
+    %     sFiles{6} = sBeatFileName{9};
+    %     sFiles{7} = sBeatFileName{6};
+    %     sFiles{8} = sBeatFileName{7};
+    %     sFiles{9} = sBeatFileName{8};
+    
+    % Format for temporal filter sets
+    sFiles{1} = sBeatFileName{5};
+    sFiles{2} = sBeatFileName{1};
+    sFiles{3} = sBeatFileName{2};
+    sFiles{4} = sBeatFileName{3};
+    sFiles{5} = sBeatFileName{4};
+    sFiles{6} = sBeatFileName{6};
+    sFiles{7} = sBeatFileName{7};
+    sFiles{8} = sBeatFileName{8};
+    sFiles{9} = sBeatFileName{9};
+    
+    %     sFiles{1} = sBeatFileName{3};
+    %     sFiles{2} = sBeatFileName{8};
+    %     sFiles{3} = sBeatFileName{7};
+    %     sFiles{4} = sBeatFileName{6};
+    %     sFiles{5} = sBeatFileName{5};
+    %     sFiles{6} = sBeatFileName{4};
+    %     sFiles{7} = sBeatFileName{2};
+    %     sFiles{8} = sBeatFileName{1};
+    sBeatFileName = sFiles;
+    
+    %intialise arrays to hold beat information
+    rowdim = 42;
+    coldim = 41;
+    aAllActivationTimes = zeros(rowdim,coldim,length(sBeatFileName));
+    aAllRepolarisationTimes = zeros(rowdim,coldim,length(sBeatFileName));
+    aAllAPDs = zeros(rowdim,coldim,length(sBeatFileName));
+    %get the beat data
+    for i = 1:length(sBeatFileName)
+        sLongDataFileName=strcat(sBeatPathName,char(sBeatFileName{i}));
+        [aHeaderInfo aAllActivationTimes(:,:,i) aAllRepolarisationTimes(:,:,i) aAllAPDs(:,:,i)] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
+    end
+else
+    if (~ischar(sBeatFileName) && ~ischar(sBeatPathName))
+        break
+    end
+    %get the beat data
+    [aHeaderInfo aAllActivationTimes aAllRepolarisationTimes aAllAPDs] = ReadOpticalDataCSVFile(strcat(sBeatPathName,sBeatFileName),rowdim,coldim,7);
+end
 
 %% Get S/N, power spectra and candidates for dVdtMax
 
@@ -126,7 +153,7 @@ aSubplotHandles = zeros(iNumFiles,iNumberOfSubplotsFigures,2);
 %populate
 for m = 1:length(aSubplotFigures)
     aSubplotFigures(m) = figure();
-    aSubplotAxes{m} = panel(aSubplotFigures(m));
+    aSubplotAxes{m} = panel(aSubplotFigures(m),'no-manage-font');
     aSubplotAxes{m}.pack(iNumFiles,1);
 end
 
@@ -186,7 +213,7 @@ for i = [2:iNumFiles 1]
         dCurrentAT = aAllActivationTimes(dRowLoc, dColLoc,i) - aHeaderInfo.startframe + 2;
         if i == 2
             if abs(aSortedLocations(end) - dCurrentAT) <= 3 && 0 < (aSortedLocations(end-1) - dCurrentAT) ...
-                    && (aSortedLocations(end-1) - dCurrentAT) <= 4 ...
+                    && (aSortedLocations(end-1) - dCurrentAT) <= 3 ...
                     && (aSortedLocations(end-1) - aSortedLocations(end)) > 0
                 aSlopePeakDistance(i,j) = aSortedLocations(end-1) - aSortedLocations(end);
                 aLocationsToPlot{i}(:,aCount(i))= [dRowLoc ; dColLoc ; 0];
@@ -199,23 +226,28 @@ for i = [2:iNumFiles 1]
                     [aSubplotHandles(i,aPointCount(i),:) h1 h2] = plotyy(aTime,aThisData,aTime,aThisSlope);
                     set(h2,'Color','r');
                     oTitle = title(sprintf('%s Location %s',strrep(char(sFileName{i}),'_','\_'),sprintf('%d%d',dXLoc,dYLoc)));%print title in native coordinates
-                    oAxes.fontsize = 6;
+                    set(oTitle,'fontunits','points');
+                    set(oTitle,'fontsize',6);
                     hold(aSubplotHandles(i,aPointCount(i),1),'on');
                     % %     plot a green marker for the 50%AP AT
                     dCurrentAT = aAllActivationTimes(dRowLoc, dColLoc,i) - aHeaderInfo.startframe + 2;
-                    plot(aSubplotHandles(i,aPointCount(i),1),aTime(dCurrentAT), aThisData(dCurrentAT), 'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','b','MarkerSize',4);
+                    plot(aSubplotHandles(i,aPointCount(i),1),aTime(dCurrentAT), aThisData(dCurrentAT), 'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','b','MarkerSize',6);
                     % %     plot a red marker for the slope based estimation of AT
-                    plot(aSubplotHandles(i,aPointCount(i),1),aTime(aSlopeLocations(iMaxSlopeIndex)), aThisData(aSlopeLocations(iMaxSlopeIndex)),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','r','MarkerSize',2);
+                    plot(aSubplotHandles(i,aPointCount(i),1),aTime(aSlopeLocations(iMaxSlopeIndex)), aThisData(aSlopeLocations(iMaxSlopeIndex)),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','r','MarkerSize',4);
                     hold(aSubplotHandles(i,aPointCount(i),1),'off');
-                    XTick = get(aSubplotHandles(i,aPointCount(i),1),'xtick');
-                    set(aSubplotHandles(i,aPointCount(i),1),'xtick',[]);
-                    set(aSubplotHandles(i,aPointCount(i),2),'xtick',[]);
+                    XLabel = get(aSubplotHandles(i,aPointCount(i),2),'xticklabel');
+                    set(aSubplotHandles(i,aPointCount(i),1),'xticklabel',[]);
+                    set(aSubplotHandles(i,aPointCount(i),2),'xticklabel',[]);
                     set(aSubplotHandles(i,aPointCount(i),1),'ytick',[]);
                     set(aSubplotHandles(i,aPointCount(i),2),'ytick',[]);
                     axis(aSubplotHandles(i,aPointCount(i),1),'auto');
                     axis(aSubplotHandles(i,aPointCount(i),2),'auto');
+                    set(aSubplotHandles(i,aPointCount(i),1),'YColor','k');
+                    set(aSubplotHandles(i,aPointCount(i),2),'YColor','k');
+                    set(aSubplotHandles(i,aPointCount(i),1),'fontunits','points');
+                    set(aSubplotHandles(i,aPointCount(i),1),'fontsize',6);
                     oAxes.de.margin = 2;
-                    oAxes.de.marginbottom = 4;
+                    oAxes.de.marginbottom = 5;
                     aPointCount(i) = aPointCount(i) + 1;
                 end
                 aCount(i) = aCount(i) + 1;
@@ -233,26 +265,31 @@ for i = [2:iNumFiles 1]
             [aSubplotHandles(i,iPoint,:) h1 h2] = plotyy(aTime,aThisData,aTime,aThisSlope);
             set(h2,'Color','r');
             oTitle = title(sprintf('%s Location %s',strrep(char(sFileName{i}),'_','\_'),sprintf('%d%d',dXLoc,dYLoc)));%print title in native coordinates
-            oAxes.fontsize = 6;
+            set(oTitle,'fontunits','points');
+            set(oTitle,'fontsize',6);
             hold(aSubplotHandles(i,iPoint,1),'on');
             %     plot a green marker for the 50%AP AT
             dCurrentAT = aAllActivationTimes(dRowLoc, dColLoc,i) - aHeaderInfo.startframe + 2;
-            plot(aSubplotHandles(i,iPoint,1),aTime(dCurrentAT), aThisData(dCurrentAT), 'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','b','MarkerSize',4);
+            plot(aSubplotHandles(i,iPoint,1),aTime(dCurrentAT), aThisData(dCurrentAT), 'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','b','MarkerSize',6);
             %     plot a red marker for the slope based estimation of AT
-            plot(aSubplotHandles(i,iPoint,1),aTime(aSlopeLocations(iMaxSlopeIndex)), aThisData(aSlopeLocations(iMaxSlopeIndex)),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','r','MarkerSize',2);
+            plot(aSubplotHandles(i,iPoint,1),aTime(aSlopeLocations(iMaxSlopeIndex)), aThisData(aSlopeLocations(iMaxSlopeIndex)),'Marker', 'o', 'MarkerEdgeColor','k','MarkerFaceColor','r','MarkerSize',4);
             hold(aSubplotHandles(i,iPoint,1),'off');
-            XTick = get(aSubplotHandles(i,iPoint,1),'xtick');
-            set(aSubplotHandles(i,iPoint,1),'xtick',[]);
-            set(aSubplotHandles(i,iPoint,2),'xtick',[]);
+            XLabel = get(aSubplotHandles(i,iPoint,2),'xticklabel');
+            set(aSubplotHandles(i,iPoint,1),'xticklabel',[]);
+            set(aSubplotHandles(i,iPoint,2),'xticklabel',[]);
             set(aSubplotHandles(i,iPoint,1),'ytick',[]);
             set(aSubplotHandles(i,iPoint,2),'ytick',[]);
             axis(aSubplotHandles(i,iPoint,1),'auto');
             axis(aSubplotHandles(i,iPoint,2),'auto');
+            set(aSubplotHandles(i,iPoint,1),'YColor','k');
+            set(aSubplotHandles(i,iPoint,2),'YColor','k');
+            set(aSubplotHandles(i,iPoint,1),'fontunits','points');
+            set(aSubplotHandles(i,iPoint,1),'fontsize',6);
             oAxes.de.margin = 2;
-            oAxes.de.marginbottom = 4;
+            oAxes.de.marginbottom = 5;
         else
             if abs(aSortedLocations(end) - dCurrentAT) <= 3 && 0 < (aSortedLocations(end-1) - dCurrentAT) ...
-                    && (aSortedLocations(end-1) - dCurrentAT) <= 4 ...
+                    && (aSortedLocations(end-1) - dCurrentAT) <= 3 ...
                     && (aSortedLocations(end-1) - aSortedLocations(end)) > 0
                 aSlopePeakDistance(i,j) = aSortedLocations(end-1) - aSortedLocations(end);
                 aLocationsToPlot{i}(:,aCount(i))= [dRowLoc ; dColLoc ; 0];
@@ -275,8 +312,10 @@ for i = [2:iNumFiles 1]
     end
     if i == iNumFiles 
         for n = 1:length(aSubplotFigures)
-            set(aSubplotHandles(iNumFiles,n,1),'xtick',XTick);
+            set(aSubplotHandles(iNumFiles,n,1),'xticklabel',XLabel);
             set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'string','Time (ms)');
+            set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'fontunits','points');
+            set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'fontsize',6);
         end
     end
     iStoN = mean(aSignaltoNoise,2);

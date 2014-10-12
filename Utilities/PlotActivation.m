@@ -1,4 +1,4 @@
-function [oATFigure oATAxes] = PlotActivation(aActivationTimes,sBeatFileName,aPaceSettersToPlot,aLocationsToPlot,aPoints)
+function [oATFigure oATAxes] = PlotActivation(aActivationTimes,sBeatFileName,aPaceSettersToPlot,aLocationsToPlot)
 iMontageX = 1;
 iMontageY = 1;
 aActivationTimes = aActivationTimes(:,1:end-1);
@@ -80,31 +80,32 @@ set(oBeatLabel,'parent',oATAxes);
 %set axes title
 [pathstr, name, ext, versn] = fileparts(sBeatFileName);
 set(get(oATAxes,'title'),'string',strrep(name,'_','\_'));
-
-%%overlay a plot with the updated points
-oOverlayAxes = axes('parent',oATFigure);
-xLocs = dRes .* aLocationsToPlot(1,:);
-yLocs = dRes .* aLocationsToPlot(2,:);
-xPaceLocs = dRes .* aPaceSettersToPlot(1,:);
-yPaceLocs = dRes .* aPaceSettersToPlot(2,:);
-% [row col] = find(aScatterPointsToPlot);
-set(oOverlayAxes,'units','normalized');
-set(oOverlayAxes,'outerposition',[0 0 1 1]);
-set(oOverlayAxes, 'Position', get(oATAxes,'position'));
-scatter(oOverlayAxes, xLocs, yLocs,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','k');
-hold(oOverlayAxes,'on');
-scatter(oOverlayAxes, xPaceLocs, yPaceLocs,'Marker','o','MarkerEdgeColor','r','MarkerFaceColor','r');
-axis(oOverlayAxes, 'equal');axis(oOverlayAxes,[get(oATAxes,'xlim'),get(oATAxes,'ylim')]);
-set(oOverlayAxes,'xticklabel',[]);
-set(oOverlayAxes,'yticklabel', []);
-set(oOverlayAxes,'Box','off');
-set(oOverlayAxes,'color','none');
-iPointIndices = find(aLocationsToPlot(3,:));
-for i = 1:length(iPointIndices)
-    oLabel = text(xLocs(iPointIndices(i)) - 0.2, yLocs(iPointIndices(i)) + 0.1, ...
-        sprintf('%d%d',aLocationsToPlot(2,iPointIndices(i))-1,aLocationsToPlot(1,iPointIndices(i))-1));
-    set(oLabel,'FontWeight','bold','FontUnits','normalized');
-    set(oLabel,'FontSize',0.012);
-    set(oLabel,'parent',oOverlayAxes);
+if ~isempty(aLocationsToPlot)
+    %%overlay a plot with the updated points
+    oOverlayAxes = axes('parent',oATFigure);
+    xLocs = dRes .* aLocationsToPlot(1,:);
+    yLocs = dRes .* aLocationsToPlot(2,:);
+    xPaceLocs = dRes .* aPaceSettersToPlot(1,:);
+    yPaceLocs = dRes .* aPaceSettersToPlot(2,:);
+    % [row col] = find(aScatterPointsToPlot);
+    set(oOverlayAxes,'units','normalized');
+    set(oOverlayAxes,'outerposition',[0 0 1 1]);
+    set(oOverlayAxes, 'Position', get(oATAxes,'position'));
+    scatter(oOverlayAxes, xLocs, yLocs,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','k');
+    hold(oOverlayAxes,'on');
+    scatter(oOverlayAxes, xPaceLocs, yPaceLocs,'Marker','o','MarkerEdgeColor','r','MarkerFaceColor','r');
+    axis(oOverlayAxes, 'equal');axis(oOverlayAxes,[get(oATAxes,'xlim'),get(oATAxes,'ylim')]);
+    set(oOverlayAxes,'xticklabel',[]);
+    set(oOverlayAxes,'yticklabel', []);
+    set(oOverlayAxes,'Box','off');
+    set(oOverlayAxes,'color','none');
+    iPointIndices = find(aLocationsToPlot(3,:));
+    for i = 1:length(iPointIndices)
+        oLabel = text(xLocs(iPointIndices(i)) - 0.2, yLocs(iPointIndices(i)) + 0.1, ...
+            sprintf('%d%d',aLocationsToPlot(2,iPointIndices(i))-1,aLocationsToPlot(1,iPointIndices(i))-1));
+        set(oLabel,'FontWeight','bold','FontUnits','normalized');
+        set(oLabel,'FontSize',0.012);
+        set(oLabel,'parent',oOverlayAxes);
+    end
 end
 end
