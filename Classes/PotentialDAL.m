@@ -197,18 +197,18 @@ classdef PotentialDAL < BaseDAL
             oUnemap.TimeSeries = [1:1:size(aFileContents,1)]*(1/oUnemap.oExperiment.Unemap.ADConversion.SamplingRate);
         end
         
-        function GetOpticalDataFromCSVFile(oPotentialDAL, oOptical, sFilePath)
+        function GetOpticalDataFromCSVFile(oPotentialDAL, oOptical, sFilePath,iHeaderLines)
             %Get the potential data for a given channel from the input
             %signal (txt) file.
             
              %Load the potential data from the txt file
              fid = fopen(sFilePath,'r');
              %scan the header information in
-             for i = 1:10;
+             for i = 1:iHeaderLines
                  tline = fgets(fid);
                  [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
                  switch (splitstring{1})
-                     case 'frm num'
+                     case {'frm num','frm_num'}
                          iNumFrames = str2double(splitstring{2});
                      case 'position'
                          [xLoc yLoc] = strread(splitstring{2},'[%d][%d]');
@@ -226,7 +226,12 @@ classdef PotentialDAL < BaseDAL
              fclose(fid);
 
             %Get the potential data and initialise processed.data
-            oOptical.Electrodes.Potential.Data = aData;
+            %check if the data needs to be inverted 
+            if max(aData) < 0
+                oOptical.Electrodes.Potential.Data = -aData;
+            else
+                oOptical.Electrodes.Potential.Data = aData;
+            end
             oOptical.Electrodes.Processed.Data = NaN(size(aData,1),1);
             %Get the Timeseries data
             oOptical.TimeSeries = [0:1:size(aData,1)-1]*(1/oOptical.oExperiment.Optical.SamplingRate);

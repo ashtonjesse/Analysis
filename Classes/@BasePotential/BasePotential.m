@@ -220,23 +220,26 @@ classdef BasePotential < BaseSignal
             end
         end
         
-        function [aRateData dPeaks] = CalculateSinusRate(oBasePotential, iElectrodeNumber)
+        function [aRateData dOutPeaks] = CalculateSinusRate(oBasePotential, iElectrodeNumber)
             %Get the peaks associated with the beat data from this
             %electrode and make call to GetHeartRateData
             dPeaks = zeros(size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
-            %Loop through the beats and find max curvature
+            %Loop through the beats and find max slope
             for i = 1:size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1);
                 aInData = oBasePotential.Electrodes(iElectrodeNumber).Processed.Data...
                     (oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
-                aCurvature = oBasePotential.CalculateCurvature(aInData, 20, 5);
-                [val, loc] = max(aCurvature);
+                aSlope = oBasePotential.CalculateSlope(aInData, 5, 3);
+                [val, loc] = max(aSlope);
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
             end
-            [aRateData, aRates, dPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            [aRateData, aRates, dOutPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = aRates;
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
         end
         
-        function [aRateTrace, aRates, dPeaks] = CalculateSinusRateFromRMS(oBasePotential)
+        function [aRateTrace, aRates, dOutPeaks] = CalculateSinusRateFromRMS(oBasePotential)
             %calculate the sinus rate from RMS data instead
             dPeaks = zeros(size(oBasePotential.Electrodes(1).Processed.BeatIndexes,1),1);
             %Loop through the beats and find max curvature
@@ -249,8 +252,10 @@ classdef BasePotential < BaseSignal
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oBasePotential.Electrodes(1).Processed.BeatIndexes(i,1);
             end
-
-            [aRateTrace, aRates, dPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            [aRateTrace, aRates, dOutPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = aRates;
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
         end
         
         function [aRateTrace, aRates, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)

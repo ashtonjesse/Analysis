@@ -245,7 +245,7 @@ classdef PressureAnalysis < SubFigure
             if ~isempty(oFigure.SelectedBeat)
                 switch (oFigure.SignalToUseForBeatDetection)
                     case {'Optical Signal','VRMS'}
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.DeleteBeat(oFigure.SelectedBeat);
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).DeleteBeat(oFigure.SelectedBeat);
                     case 'Phrenic'
                         oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.DeleteBeat(oFigure.SelectedBeat);
                 end
@@ -329,9 +329,14 @@ classdef PressureAnalysis < SubFigure
                         {'oAxes','title','Curvature'}};
                 case 'Optical Signal'
                     aTimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).TimeSeries;
+                    oElectrodes = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes;
+                    %Process the data if it isn't already
+                    if strcmp(oElectrodes(1).Status,'Potential')
+                        oElectrodes(1).Processed.Data = oElectrodes(1).Potential.Data;
+                        oElectrodes(1).Status = 'Processed';
+                    end
                     aData = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).CalculateCurvature(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data,20,5);
+                        oElectrodes(1).Processed.Data,20,5);
                     aOptions = {{'oInstructionText','string','Select a range of data during quiescence'} ; ...
                         {'oBottomText','string','How many standard deviations to apply?'} ; ...
                         {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
@@ -459,9 +464,9 @@ classdef PressureAnalysis < SubFigure
         end
                 
         function oSmoothPressureMenu_Callback(oFigure, src, event)
-            %Apply a smoothing to the pressure data
-            oFigure.oParentFigure.oGuiHandle.oPressure.Processed.Data = ...
-                oFigure.oParentFigure.oGuiHandle.oPressure.FilterData(oFigure.oParentFigure.oGuiHandle.oPressure.Processed.Data,'SovitzkyGolay',5,29);
+            %             %Apply a smoothing to the pressure data
+            oPressure = oFigure.oParentFigure.oGuiHandle.oPressure;
+            oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'DWTFilterRemoveScales', 12);
             oFigure.Replot();
         end
         
@@ -608,7 +613,7 @@ classdef PressureAnalysis < SubFigure
                         for i = 1:length(sDataFileName)
                             sLongDataFileName=strcat(sDataPathName,char(sDataFileName{i}));
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = [oFigure.oParentFigure.oGuiHandle.oPressure.oRecording, ...
-                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment)];
+                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6)];
                             sResult = regexp(char(sDataFileName{i}),'_');
                             sFileName = char(sDataFileName{i});
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name = sFileName(1:sResult(1)-1);
@@ -623,7 +628,7 @@ classdef PressureAnalysis < SubFigure
                         %get the optical data
                         sLongDataFileName=strcat(sDataPathName,char(sDataFileName));
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = ...
-                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6);
                         sResult = regexp(char(sDataFileName),'_');
                         sFileName = char(sDataFileName);
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Name = sFileName(1:sResult(1)-1);
@@ -813,12 +818,19 @@ classdef PressureAnalysis < SubFigure
                         oFigure.PlotPhrenic(oPlots(i).ID);
                     case 'Optical Signal'
                         hold(oPlots(i).ID,'on');
-                        ymax = 0;
-                        ymin = 999;
                         for j = 1:length(oFigure.SelectedRecordings)
-                            ymax = max(ymax, max(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes.Processed.Data));
-                            ymin = min(ymin, min(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes.Processed.Data));
-                            oFigure.PlotElectrode(oPlots(i).ID,oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes(1),...
+                            %each optical electrode belongs to a separate
+                            %recording so there is only ever one electrode
+                            %per recording
+                            oElectrodes = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).Electrodes;
+                            if j == 1
+                                ymax = max(oElectrodes.(oElectrodes(1).Status).Data);
+                                ymin = min(oElectrodes.(oElectrodes(1).Status).Data);
+                            else
+                                ymax = max(ymax, max(oElectrodes.(oElectrodes(1).Status).Data));
+                                ymin = min(ymin, min(oElectrodes.(oElectrodes(1).Status).Data));
+                            end
+                            oFigure.PlotElectrode(oPlots(i).ID,oElectrodes(1), ...
                                 transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(j)).TimeSeries),oFigure.Colours(oFigure.SelectedRecordings(j)), ymin, ymax);
                         end
                         hold(oPlots(i).ID,'off');
@@ -953,31 +965,35 @@ classdef PressureAnalysis < SubFigure
         
         function PlotElectrode(oFigure, oAxesHandle, oElectrode, aTime, sColour, ymin, ymax)
             %Plot the selected electrode
-            aProcessedData = oElectrode.Processed.Data;
+            aData = oElectrode.(oElectrode.Status).Data;
             %check for beats
-            if isfield(oElectrode.Processed,'Beats')
-                aBeatData = oElectrode.Processed.Beats;
-                aBeatIndexes = oElectrode.Processed.BeatIndexes;
+            if strcmp(oElectrode.Status,'Processed')
+                if isfield(oElectrode.Processed,'Beats')
+                    aBeatData = oElectrode.Processed.Beats;
+                    aBeatIndexes = oElectrode.Processed.BeatIndexes;
+                end
             end
-            
             %Plot all the data
             if oElectrode.Accepted
                 %If the signal is accepted then plot it as black
-                plot(oAxesHandle,aTime,aProcessedData,sColour);
+                plot(oAxesHandle,aTime,aData,sColour);
                 ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
-                if isfield(oElectrode.Processed,'Beats')
-                    plot(oAxesHandle,aTime,aBeatData,'-g');
-                    if ~isempty(oFigure.SelectedBeat)
-                        %Get the currently selected beat
-                        aSelectedBeat = aBeatData(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
-                        aSelectedTime = aTime(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
-                        plot(oAxesHandle,aSelectedTime,aSelectedBeat,'-b');
+                if strcmp(oElectrode.Status,'Processed')
+                    %only processed data has beats
+                    if isfield(oElectrode.Processed,'Beats')
+                        plot(oAxesHandle,aTime,aBeatData,'-g');
+                        if ~isempty(oFigure.SelectedBeat)
+                            %Get the currently selected beat
+                            aSelectedBeat = aBeatData(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
+                            aSelectedTime = aTime(aBeatIndexes(oFigure.SelectedBeat,1):aBeatIndexes(oFigure.SelectedBeat,2));
+                            plot(oAxesHandle,aSelectedTime,aSelectedBeat,'-b');
+                        end
                     end
                 end
             else
                 %The signal is not accepted so plot it as red
                 %without beats
-                plot(oAxesHandle,aTime,aProcessedData,'-r');
+                plot(oAxesHandle,aTime,aData,'-r');
                 ylim(oAxesHandle,[ymin - 0.2, ymax + 0.2]);
             end
             

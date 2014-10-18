@@ -46,7 +46,7 @@ classdef Optical < BasePotential
             SaveEntity(oOptical,sPath);
         end
         
-        function oOptical = GetOpticalRecordingFromCSVFile(oOptical, sFileName, oExperiment)
+        function oOptical = GetOpticalRecordingFromCSVFile(oOptical, sFileName, oExperiment,iHeaderLines)
             %   Get an entity by loading data from a CSV file 
             
             % Load the experiment
@@ -54,7 +54,7 @@ classdef Optical < BasePotential
             %Initialise the Electrodes struct
             oOptical.Electrodes = struct('Name','','Location',[],'Status','Potential','Accepted',1);
             %get the data from the file
-            oOptical.oDAL.GetOpticalDataFromCSVFile(oOptical, sFileName);
+            oOptical.oDAL.GetOpticalDataFromCSVFile(oOptical, sFileName,iHeaderLines);
         end
         
     end

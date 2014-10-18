@@ -85,6 +85,21 @@ classdef BaseSignal < BaseEntity
                     iWindowSize = varargin{2};
                     %Apply filter
                     OutData = sgolayfilt(aInData,iOrder,iWindowSize);
+                    
+                case 'TukeyWindow'
+                    iAlpha = varargin{1};
+                    iWindowSize = varargin{2};
+                    oWindow = tukeywin(iWindowSize,iAlpha);
+                    OutData = filter(oWindow,sum(oWindow),aInData);
+                    
+                case 'BartlettWindow'
+                    iWindowSize = varargin{1};
+                    oWindow = bartlett(iWindowSize);
+                    OutData = filter(oWindow,sum(oWindow),aInData);
+                    
+                case 'DWTFilterRemoveScales'
+                    iScale = varargin{1};
+                    OutData = oBaseSignal.ComputeDWTFilteredSignalsRemovingScales(aInData,iScale);
             end
         end
         

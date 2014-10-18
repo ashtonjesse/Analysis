@@ -59,8 +59,10 @@ classdef Pressure < BaseSignal
             %Resamples the original pressure data at the new frequency
              oPressure.Processed.Data = resample(oPressure.Original.Data, dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
+            oPressure.Processed.Data = oPressure.Processed.Data(2:(end-2)); 
             oPressure.RefSignal.Processed = resample(oPressure.RefSignal.Original, dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
+            oPressure.RefSignal.Processed = oPressure.RefSignal.Processed(2:(end-2)); 
             oPressure.oPhrenic.ResampleData(dNewFrequency, ...
                 oPressure.oExperiment.PerfusionPressure.SamplingRate);
             oPressure.TimeSeries.Processed = [1:1:size(oPressure.Processed.Data,1)] * (1/dNewFrequency);

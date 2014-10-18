@@ -48,6 +48,7 @@ classdef Phrenic < BasePotential
     methods (Access = public)
         function ResampleData(oPhrenic, dNewFrequency, dOldFrequency)
             oPhrenic.Electrodes.Processed.Data = oPhrenic.ResampleSignal(oPhrenic.Electrodes.(oPhrenic.Electrodes.Status).Data, dNewFrequency, dOldFrequency);
+            oPhrenic.Electrodes.Processed.Data = oPhrenic.Electrodes.Processed.Data(2:(end-2));
             oPhrenic.TimeSeries = [1:1:size(oPhrenic.Electrodes.Processed.Data,1)] * (1/dNewFrequency);
             oPhrenic.Electrodes.Status = 'Processed';
         end
