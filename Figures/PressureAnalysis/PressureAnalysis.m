@@ -613,7 +613,7 @@ classdef PressureAnalysis < SubFigure
                         for i = 1:length(sDataFileName)
                             sLongDataFileName=strcat(sDataPathName,char(sDataFileName{i}));
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = [oFigure.oParentFigure.oGuiHandle.oPressure.oRecording, ...
-                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6)];
+                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,10)];%6
                             sResult = regexp(char(sDataFileName{i}),'_');
                             sFileName = char(sDataFileName{i});
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name = sFileName(1:sResult(1)-1);
@@ -628,7 +628,7 @@ classdef PressureAnalysis < SubFigure
                         %get the optical data
                         sLongDataFileName=strcat(sDataPathName,char(sDataFileName));
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = ...
-                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6);
+                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,10);%6
                         sResult = regexp(char(sDataFileName),'_');
                         sFileName = char(sDataFileName);
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Name = sFileName(1:sResult(1)-1);

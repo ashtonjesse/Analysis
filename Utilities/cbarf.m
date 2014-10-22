@@ -138,7 +138,7 @@ if newCbar
       aTightInset = get(ax, 'TightInset');
       axPos(1) = aTightInset(1)+20;
       axPos(2) = dW+aTightInset(2);
-      axPos(3) = 580;%480 
+      axPos(3) = 480;%480 
       axPos(4) = W;
   end
   

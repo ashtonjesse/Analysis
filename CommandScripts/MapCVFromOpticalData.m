@@ -3,34 +3,32 @@
 %conduction velocity field which is then plotted and the figure is printed
 %to file.
 % 
-clear all;
 close all;
-% 
-% %get a list of the csv files in the directory
-sFilesPath = 'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\APD30\';
-sSavePath = 'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\APD30\';
-sFormat = 'csv';
-%Select the files we want to plot
-[sDataFileNames,sDataPathName]=uigetfile('*.*','Select a CSV files that contain optical transmembrane recordings',sFilesPath,'MultiSelect','on');
-%Make sure the dialogs return char objects
-if (isempty(sDataFileNames) && ~ischar(sDataPathName))
-    break
-end
+% clear all;
+% % 
+% % %get a list of the csv files in the directory
+% sFormat = 'csv';
+% %Select the files we want to plot
+% [sDataFileNames,sDataPathName]=uigetfile('*.*','Select a CSV files that contain optical transmembrane recordings','MultiSelect','on');
+% %Make sure the dialogs return char objects
+% if (isempty(sDataFileNames) && ~ischar(sDataPathName))
+%     break
+% end
 
 % %Get the full path names of all the  files in the directory
 aFileFull = strcat(sDataPathName,sDataFileNames);
-
+sSavePath = sDataPathName;
 bPrintAPD = false;
-iMontageX = 4;
+iMontageX = 2;
 iMontageY = ceil(length(sDataFileNames)/iMontageX);
 
 %Used for APDs only
 if bPrintAPD
     %select a map to compare with
-    [sApdFileName,sApdPathName]=uigetfile('*.*','Select a CSV file that contains APD data to compare with',sFilesPath);
+    [sApdFileName,sApdPathName]=uigetfile('*.*','Select a CSV file that contains APD data to compare with');
 end
 
-rowdim = 44;
+rowdim = 41;
 coldim = 41;%add one to the number of columns in the csv file
 %Open the first file to get some info out (assumes that all the maps in
 %this directory have the same shape)
@@ -530,7 +528,7 @@ set(oTitle,'string','Activation Time (ms)','position',[0.5 2]);
 oFigureTitle = text('string', sFigureTitle, 'parent', oColorBar);
 set(oFigureTitle, 'units', 'normalized');
 set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
-set(oFigureTitle, 'position', [0 2.5]);
+set(oFigureTitle, 'position', [-0.085 2.65]);
 %set the paper size
 sSaveFilePath = fullfile(sSavePath,'ATcolorbar.bmp');
 print(oCbarFigure,'-dbmp','-r300',sSaveFilePath);
@@ -564,7 +562,7 @@ set(oTitle,'string','Velocity (m/s)','position',[0.5 2]);
 oFigureTitle = text('string', sFigureTitle, 'parent', oColorBar);
 set(oFigureTitle, 'units', 'normalized');
 set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
-set(oFigureTitle, 'position', [0 2.5]);
+set(oFigureTitle, 'position', [-0.085 2.65]);
 %set the paper size
 sSaveFilePath = fullfile(sSavePath,'CVcolorbar.bmp');
 print(oCbarFigure,'-dbmp','-r300',sSaveFilePath);
@@ -598,7 +596,7 @@ if bPrintAPD
     oFigureTitle = text('string', sFigureTitle, 'parent', oColorBar);
     set(oFigureTitle, 'units', 'normalized');
     set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
-    set(oFigureTitle, 'position', [0 2.5]);
+    set(oFigureTitle, 'position', [-0.085 2.65]);
     %set the paper size
     sSaveFilePath = fullfile(sSavePath,'APDcolorbar.bmp');
     print(oCbarFigure,'-dbmp','-r300',sSaveFilePath);
