@@ -56,6 +56,25 @@ classdef Phrenic < BasePotential
         function ComputeIntegral(oPhrenic, iBinSize)
             oPhrenic.Electrodes.Processed.Integral = oPhrenic.ComputeRectifiedBinIntegral(oPhrenic.Electrodes.(oPhrenic.Electrodes.Status).Data, iBinSize);
         end
+        
+        function CalculateBurstRate(oPhrenic, aIndices)
+            % aIndices provides an array of indexes the length of the
+            % phrenic data that indicate where datapoints should belong to
+            % a phrenic burst. This function loops through these find the
+            % start and end points of each block and then calculating the
+            % rate of bursts based on the central point of each block
+            aEdges = find(diff(aIndices) > 1);
+            %add a zero to the beginning
+            aEdges = [0 aEdges'];
+            aFirstIndex = aEdges + 1;
+            oPhrenic.Electrodes.Processed.BeatIndexes = aIndices([aFirstIndex(1:end-1) ; aEdges(2:end)]');
+            dLocs = oPhrenic.Electrodes.Processed.BeatIndexes(:,2) - oPhrenic.Electrodes.Processed.BeatIndexes(:,1);
+            dLocs = floor(dLocs / 2) + oPhrenic.Electrodes.Processed.BeatIndexes(:,1);
+            [aRateData, aRates, dPeaks] = GetRateData(oPhrenic,dLocs);
+            oPhrenic.Electrodes.Processed.BeatRates = aRates;
+            oPhrenic.Electrodes.Processed.BeatRateData = aRateData;
+            oPhrenic.Electrodes.Processed.BeatRateTimes = oPhrenic.TimeSeries(dLocs);
+        end
     end
 end
 

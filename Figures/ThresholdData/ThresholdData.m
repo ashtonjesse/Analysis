@@ -17,6 +17,7 @@ classdef ThresholdData < SelectData
         Threshold;
         YDataInput;
         XDataInput;
+        ThresholdType;
     end
     
     events
@@ -24,7 +25,7 @@ classdef ThresholdData < SelectData
     end
 
     methods
-        function oFigure = ThresholdData(oParent,XData,YData,sOptions)
+        function oFigure = ThresholdData(oParent,XData,YData,sThresholdType,sOptions)
             %% Constructor
             oFigure = oFigure@SelectData(oParent,'ThresholdData',XData,YData,sOptions);
             %Override the ReturnButton callback
@@ -34,7 +35,7 @@ classdef ThresholdData < SelectData
             %set properties
             oFigure.YDataInput = YData;
             oFigure.XDataInput = XData;
-            
+            oFigure.ThresholdType = sThresholdType;
         end
     end
     
@@ -55,14 +56,21 @@ classdef ThresholdData < SelectData
             %Notify listeners and pass the selected data
             %check if the threshold is based on a curvature calculation or
             %has just been entered via the edit box
-            if strcmp(get(oFigure.oGuiHandle.bCalcThreshold,'visible'),'on')
-                notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
-            else
-                oFigure.Threshold = oFigure.GetEditInputDouble('oEdit');
-                oFigure.GetPeaksAboveThreshold();
-                notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+            switch (oFigure.ThresholdType)
+                case 'Peaks'
+                    if strcmp(get(oFigure.oGuiHandle.bCalcThreshold,'visible'),'on')
+                        notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+                    else
+                        oFigure.Threshold = oFigure.GetEditInputDouble('oEdit');
+                        oFigure.GetPeaksAboveThreshold();
+                        notify(oFigure,'ThresholdCalculated',DataPassingEvent(oFigure.Peaks,oFigure.Threshold));
+                    end
+                case 'Values'
+                    oFigure.Threshold = oFigure.GetEditInputDouble('oEdit');
+                    %get indexes of values above threshold
+                    aIndices = find(oFigure.YDataInput > oFigure.Threshold);
+                    notify(oFigure,'ThresholdCalculated',DataPassingEvent(aIndices,oFigure.Threshold));
             end
-            
             oFigure.Close_fcn;
         end
 

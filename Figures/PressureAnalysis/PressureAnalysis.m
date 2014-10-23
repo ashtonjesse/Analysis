@@ -45,6 +45,7 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oSmoothMenu, 'callback', @(src, event) oSmoothMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSmoothPressureMenu, 'callback', @(src, event) oSmoothPressureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateRefMenu, 'callback', @(src, event) oTruncateRefMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDetectBurstsMenu, 'callback', @(src, event) oDetectBurstsMenu_Callback(oFigure, src, event));
             
             %get the children that belong to oExperimentPanel to set
             %properties
@@ -84,7 +85,7 @@ classdef PressureAnalysis < SubFigure
                 case 'Extracellular'
                     sPlotNames = {'Pressure','Reference Signal', 'Unemap Reference Signal', 'Phrenic Integral', 'VRMS', 'Heart Rate', };
                 case 'Optical'
-                    sPlotNames = {'Pressure','Reference Signal', 'Optical Signal', 'Phrenic Signal', 'Heart Rate', };
+                    sPlotNames = {'Pressure','Reference Signal', 'Optical Signal', 'Phrenic Signal', 'Heart Rate', 'Phrenic Integral', 'Phrenic Burst Rate', };
             end
             %set the default (first option in both cases)
             oFigure.SignalToUseForBeatDetection = 'Reference Signal';
@@ -282,6 +283,31 @@ classdef PressureAnalysis < SubFigure
         end    
         
         % -----------------------------------------------------------------
+        function oDetectBurstsMenu_Callback(oFigure, src, event)
+            % Prepare the phrenic data for burst detection by reducing the
+            % power of the ECG artifact using DWT, calculate integral and
+            % then allow user to select threshold
+            
+            %Keep filter scale 1
+            aBurstData = ComputeDWTFilteredSignalsKeepingScales(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic, ...
+                oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Processed.Data,1);
+            %calc bin integral of this
+            aBurstData = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.ComputeRectifiedBinIntegral(aBurstData, 500);
+            %open threshold window
+            %set variables for call to ThresholdFigure
+            aTimeSeries = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries;
+            aOptions = {{'oInstructionText','string','Enter a threshold value to use'} ; ...
+                {'oBottomText','visible','off'} ; ...
+                {'oBottomPopUp','visible','off'} ; ...
+                {'oEditText','string','Threshold value to use'} ; ...
+                {'bCalcThreshold','visible','off'} ; ...
+                {'oReturnButton','string','Done'}};
+            oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aBurstData, 'Values', aOptions);
+            %Add a listener so that the figure knows when a user has
+            %calculated the threshold
+            addlistener(oGetThresholdFigure,'ThresholdCalculated',@(src,event) oFigure.ThresholdPhrenicBursts(src, event));
+        end
+        
         function oDetectBeatsMenu_Callback(oFigure, src, event)
             %Detect the beats through the selected signal
             %Set the defaults
@@ -353,7 +379,7 @@ classdef PressureAnalysis < SubFigure
                         {'oReturnButton','string','Done'} ; ...
                         {'oAxes','title','Curvature'}};
             end
-            oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aData, aOptions);
+            oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aData, 'Values', aOptions);
             %Add a listener so that the figure knows when a user has
             %calculated the threshold
             addlistener(oGetThresholdFigure,'ThresholdCalculated',@(src,event) oFigure.ThresholdCurvature(src, event));
@@ -403,6 +429,11 @@ classdef PressureAnalysis < SubFigure
             end
             
             oFigure.Replot();
+        end
+        
+        function ThresholdPhrenicBursts(oFigure, src, event)
+            %Use this threshold to detect the bursts
+            oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.CalculateBurstRate(event.ArrayData);
         end
         
         function oSmoothMenu_Callback(oFigure, src, event)
@@ -839,6 +870,9 @@ classdef PressureAnalysis < SubFigure
                             transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries));
                     case 'VRMS'
                         oFigure.PlotVRMS(oPlots(i).ID);
+                    case 'Phrenic Burst Rate'
+                        oFigure.CurrentZoomLimits(2,:) = [999, 0];
+                        oFigure.PlotPhrenicBurstRate(oPlots(i).ID);
                 end
                 if i == 1
                     xLimits = get(oFigure.Plots(1).ID,'xlim');
@@ -1106,6 +1140,18 @@ classdef PressureAnalysis < SubFigure
                     
                 end
             end
+        end
+        
+        function PlotPhrenicBurstRate(oFigure, oAxesHandle)
+            aRateData = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Processed.BeatRateData;
+            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries, aRateData,'k');
+            YMin = min(oFigure.CurrentZoomLimits(2,1),min(aRateData));
+            YMax = max(oFigure.CurrentZoomLimits(2,2),max(aRateData));
+            oFigure.CurrentZoomLimits(2,:) = [YMin, YMax];
+            ylim(oAxesHandle,[YMin - 10, YMax + 10]);
+            oLabel = ylabel(oAxesHandle,['Phrenic Burst', 10, 'Rate (bpm)']);
+            set(oLabel, 'FontUnits', 'points');
+            set(oLabel,'FontSize',oFigure.FontSize);
         end
         
         function TimeAlign(oFigure, src, event)

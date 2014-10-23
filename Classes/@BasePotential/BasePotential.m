@@ -233,7 +233,7 @@ classdef BasePotential < BaseSignal
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
             end
-            [aRateData, aRates, dOutPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = aRates;
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
@@ -252,15 +252,15 @@ classdef BasePotential < BaseSignal
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oBasePotential.Electrodes(1).Processed.BeatIndexes(i,1);
             end
-            [aRateTrace, aRates, dOutPeaks] = oBasePotential.GetHeartRateData(dPeaks);
+            [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = aRates;
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
         end
         
-        function [aRateTrace, aRates, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
+        function [aRateTrace, aRates, dPeaks] = GetRateData(oBasePotential,dPeaks)
             %Take the peaks  supplied and create an array of
-            %discrete heart rates
+            %discrete rates
             
             
             %aTimes = aTimes';

@@ -130,6 +130,7 @@ classdef BaseSignal < BaseEntity
             OutData = zeros(length(aInData),1);
             dIntegrand = 0;
             iBinCount = 1;
+            aInData = detrend(aInData);
             for i = 1:length(OutData)
                 if (iBinCount * iBinSize) == i
                     %compute the integrand for the next bin
