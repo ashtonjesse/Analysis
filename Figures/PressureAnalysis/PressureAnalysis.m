@@ -46,7 +46,8 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.oSmoothPressureMenu, 'callback', @(src, event) oSmoothPressureMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateRefMenu, 'callback', @(src, event) oTruncateRefMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDetectBurstsMenu, 'callback', @(src, event) oDetectBurstsMenu_Callback(oFigure, src, event));
-            
+            set(oFigure.oGuiHandle.oUpdatePhrenicMenu, 'callback', @(src, event) oUpdatePhrenicMenu_Callback(oFigure, src, event));
+
             %get the children that belong to oExperimentPanel to set
             %properties
             oExpChildren = get(oFigure.oGuiHandle.oExperimentPanel,'children');
@@ -315,6 +316,7 @@ classdef PressureAnalysis < SubFigure
             aData = [];
             aOptions = {};
             %Work out which signal to use for beat detection
+            sThresholdType = 'Peaks';
             switch (oFigure.SignalToUseForBeatDetection)
                 case 'Reference Signal'
                     %set variables for call to ThresholdFigure
@@ -378,11 +380,20 @@ classdef PressureAnalysis < SubFigure
                         {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
                         {'oReturnButton','string','Done'} ; ...
                         {'oAxes','title','Curvature'}};
+                    sThresholdType = 'Values';
             end
-            oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aData, 'Values', aOptions);
+            oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aData, sThresholdType, aOptions);
             %Add a listener so that the figure knows when a user has
             %calculated the threshold
             addlistener(oGetThresholdFigure,'ThresholdCalculated',@(src,event) oFigure.ThresholdCurvature(src, event));
+        end
+        
+        function oUpdatePhrenicMenu_Callback(oFigure, src, event)
+            oPressure = oFigure.oParentFigure.oGuiHandle.oPressure;
+            oPressure.oPhrenic = Phrenic(oPressure.oExperiment,oPressure.RefSignal.Original,oPressure.TimeSeries.Original);
+            oPressure.oPhrenic.TimeSeries = oPressure.TimeSeries.Processed;
+            oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.RefSignal.Processed;
+            oPressure.oPhrenic.Electrodes.Status = 'Processed';
         end
         
         function ThresholdCurvature(oFigure, src, event)
@@ -644,7 +655,7 @@ classdef PressureAnalysis < SubFigure
                         for i = 1:length(sDataFileName)
                             sLongDataFileName=strcat(sDataPathName,char(sDataFileName{i}));
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = [oFigure.oParentFigure.oGuiHandle.oPressure.oRecording, ...
-                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,10)];%6
+                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6)];%10
                             sResult = regexp(char(sDataFileName{i}),'_');
                             sFileName = char(sDataFileName{i});
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name = sFileName(1:sResult(1)-1);
@@ -659,7 +670,7 @@ classdef PressureAnalysis < SubFigure
                         %get the optical data
                         sLongDataFileName=strcat(sDataPathName,char(sDataFileName));
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = ...
-                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,10);%6
+                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6);%10
                         sResult = regexp(char(sDataFileName),'_');
                         sFileName = char(sDataFileName);
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Name = sFileName(1:sResult(1)-1);
