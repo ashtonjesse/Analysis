@@ -79,7 +79,28 @@ classdef BaseSignal < BaseEntity
                     %Check if this filter should be applied to processed or
                     %original data
                     OutData = filter(oFilter,aInData);
-                   
+                case 'LowPass'
+                    %Get nyquist frequency
+                    wo = varargin{1}/2;
+                    fc = varargin{2};
+                    [z p k] = butter(3, fc/wo, 'low'); % 3rd order filter
+                    %                     [z p k] = cheby1(5,0.5, fc/wo); % 5th order filter
+                    [sos,g] = zp2sos(z,p,k); % Convert to 2nd order sections form
+                    oFilter = dfilt.df2sos(sos,g); % Create filter object
+                    %                     fvtool(oFilter);
+                    %Check if this filter should be applied to processed or
+                    %original data
+                    OutData = filter(oFilter,aInData);
+                    %reverse, repeat filter and reverse again
+                    if isrow(OutData)
+                        OutData = fliplr(OutData);
+                        OutData = filter(oFilter,OutData);
+                        OutData = fliplr(OutData);
+                    else
+                        OutData = flipud(OutData);
+                        OutData = filter(oFilter,OutData);
+                        OutData = flipud(OutData);
+                    end
                 case 'SovitzkyGolay'
                     iOrder = varargin{1};
                     iWindowSize = varargin{2};

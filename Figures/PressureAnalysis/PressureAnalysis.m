@@ -508,7 +508,8 @@ classdef PressureAnalysis < SubFigure
         function oSmoothPressureMenu_Callback(oFigure, src, event)
             %             %Apply a smoothing to the pressure data
             oPressure = oFigure.oParentFigure.oGuiHandle.oPressure;
-            oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'DWTFilterRemoveScales', 12);
+            %             oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'DWTFilterRemoveScales', 12);
+            oPressure.Processed.Data = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.Optical.SamplingRate, 0.2);
             oFigure.Replot();
         end
         
@@ -720,8 +721,14 @@ classdef PressureAnalysis < SubFigure
         function oResampleMenu_Callback(oFigure, src, event)
             %Resample the data to match the sampling frequency of Unemap
             %data
-            oFigure.oParentFigure.oGuiHandle.oPressure.ResampleOriginalData(...
-                oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.Unemap.ADConversion.SamplingRate)
+            switch (oFigure.RecordingType)
+                case 'Extracellular'
+                    oFigure.oParentFigure.oGuiHandle.oPressure.ResampleOriginalData(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.Unemap.ADConversion.SamplingRate)
+                case 'Optical'
+                    oFigure.oParentFigure.oGuiHandle.oPressure.ResampleOriginalData(...
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.Optical.SamplingRate)
+            end
             %Plot data
             oFigure.Replot();
         end
@@ -1193,17 +1200,16 @@ classdef PressureAnalysis < SubFigure
                 if ~isempty((oFigure.SelectedRecordings))
                     oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).oRecording(oFigure.SelectedRecordings(1)).TimeSeries = ...
                         oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).oRecording(oFigure.SelectedRecordings(1)).TimeSeries - dDiff;
-                    %if there is no processed data then copy the original data
-                    %over
+
+                    %if there is no processed data then copy the original
+                    %data over
                     if isempty(oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Processed)
                         oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Processed.Data = ...
                             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Original.Data;
                         oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Processed = ...
                             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Original;
-                        oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Phrenic.Electrodes.Processed.Data = ...
-                            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Phrenic.Electrodes.Original.Data;
                         oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Status = 'Processed';
-                        oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Phrenic.Electrodes.Status = 'Processed';
+                        oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).Status = 'Processed';
                     end
                 end
             end
