@@ -53,14 +53,15 @@ for j = 1:numel(aFiles)
     aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
     aPressureProcessedData = aPressureProcessedData(aSeriesPoints);
     
-%     normalise rates
-    aRates = (-1 + aRates./mean(aRates(1:4)))*100;
-%     get rate slope values
+    % %     normalise rates
+    %     aRates = (-1 + aRates./mean(aRates(1:4)))*100;
+    %     get rate slope values
     aSlope = fCalculateMovingSlope(aRates,5,3);
     aSmoothSlope = fCalculateMovingSlope(aRates,19,3);
     
     %get pressure slope values
-        aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
+    aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
+    aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %for aligning data
     %     aPhrenicTime = aPhrenicTime - aTimes(ThresholdInd);
@@ -79,18 +80,18 @@ for j = 1:numel(aFiles)
     %     hold(oAxes{2}, 'on');
     %     hold(oAxes{3}, 'on');
     
-    %HR plotting
-    oFigure = figure();
-    [AX H1 H2] = plotyy(aTimes,aRates,aTimes,aSlope);
-    dcm_obj = datacursormode(oFigure);
-    set(dcm_obj,'UpdateFcn',@NewCursorCallback);
-    hold(AX(2),'on');
-    plot(AX(2),aTimes,aSmoothSlope,'g');
-    hold(AX(2),'off');
+    %     %HR plotting
+    %     oFigure = figure();
+    %     [AX H1 H2] = plotyy(aTimes,aRates,aTimes,aSlope);
+    %     dcm_obj = datacursormode(oFigure);
+    %     set(dcm_obj,'UpdateFcn',@NewCursorCallback);
+    %     hold(AX(2),'on');
+    %     plot(AX(2),aTimes,aSmoothSlope,'g');
+    %     hold(AX(2),'off');
     
         %pressure plotting
         oFigure = figure();
-        [AX H1 H2] = plotyy(aPressureTime,aPressureProcessedData,aPressureTime,aPressureSlope);
+        [AX H1 H2] = plotyy(aPressureTime,aPressureProcessedData,aPressureTime,aPressureCurvature);
         dcm_obj = datacursormode(oFigure);
         set(dcm_obj,'UpdateFcn',@NewCursorCallback);
 end

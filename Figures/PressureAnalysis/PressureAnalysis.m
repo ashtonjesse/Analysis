@@ -380,7 +380,7 @@ classdef PressureAnalysis < SubFigure
                         {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
                         {'oReturnButton','string','Done'} ; ...
                         {'oAxes','title','Curvature'}};
-                    sThresholdType = 'Values';
+                    %                     sThresholdType = 'Values';
             end
             oGetThresholdFigure = ThresholdData(oFigure, aTimeSeries, aData, sThresholdType, aOptions);
             %Add a listener so that the figure knows when a user has
@@ -509,7 +509,7 @@ classdef PressureAnalysis < SubFigure
             %             %Apply a smoothing to the pressure data
             oPressure = oFigure.oParentFigure.oGuiHandle.oPressure;
             %             oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'DWTFilterRemoveScales', 12);
-            oPressure.Processed.Data = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.Optical.SamplingRate, 0.2);
+            oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'LowPass', oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
             oFigure.Replot();
         end
         
@@ -852,7 +852,7 @@ classdef PressureAnalysis < SubFigure
                     case 'Heart Rate'
                         switch (oFigure.SignalToUseForBeatDetection)
                             case 'Phrenic'
-                                oFigure.PlotHeartRate(oPlots(i).ID, oFigure.oParentFigur.oGuiHandle.oPressure.oPhrenic);
+                                oFigure.PlotHeartRate(oPlots(i).ID, oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic);
                             case 'Optical Signal'
                                 hold(oPlots(i).ID,'on');
                                 oFigure.CurrentZoomLimits(2,:) = [999, 0];
@@ -884,8 +884,10 @@ classdef PressureAnalysis < SubFigure
                         end
                         hold(oPlots(i).ID,'off');
                     case 'Phrenic Signal With Beats'
+                        ymax = max(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes(1).Processed.Data);
+                        ymin = min(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes(1).Processed.Data);
                         oFigure.PlotElectrode(oPlots(i).ID,oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes(1),...
-                            transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries));
+                            transpose(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries),'k', ymin, ymax);
                     case 'VRMS'
                         oFigure.PlotVRMS(oPlots(i).ID);
                     case 'Phrenic Burst Rate'
@@ -1029,6 +1031,7 @@ classdef PressureAnalysis < SubFigure
             if oElectrode.Accepted
                 %If the signal is accepted then plot it as black
                 plot(oAxesHandle,aTime,aData,sColour);
+                hold(oAxesHandle,'on');
                 ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
                 if strcmp(oElectrode.Status,'Processed')
                     %only processed data has beats
@@ -1042,6 +1045,7 @@ classdef PressureAnalysis < SubFigure
                         end
                     end
                 end
+                hold(oAxesHandle,'off');
             else
                 %The signal is not accepted so plot it as red
                 %without beats

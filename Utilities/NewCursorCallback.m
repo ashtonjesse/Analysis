@@ -6,11 +6,11 @@ function output_txt = NewCursorCallback(obj,event_obj)
 
 pos = get(event_obj,'Position');
 dataindex = get(event_obj,'DataIndex');
-output_txt = {['X: ',num2str(pos(1),4)],...
-    ['Y: ',num2str(pos(2),4)],...
+output_txt = {['X: ',num2str(pos(1),6)],...
+    ['Y: ',num2str(pos(2),6)],...
     ['DataIndex: ', num2str(dataindex)]};
 
 % If there is a Z-coordinate in the position, display it as well
 if length(pos) > 2
-    output_txt{end+1} = ['Z: ',num2str(pos(3),4)];
+    output_txt{end+1} = ['Z: ',num2str(pos(3),6)];
 end
