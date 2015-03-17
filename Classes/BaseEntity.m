@@ -19,7 +19,16 @@ classdef BaseEntity < handle
             % Save the Entity to the specified location
             oEntity.oDAL.SaveThisEntity(oEntity,sPath);
         end
-
+        
+        function bExists = IsProp(oEntity,sProperty)
+            %check to see if this class has the specified property
+            bExists = false;
+            aProperties = properties(oEntity);
+            bResult = strcmpi(sProperty, aProperties);
+            if ~isempty(find(bResult,1,'first'))
+                bExists = true;
+            end
+        end
     end
     
 end

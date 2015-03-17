@@ -11,8 +11,8 @@ close all;
 %     end
 %     %remap file indices
 %     sFiles = cell(size(sFileName));
-%     sFiles{1} = sFileName{1};
-%     sFiles{2} = sFileName{3};
+%     sFiles{1} = sFileName{3};
+%     sFiles{2} = sFileName{1};
 %     sFiles{3} = sFileName{2};
 %     sFileName = sFiles;
 %     aOAP = [];
@@ -35,11 +35,11 @@ close all;
 %     end
 %     iNumFiles = length(sFileName);
 % else
-%     sFileName = strcat(sPathName,sFileName);
 %     % % Make sure the dialogs return char objects
 %     if (isempty(sFileName) && ~ischar(sFileName))
 %         break
 %     end
+%     sFileName = strcat(sPathName,sFileName);
 %     %check the extension
 %     [pathstr, name, ext, versn] = fileparts(sFileName);
 %     if strcmpi(ext,'.csv')
@@ -50,32 +50,42 @@ close all;
 %     end
 %     iNumFiles = 1;
 % end
-% 
-% %% load the beat data
-% [sBeatFileName,sBeatPathName]=uigetfile('*.*','Select CSV file(s) that contain optical beat data','multiselect','on');
-% % %Make sure the dialogs return char objects
-% 
-% if iscell(sBeatFileName)
-%     %Make sure the dialogs return char objects
-%     if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
-%         break
-%     end
-%     sFiles = cell(size(sBeatFileName));
-%     sFiles{1} = sBeatFileName{1};
-%     sFiles{2} = sBeatFileName{2};
-%     sBeatFileName = sFiles;    
-%     %intialise arrays to hold beat information
-%     rowdim = 42;
-%     coldim = 41;
-%     aAllActivationTimes = zeros(rowdim,coldim,length(sBeatFileName));
-%     aAllRepolarisationTimes = zeros(rowdim,coldim,length(sBeatFileName));
-%     aAllAPDs = zeros(rowdim,coldim,length(sBeatFileName));
-%     %get the beat data
-%     for i = 1:length(sBeatFileName)
-%         sLongDataFileName=strcat(sBeatPathName,char(sBeatFileName{i}));
-%         [aHeaderInfo aAllActivationTimes(:,:,i) aAllRepolarisationTimes(:,:,i) aAllAPDs(:,:,i)] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
-%     end
-% end
+
+%% load the beat data
+[sBeatFileName,sBeatPathName]=uigetfile('*.*','Select CSV file(s) that contain optical beat data','multiselect','on');
+% %Make sure the dialogs return char objects
+
+if iscell(sBeatFileName)
+    %Make sure the dialogs return char objects
+    if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
+        break
+    end
+    sFiles = cell(size(sBeatFileName));
+    sFiles{1} = sBeatFileName{1};
+    sFiles{2} = sBeatFileName{2};
+    sBeatFileName = sFiles;    
+    %intialise arrays to hold beat information
+    rowdim = 42;
+    coldim = 41;
+    aAllActivationTimes = zeros(rowdim,coldim,length(sBeatFileName));
+    aAllRepolarisationTimes = zeros(rowdim,coldim,length(sBeatFileName));
+    aAllAPDs = zeros(rowdim,coldim,length(sBeatFileName));
+    %get the beat data
+    for i = 1:length(sBeatFileName)
+        sLongDataFileName=strcat(sBeatPathName,char(sBeatFileName{i}));
+        [aHeaderInfo aAllActivationTimes(:,:,i) aAllRepolarisationTimes(:,:,i) aAllAPDs(:,:,i)] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
+    end
+else
+    % % Make sure the dialogs return char objects
+    if (isempty(sBeatFileName) && ~ischar(sBeatFileName))
+        break
+    end
+    sLongDataFileName=strcat(sBeatPathName,sBeatFileName);
+    rowdim = 42;
+    coldim = 41;
+    %get the beat data
+    [aHeaderInfo aAllActivationTimes aAllRepolarisationTimes aAllAPDs] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
+end
 
 %% set up figure and panel
 oFigure = figure();
@@ -85,27 +95,27 @@ set(oFigure,'papersize',[13.5 16])
 aSubplotPanel = panel(oFigure,'no-manage-font');
 aSubplotPanel.pack(2,1);
 
-% %% compute and plot power spectra
-% %get dimension variables
-% iNumDataPoints = length(aOAP(1).Data(:,1)) - 1;
-% iNumPixels = size(aOAP(1).Locations,2);
-% %initialise variables
-% aPSDXTukey = zeros(iNumDataPoints/2+1,iNumPixels,iNumFiles);
-% aMeanPSDX = zeros(iNumDataPoints/2+1,iNumFiles);
-% oWindow = tukeywin(iNumDataPoints,0.5);
-% oMeanWindow = tukeywin(45,0.5);
-% iSamplingFreq = 779.76;
-% for i = 1:iNumFiles
-%     for j = 1:iNumPixels
-%         [aPSDXTukey(:,j,i) Fxx] = periodogram(-aOAP(i).Data(1:iNumDataPoints,j),oWindow,iNumDataPoints,iSamplingFreq);
-%     end
-%     aMean = filter(oMeanWindow,1,mean(aPSDXTukey(:,:,i),2));
-%     if i == 1
-%         aNoiseIndices = find(Fxx > 250);
-%         dPower = mean(aMean(aNoiseIndices));
-%     end
-%     aMeanPSDX(:,i) = aMean/dPower;
-% end
+%% compute and plot power spectra
+%get dimension variables
+iNumDataPoints = length(aOAP(1).Data(:,1)) - 1;
+iNumPixels = size(aOAP(1).Locations,2);
+%initialise variables
+aPSDXTukey = zeros(iNumDataPoints/2+1,iNumPixels,iNumFiles);
+aMeanPSDX = zeros(iNumDataPoints/2+1,iNumFiles);
+oWindow = tukeywin(iNumDataPoints,0.5);
+oMeanWindow = tukeywin(45,0.5);
+iSamplingFreq = 779.76;
+for i = 1:iNumFiles
+    for j = 1:iNumPixels
+        [aPSDXTukey(:,j,i) Fxx] = periodogram(-aOAP(i).Data(1:iNumDataPoints,j),oWindow,iNumDataPoints,iSamplingFreq);
+    end
+    aMean = filter(oMeanWindow,1,mean(aPSDXTukey(:,:,i),2));
+    if i == 1
+        aNoiseIndices = find(Fxx > 250);
+        dPower = mean(aMean(aNoiseIndices));
+    end
+    aMeanPSDX(:,i) = aMean/dPower;
+end
 
 %% select panel and plot AP upstroke and data
 oAxes = aSubplotPanel(1,1).select();
@@ -125,7 +135,7 @@ set(h,'Color',[0.7 0.7 0.7]);
 axis tight;
 %get data
 %plot
-aData = -aOAP(3).Data(:,aFirstIndices(aSecondIndices));
+aData = -aOAP(2).Data(:,aFirstIndices(aSecondIndices));
 aSubData = aData(aHeaderInfo.startframe:aHeaderInfo.endframe);
 aThisData = aSubData - min(aSubData);
 aThisData = aThisData / (max(aSubData) - min(aSubData));

@@ -1,27 +1,34 @@
 % Read in file and get data
-% clear all;
+clear all;
 close all;
 % % Define inputs
-sDataSource = 'unemap';
+sDataSource = 'optical';
 switch (sDataSource)
     case 'optical'
-%         sFilesPath = 'G:\PhD\Experiments\Bordeaux\Data\20131129\Baro003\0114_01_ApdMap50.csv';
-        rowdim = 100;
-        coldim = 101;
+        sFilesPath = 'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\APD30\20140821baro002Apd30_40.csv';
+        rowdim = 41;
+        coldim = 41;
         % % % get data
-%         [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(sFilesPath,rowdim,coldim);
-%         aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
-        % % % get coords of data points
+        [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(sFilesPath,rowdim,coldim,7);
+        aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
         [rowIndices colIndices] = find(aActivationTimes > 0);
-        AT = aActivationTimes(aActivationTimes > 0);
-        % % % % Apply scale
-        dRes = 0.25;
-        dInterpDim = dRes/1;
-        rowlocs = dRes .* rowIndices;
-        collocs = dRes .* colIndices;
+        aATPoints = aActivationTimes > 0;
+        AT = aActivationTimes(aATPoints);
+        AT(AT < 1) = NaN;
+        %normalise the ATs to first activation
+        [C I] = min(AT);
+        AT = single(AT - AT(I));
+        AT = double(AT);
+        dRes = 0.190;
+        x = dRes .* rowIndices;% + (rand(size(rowIndices))./10);
+        y = dRes .* colIndices;%+ (rand(size(rowIndices))./10)
+        dInterpDim = dRes/6;
+        rowlocs = x;
+        collocs = y;
         % Find the boundary of the recording points by converting to logical array
         aMask = logical(aActivationTimes + 1);
-        aMask = imresize(aMask,'scale',1,'method', 'bicubic');
+        %Resize the mask to set the resolution of the interpolated field
+        aMask = imresize(aMask,'scale',6,'method', 'bilinear');
         %Dilate this mask and subtract the original to just leave the boundary
         aMask = logical(filter2(true(3),aMask)) - aMask;
         % se = strel('square',3);
@@ -33,8 +40,9 @@ switch (sDataSource)
         rowBoundary = dInterpDim .* rowMaskIndices;
         colBoundary = dInterpDim .* colMaskIndices;
         
-        %Get the interpolation points array
+        %         %Get the interpolation points array
         [xlin ylin] = meshgrid(min(rowBoundary):dInterpDim:max(rowBoundary),min(colBoundary):dInterpDim:max(colBoundary));
+
         %Create an array from vectors of xlin elements repeated size(ylin,2) times
         %and appended end on end, then concatenated with a repmat of the ylin
         %elements
@@ -47,7 +55,7 @@ switch (sDataSource)
     case 'unemap'
         disp('loading unemap...');
         oUnemap = ...
-            GetUnemapFromMATFile(Unemap,'D:\Users\jash042\Documents\PhD\Analysis\Database\20130904\baro001\pabaro001_unemap.mat');
+            GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro002\pabaro002_unemap.mat');
         disp('done loading');
         aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
         aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
@@ -140,6 +148,9 @@ hold on;
 scatter(aXArray(aInBoundaryPoints),aYArray(aInBoundaryPoints),'r');
 hold off;
 axis equal; axis tight;
+figure(4);
+scatter(rowlocs,collocs,400,AT,'filled');
+axis equal; axis tight;colormap(distinguishable_colors(12));colorbar;
 %Only keep these mesh points
 aMeshPoints = aMeshPoints(aInBoundaryPoints,:);
 %Find the distance from each interpolation point to every data point
@@ -168,6 +179,7 @@ for i = 1:length(r2)
     %Reconstruct field
     oMapData(i).z(oMapData(i).Boundary) = oMapData(i).Interpolated;
     oMapData(i).z = reshape(oMapData(i).z,size(xlin,1),size(xlin,2));
+    oMapData(i).z = round(oMapData(i).z);
 end
 %Find the indices of the closest interpolation points to each recording
 %point
@@ -177,7 +189,12 @@ aCVPart = cell2mat({oMapData(:).CVApprox});
 aInterpPart = cell2mat({oMapData(:).Interpolated});
 aInterpPart = aInterpPart(aMinIndices,:);
 aRMS = sqrt(sum((aCVPart - aInterpPart).^2,1)/size(aCVPart,1));
-
+aDataToPlot = aRMS;
+[C iMinIndex] = min(aDataToPlot);
+figure();
+plot(r2,aDataToPlot);
+hold on
+plot(r2(iMinIndex),C,'r+');
 
 %check if there is an existing colour bar
 %get figure children
@@ -188,8 +205,8 @@ ibmax = 0;
 ibmin = 0;
 i = 1;
 %Loop through the beats to find max and min
-dMin = min(min(oMapData(1).z));
-dMax = max(max(oMapData(1).z));
+dMin = min(min(oMapData(iMinIndex).z));
+dMax = max(max(oMapData(iMinIndex).z));
 if dMin < cbarmin
     cbarmin = dMin;
     ibmin = i;
@@ -202,16 +219,16 @@ end
 figure(3); oMapAxes = axes();
 iBeat = 1;
 %Assuming the potential field has been normalised.
-[C, oContour] = contourf(oMapAxes,oMapData(1).x,oMapData(1).y,oMapData(1).z,floor(cbarmin):0.2:ceil(cbarmax));
-colormap(oMapAxes, colormap(flipud(colormap(jet))));
-
+[C, oContour] = contourf(oMapAxes,oMapData(iMinIndex).x,oMapData(iMinIndex).y,oMapData(iMinIndex).z,floor(cbarmin):1:ceil(cbarmax));
+colormap(oMapAxes, colormap(flipud(colormap(jet))));%
+colorbar();
 %if the colour bar should be visible then make
 %a new one
-oColorBar = cbarf([cbarmin cbarmax], floor(cbarmin):0.2:ceil(cbarmax));
-oTitle = get(oColorBar, 'title');
-set(oTitle,'units','normalized');
-set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
-axis(oMapAxes, 'equal');axis(oMapAxes, 'tight');
+% oColorBar = cbarf([cbarmin cbarmax], floor(cbarmin):1:ceil(cbarmax));
+% oTitle = get(oColorBar, 'title');
+% set(oTitle,'units','normalized');
+% set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+% axis(oMapAxes, 'equal');axis(oMapAxes, 'tight');
 
 % % visualize CV
 % x = rowlocs;
@@ -223,9 +240,4 @@ axis(oMapAxes, 'equal');axis(oMapAxes, 'tight');
 % figure(5); mesh(xx,yy,ATI); hold on; 
 % scatter3(x,y,AT,40,AT,'filled'); hold off; axis tight; colorbar;
 % xlabel('x'); ylabel('y'); zlabel('AT'); title('CV function');
-aDataToPlot = aRMS;
-[C iMinIndex] = min(aDataToPlot);
-figure();
-plot(r2,aDataToPlot);
-hold on
-plot(r2(iMinIndex),C,'r+');
+

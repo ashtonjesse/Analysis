@@ -27,7 +27,7 @@ classdef WaveletAnalysis < SubFigure
             oFigure = oFigure@SubFigure(oParent,'WaveletAnalysis',@WaveletAnalysis_OpeningFcn);
 
             %Initialise properties
-            oFigure.NumberOfScales = 8;
+            oFigure.NumberOfScales = 10;
             
             %Set up beat slider
             oElectrodeSlider = SlideControl(oFigure,'Select Electrode',{'SlideSelectionChange'});
@@ -55,7 +55,7 @@ classdef WaveletAnalysis < SubFigure
             %Plot the Potential and processed data of the first signal
             oFigure.CreateSubPlot();
             oFigure.PlotPotential(1);
-            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsKeepingScales(...
+            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsRemovingScales(...
                 oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.Data, 0:oFigure.NumberOfScales);
             oFigure.PlotScalogram();
             % --- Executes just before Figure is made visible.
@@ -117,7 +117,7 @@ classdef WaveletAnalysis < SubFigure
            iChannel = event.Value;
            oFigure.PlotPotential(iChannel);
             
-           oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsKeepingScales(...
+           oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsRemovingScales(...
                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data, 1:oFigure.NumberOfScales); 
            %            oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
            %                 1:oFigure.NumberOfScales,'gaus1');
@@ -182,7 +182,7 @@ classdef WaveletAnalysis < SubFigure
             set(oSignalPlot,'NextPlot','replacechildren');
             %Plot the signal data for the currently selected channels
             plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data,'k');
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
             if ~isempty(oFigure.aCurrentLimits)
                 set(oSignalPlot,'XLim',oFigure.aCurrentLimits);
             else

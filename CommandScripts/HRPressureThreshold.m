@@ -1,0 +1,19 @@
+% close all;
+% clear all;
+% % % open all the files 
+% aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro001\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro002\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro003\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro004\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro005\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro006\Pressure.mat' ...
+%     };
+% aPressureData = cell(1,numel(aFiles));
+% for i = 1:numel(aFiles)
+%     aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
+%     fprintf('Got file %s\n',char(aFiles{i}));
+% end
+aIndices = ones(numel(aFiles),1);
+aIndices(1) = 1;
+warning('off','MATLAB:polyfit:RepeatedPointsOrRescale');
+HRBaroFunction_GetPressureThreshold(aFiles,aPressureData,aIndices);

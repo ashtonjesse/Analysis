@@ -13,6 +13,10 @@ classdef Pressure < BaseSignal
         Status = 'Original';
         oRecording = [];
         RecordingType = 'Extracellular';
+        Increase = [];
+        Plateau = [];
+        Baseline = [];
+        HeartRate = [];
     end
     
     methods
@@ -53,6 +57,21 @@ classdef Pressure < BaseSignal
             oPressure.RefSignal.(oPressure.RefSignal.Status) = oPressure.RefSignal.(oPressure.RefSignal.Status)(bIndexesToKeep);
             oPressure.oPhrenic.Electrodes.(oPressure.oPhrenic.Electrodes.Status).Data = ...
                 oPressure.oPhrenic.Electrodes.(oPressure.oPhrenic.Electrodes.Status).Data(bIndexesToKeep);
+        end
+        
+        function SmoothData(oPressure, iCutoff)
+            %apply lowpass filter to data
+            oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, iCutoff);
+            oPressure.Status = 'Processed';
+            %take a second off each end to remove end effects
+            bOver = oPressure.TimeSeries.(oPressure.TimeSeries.Status) > 2;
+            bUnder = oPressure.TimeSeries.(oPressure.TimeSeries.Status) < max(oPressure.TimeSeries.(oPressure.TimeSeries.Status)) - 2;
+            bIndexesToKeep = bOver & bUnder;
+            oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.oPhrenic.Electrodes.(oPressure.oPhrenic.Electrodes.Status).Data;
+            oPressure.RefSignal.Processed = oPressure.RefSignal.(oPressure.RefSignal.Status);
+            oPressure.oPhrenic.Electrodes.Status  = 'Processed';
+            oPressure.RefSignal.Status = 'Processed';
+            oPressure.TruncateData(bIndexesToKeep);
         end
         
         function ResampleOriginalData(oPressure, dNewFrequency)
@@ -100,10 +119,34 @@ classdef Pressure < BaseSignal
                         oPressure.oRecording = [oPressure.oRecording Optical(oData.oEntity.oRecording(i))];
                     end
             end
-            %another hack to allow backwards compatibility
+            
             if ~isfield(oPressure.TimeSeries,'Status')
                 oPressure.TimeSeries.Status = oPressure.Status;
                 oPressure.RefSignal.Status = oPressure.Status;
+            end
+            
+            if oData.oEntity.IsProp('Increase')
+                oPressure.Increase = oData.oEntity.Increase;
+            else
+                oPressure.Increase = [];
+            end
+            
+            if oData.oEntity.IsProp('Plateau')
+                oPressure.Plateau = oData.oEntity.Plateau;
+            else
+                oPressure.Plateau = [];
+            end
+            
+            if oData.oEntity.IsProp('Baseline')
+                oPressure.Baseline = oData.oEntity.Baseline;
+            else
+                oPressure.Baseline = [];
+            end
+            
+            if oData.oEntity.IsProp('HeartRate')
+                oPressure.HeartRate = oData.oEntity.HeartRate;
+            else
+                oPressure.HeartRate = [];
             end
         end
         
@@ -147,6 +190,7 @@ classdef Pressure < BaseSignal
             oPressure.TimeSeries.Status = 'Original';
             oPressure.RefSignal.Status = 'Original';
         end       
+        
         
     end
 end

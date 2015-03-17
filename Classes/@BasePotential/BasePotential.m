@@ -264,11 +264,13 @@ classdef BasePotential < BaseSignal
             
             
             %aTimes = aTimes';
-            %Put peaks in pairs
+            
+            %get the time values for these peaks
             aTimes = oBasePotential.TimeSeries(dPeaks);
             if size(aTimes,1) > size(aTimes,2)
                 aTimes = aTimes';
             end
+            %Put peaks in pairs
             if size(dPeaks,1) > size(dPeaks,2)
                 dPeaks = dPeaks';
             end

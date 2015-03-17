@@ -84,7 +84,7 @@ oImage.Data
 oImage.Name
 
 Pressure: (BaseSignal)
-oPressure.oExperiment
+oPressure.oExperiment %Experiment class
 oPressure.Status
 oPressure.Original.Data
 oPressure.Processed.Data
@@ -94,9 +94,29 @@ oPressure.TimeSeries.Status
 oPressure.RefSignal.Original
 oPressure.RefSignal.Processed
 oPressure.RefSignal.Status
-oPressure.oPhrenic
-oPressure.oRecording
+oPressure.oPhrenic %Phrenic class
+oPressure.oRecording %BasePotential class
 oPressure.RecordingType
+oPressure.Increase.Range
+oPressure.Increase.BeatRates
+oPressure.Increase.BeatTimes
+oPressure.Increase.BeatPressures
+oPressure.Plateau.Range
+oPressure.Plateau.BeatRates
+oPressure.Plateau.BeatTimes
+oPressure.Plateau.BeatPressures
+oPressure.Baseline.Range
+oPressure.Baseline.BeatRates
+oPressure.Baseline.BeatTimes
+oPressure.Baseline.BeatPressures
+oPressure.HeartRate.Plateau.Range
+oPressure.HeartRate.Plateau.BeatRates
+oPressure.HeartRate.Plateau.BeatTimes
+oPressure.HeartRate.Plateau.BeatPressures
+oPressure.HeartRate.Decrease.Range
+oPressure.HeartRate.Decrease.BeatRates
+oPressure.HeartRate.Decrease.BeatTimes
+oPressure.HeartRate.Decrease.BeatPressures
 
 Optical: (BasePotential)
 oOptical.oExperiment

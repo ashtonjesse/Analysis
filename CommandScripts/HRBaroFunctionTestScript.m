@@ -1,112 +1,68 @@
 close all;
-clear all;
+% clear all;
 % open all the files 
-aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro002\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro003\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro004\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro005\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro006\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro007\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro008\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro009\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro010\Pressure.mat' ...
-    };
-aPressureData = cell(1,numel(aFiles));
-for i = 1:numel(aFiles)
-    aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
-    fprintf('Got file %s\n',char(aFiles{i}));
-end
+% aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro002\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro003\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro004\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro005\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro006\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro007\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro008\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro009\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro010\Pressure.mat' ...
+%     };
+% aPressureData = cell(1,numel(aFiles));
+% for i = 1:numel(aFiles)
+%     aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
+%     fprintf('Got file %s\n',char(aFiles{i}));
+% end
 
-% %plot all the HR traces
-% oFigure = figure();
-% aSubplotPanel = panel(oFigure,'no-manage-font');
-% aSubplotPanel.pack(3,1);
-% oAxes = cell(1,3);
-% oAxes{1} = aSubplotPanel(1,1).select();
-% oAxes{2} = aSubplotPanel(2,1).select();
-% oAxes{3} = aSubplotPanel(3,1).select();
-% oColors = distinguishable_colors(numel(aFiles));
-%initialise arrays
-aHRSlope = zeros(numel(aFiles),2);
-aPressureSlope = zeros(numel(aFiles),2);
-for j = 1:numel(aFiles)
-    sFile = char(aFiles{j});
-    oPressure = aPressureData{j};
+% HRBaroFunction_GetPressureRange(aFiles,aPressureData);
+
+% %loop through the pressure data and save the ranges
+% for i = 1:numel(aPressureData)
+%     oPressure = aPressureData{i};
+%     oPressure.Increase.Range = aRange(i,2:3);
+% end
+
+%get the pressures that correspond to the rate locations and plot the
+%relationships
+oColors = distinguishable_colors(numel(aFiles));
+oFigure = figure();
+oAxes = axes();
+for i = 1:numel(aPressureData)
+    sFile = char(aFiles{i});
+    oPressure = aPressureData{i};
     % get the name for this line
     aIndices = regexp(sFile,'\');
     sName = sFile(aIndices(end-1)+1:aIndices(end)-1);
-    aRates = oPressure.oRecording(1).Electrodes.Processed.BeatRates;
-    aTimes = oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes(2:end);
-    
-    aPhrenicRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates;
-    aPhrenicTime = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
-    aSeriesPoints = find(aPhrenicTime >= aTimes(1) & aPhrenicTime <= aTimes(end));
-    aPhrenicTime = aPhrenicTime(aSeriesPoints);
-    aPhrenicRates = aPhrenicRates(aSeriesPoints);
-    
-    % get pressure time
-    aPressureTime = oPressure.TimeSeries.Original;
-    aSeriesPoints = find(aPressureTime >= aTimes(1) & aPressureTime <= aTimes(end));
-    aPressureTime = aPressureTime(aSeriesPoints);
     %get pressure data and filter
     aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
-    aPressureProcessedData = aPressureProcessedData(aSeriesPoints);
-    
-    % %     normalise rates
-    %     aRates = (-1 + aRates./mean(aRates(1:4)))*100;
-    %     get rate slope values
-    aSlope = fCalculateMovingSlope(aRates,5,3);
-    aSmoothSlope = fCalculateMovingSlope(aRates,19,3);
-    
-    %get pressure slope values
-    aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
-    aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
-    
-    %for aligning data
-    %     aPhrenicTime = aPhrenicTime - aTimes(ThresholdInd);
-    %     aPressureTime = aPressureTime -  aTimes(ThresholdInd);
-    %     aTimes = aTimes - aTimes(ThresholdInd);
-    
-    %for plotting all data
-    %     sColor = oColors(j,:);
-    %     oHRLine = plot(oAxes{1}, aTimes , aRates, 'Color',sColor);
-    %     set(oHRLine,'DisplayName',sName, 'LineWidth', 1.5);
-    %     oPressureLine = plot(oAxes{2}, aPressureTime, aPressureProcessedData, 'Color',sColor);
-    %     set(oPressureLine,'DisplayName',sName, 'LineWidth', 1.5);
-    %     oPhrenicLine = plot(oAxes{3}, aPhrenicTime, aPhrenicRates, 'Color',sColor);
-    %     set(oPhrenicLine,'DisplayName',sName, 'LineWidth', 1.5);
-    %     hold(oAxes{1}, 'on');
-    %     hold(oAxes{2}, 'on');
-    %     hold(oAxes{3}, 'on');
-    
-    %     %HR plotting
-    %     oFigure = figure();
-    %     [AX H1 H2] = plotyy(aTimes,aRates,aTimes,aSlope);
-    %     dcm_obj = datacursormode(oFigure);
-    %     set(dcm_obj,'UpdateFcn',@NewCursorCallback);
-    %     hold(AX(2),'on');
-    %     plot(AX(2),aTimes,aSmoothSlope,'g');
-    %     hold(AX(2),'off');
-    
-        %pressure plotting
-        oFigure = figure();
-        [AX H1 H2] = plotyy(aPressureTime,aPressureProcessedData,aPressureTime,aPressureCurvature);
-        dcm_obj = datacursormode(oFigure);
-        set(dcm_obj,'UpdateFcn',@NewCursorCallback);
+    %find the rates that fall within the time range specified
+    aTimePoints = oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes(2:end) > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
+        oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes(2:end) < oPressure.TimeSeries.Original(oPressure.Increase.Range(2));
+    aBeats = oPressure.oRecording(1).Electrodes.Processed.BeatRates(aTimePoints);
+    aBeatTimes = oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes(aTimePoints);
+    %get the corresponding pressure
+    aPressures = zeros(1,numel(aBeatTimes));
+    for j = 1:numel(aBeatTimes)
+        %find the index that is closest to this time
+        [MinVal MinIndex] = min(abs(oPressure.TimeSeries.Original - aBeatTimes(j)));
+        aPressures(j) = aPressureProcessedData(MinIndex);
+    end
+    %save to struct
+    oPressure.Increase.BeatRates = aBeats;
+    oPressure.Increase.BeatTimes = aBeatTimes;
+    oPressure.Increase.BeatPressures = aPressures;
+    %     plot
+    sColor = oColors(i,:);
+    oLine = plot(oAxes, oPressure.Increase.BeatPressures, oPressure.Increase.BeatRates, 'Color',sColor);
+    set(oLine,'DisplayName',sName, 'LineWidth', 1.5);
+    hold(oAxes, 'on');
 end
-% hold(oAxes{1}, 'off');
-% legend(oAxes{1},'show');
-% hold(oAxes{2}, 'off');
-% legend(oAxes{2},'show');
-% hold(oAxes{3}, 'off');
-% legend(oAxes{3},'show');
-% %set up labels
-% set(get(oAxes{3},'xlabel'),'string','Time relative to rate change onset (s)');
-% set(get(oAxes{1},'ylabel'),'string','% atrial rate change (bpm)');
-% set(get(oAxes{2},'ylabel'),'string','Pressure (mmHg)');
-% set(get(oAxes{3},'ylabel'),'string','Phrenic burst rate (bpm)');
-% set(oAxes{2},'xlim',get(oAxes{1},'xlim'));
-% set(oAxes{2},'ylim',[60 155]);
-% set(oAxes{2},'YMinorTick','on');
-% set(oAxes{3},'xlim',get(oAxes{1},'xlim'));
+hold(oAxes,'off');
+legend(oAxes,'show');
+%set up labels
+set(get(oAxes,'xlabel'),'string','Pressure (mmHg)');
+set(get(oAxes,'ylabel'),'string','Atrial rate (bpm)');

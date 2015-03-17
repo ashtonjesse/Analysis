@@ -121,7 +121,7 @@ dW=20;
 if newCbar
   if isVertical
       dW = 50;
-      W=30;
+      W=20;%30
       ax0Pos = [ap(1) ap(2) ap(3)-dW-W  ap(4)];
       axPos  = [ap(1)+ap(3)-dW  ap(2) W ap(4)];
   else
@@ -154,7 +154,10 @@ end
 set(ax0,'units',au)
 set(ax,'units','pixel','position',axPos)
 set(ax,'units','normalized')
-set(ax,'fontsize',8);
+set(ax,'fontsize',18);
+set(ax,'fontweight','bold');
+set(ax,'linewidth',1.5);
+set(ax,'box','on');
 
 % find start and end indices of L:
 i1=find(L>mv); i1=i1(1)-1;
@@ -175,9 +178,9 @@ for i=a:b
   cor=caxcolor(L(i),clim,cmap); hold on
   if isVertical
     if isLinear
-      fill([0 1 1 0],[L(i) L(i) L(i+1) L(i+1)],cor);
+      fill([0 1 1 0],[L(i) L(i) L(i+1) L(i+1)],cor,'linewidth',1.5);
     else
-      fill([0 1 1 0],L(a)+[(Nrec-1)*step (Nrec-1)*step Nrec*step Nrec*step],cor);
+      fill([0 1 1 0],L(a)+[(Nrec-1)*step (Nrec-1)*step Nrec*step Nrec*step],cor,'linewidth',1.5);
     end
   else
     if isLinear
@@ -190,6 +193,7 @@ for i=a:b
 end
 yl=[L(a) L(b+1)];
 
+addUp = 0;
 % add triangle at top/right:
 if addUp
   cor=caxcolor(Mv,clim,cmap);
@@ -204,6 +208,7 @@ if addUp
   end
 end
 
+addBot = 0;
 % add triangle at bottom/left:
 if addBot
   ap=get(ax,'position');

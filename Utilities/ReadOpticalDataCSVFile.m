@@ -36,6 +36,7 @@ end
 %Get activation times
 for i = 1:rowdim;
     tline = fgets(fid);
+    tline = tline(1:end-3);
     [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
     aData = str2double(splitstring);
     aActivationTimes(i,:) = aData;
@@ -46,6 +47,7 @@ if ~feof(fid)
     %Get the repolarisation times
     for i = 1:rowdim;
         tline = fgets(fid);
+        tline = tline(1:end-3);
         [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
         aData = str2double(splitstring);
         aRepolarisationTimes(i,:) = aData;
@@ -55,6 +57,7 @@ if ~feof(fid)
     %Get the APDs
     for i = 1:rowdim;
         tline = fgets(fid);
+        tline = tline(1:end-3);
         [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
         aData = str2double(splitstring);
         aAPDs(i,:) = aData;

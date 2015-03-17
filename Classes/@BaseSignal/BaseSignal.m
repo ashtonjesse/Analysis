@@ -121,6 +121,10 @@ classdef BaseSignal < BaseEntity
                 case 'DWTFilterRemoveScales'
                     iScale = varargin{1};
                     OutData = oBaseSignal.ComputeDWTFilteredSignalsRemovingScales(aInData,iScale);
+                    
+                case 'DWTFilterKeepScales'
+                    iScale = varargin{1};
+                    OutData = oBaseSignal.ComputeDWTFilteredSignalsKeepingScales(aInData,iScale);
             end
         end
         

@@ -63,17 +63,36 @@ classdef Phrenic < BasePotential
             % a phrenic burst. This function loops through these find the
             % start and end points of each block and then calculating the
             % rate of bursts based on the central point of each block
-            aEdges = find(diff(aIndices) > 1);
+            aEdges = diff(aIndices) > 1;
             %add a zero to the beginning
-            aEdges = [0 aEdges'];
-            aFirstIndex = aEdges + 1;
-            oPhrenic.Electrodes.Processed.BeatIndexes = aIndices([aFirstIndex(1:end-1) ; aEdges(2:end)]');
-            dLocs = oPhrenic.Electrodes.Processed.BeatIndexes(:,2) - oPhrenic.Electrodes.Processed.BeatIndexes(:,1);
-            dLocs = floor(dLocs / 2) + oPhrenic.Electrodes.Processed.BeatIndexes(:,1);
+            aFirstIndices = aIndices([false ; aEdges]);
+            aFirstIndices = aFirstIndices(1:end-1);
+            aSecondIndices = aIndices(aEdges);
+            aSecondIndices = aSecondIndices(2:end);
+            aBurstIndices = (aSecondIndices - aFirstIndices) > 2000;
+            oPhrenic.Electrodes.Processed.BurstIndexes = [aFirstIndices(aBurstIndices), aSecondIndices(aBurstIndices)];
+            dLocs = oPhrenic.Electrodes.Processed.BurstIndexes(:,2) - oPhrenic.Electrodes.Processed.BurstIndexes(:,1);
+            dLocs = floor(dLocs / 2) + oPhrenic.Electrodes.Processed.BurstIndexes(:,1);
             [aRateData, aRates, dPeaks] = GetRateData(oPhrenic,dLocs);
+            oPhrenic.Electrodes.Processed.BurstRates = aRates;
+            oPhrenic.Electrodes.Processed.BurstRateData = aRateData;
+            oPhrenic.Electrodes.Processed.BurstRateTimes = oPhrenic.TimeSeries(dLocs);
+            oPhrenic.Electrodes.Processed.BurstDurations = oPhrenic.TimeSeries(oPhrenic.Electrodes.Processed.BurstIndexes(:,2)) - ...
+                oPhrenic.TimeSeries(oPhrenic.Electrodes.Processed.BurstIndexes(:,1));
+        end
+        
+        function  [aRateData, dPeaks] = GetHeartRateData(oPhrenic,dPeaks)
+            %this function calculates heart rate data based on a set of
+            %peak locations
+            
+            %check that there are not any peaks that are too close together
+            %to be real
+            dPeaks = dPeaks(:,diff(dPeaks) > 1000);
+            %make the call to getratedata
+            [aRateData aRates dOutPeaks] = oPhrenic.GetRateData(dPeaks);
             oPhrenic.Electrodes.Processed.BeatRates = aRates;
             oPhrenic.Electrodes.Processed.BeatRateData = aRateData;
-            oPhrenic.Electrodes.Processed.BeatRateTimes = oPhrenic.TimeSeries(dLocs);
+            oPhrenic.Electrodes.Processed.BeatRateTimes = oPhrenic.TimeSeries(dPeaks);
         end
     end
 end

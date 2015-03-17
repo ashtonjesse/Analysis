@@ -1,4 +1,4 @@
-function HRBaroFunction_GetPressureRange(aFiles,aPressureData,aRecordingIndex)
+function HRChemoFunction_GetPressureRange(aFiles,aPressureData,aRecordingIndex)
 %this function plots a bunch of pressure plots and allows the user to
 %select a range for each and save this to a variable called aRange
 %initialise arrays
@@ -13,24 +13,25 @@ for j = 1:numel(aFiles)
     % get pressure time
     
     %get pressure data and filter
-    if numel(oPressure.TimeSeries.Original) == numel(oPressure.Original.Data)
-        aPressureTime = oPressure.TimeSeries.Original;
-        aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
+    if isfield(oPressure.TimeSeries,'Processed')
+        aPressureTime = oPressure.TimeSeries.Processed;
     else
         aPressureTime = oPressure.TimeSeries.Original;
-        aPressureProcessedData = oPressure.Processed.Data;
     end
+    aPressureProcessedData = oPressure.Processed.Data;
     
     %get pressure slope values
     aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %get rate data
-    aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+    aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates';
+    oFilter = bartlett(5);
+    aRates = filter(oFilter,sum(oFilter),aRates);
     aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
     
     %get rate slope values
-    [aRateCurvature xbar] = EstimateDerivative(aRates',aTimes,2,500,5);
+    [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,1,500,5);
     
     % plotting
     oFigure = figure();
