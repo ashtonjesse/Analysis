@@ -85,7 +85,7 @@ classdef PressureAnalysis < SubFigure
             %set up the checkboxes and plots
             switch (oFigure.RecordingType)
                 case 'Extracellular'
-                    sPlotNames = {'Pressure','Reference Signal', 'Unemap Reference Signal', 'Phrenic Integral', 'VRMS', 'Heart Rate', };
+                    sPlotNames = {'Pressure','Reference Signal', 'Unemap Reference Signal', 'Phrenic Signal', 'Phrenic Integral', 'VRMS', 'Heart Rate', 'Phrenic Burst Rate', };
                 case 'Optical'
                     sPlotNames = {'Pressure','Reference Signal', 'Optical Signal', 'Phrenic Signal', 'Heart Rate', 'Phrenic Integral', 'Phrenic Burst Rate', };
             end
@@ -121,9 +121,10 @@ classdef PressureAnalysis < SubFigure
                 oXLim = get(oFigure.Plots(1).ID,'XLim');
                 oYLim = get(oFigure.Plots(1).ID,'YLim');
                 oFigure.CurrentZoomLimits = [oXLim ; oYLim];
-                
-                for i = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
-                    set(oRecChildren(i), 'visible', 'on', 'string', strcat(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name,'_',oFigure.Colours(i)));
+                if strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical')
+                    for i = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
+                        set(oRecChildren(i), 'visible', 'on', 'string', strcat(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name,'_',oFigure.Colours(i)));
+                    end
                 end
             end
             dcm_obj = datacursormode(oFigure.oGuiHandle.(oFigure.sFigureTag));
@@ -302,7 +303,7 @@ classdef PressureAnalysis < SubFigure
             
             %Keep filter scale 1
             aBurstData = ComputeDWTFilteredSignalsKeepingScales(oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic, ...
-                oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Processed.Data,1);
+                oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Processed.Data,2);
             %calc bin integral of this
             aBurstData = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.ComputeRectifiedBinIntegral(aBurstData, 200);
             %open threshold window
@@ -414,9 +415,11 @@ classdef PressureAnalysis < SubFigure
             %this puts the refsignal data into the phrenic signal field
             oPressure = oFigure.oParentFigure.oGuiHandle.oPressure;
             oPressure.oPhrenic = Phrenic(oPressure.oExperiment,oPressure.RefSignal.Original,oPressure.TimeSeries.Original);
-            oPressure.oPhrenic.TimeSeries = oPressure.TimeSeries.Processed;
-            oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.RefSignal.Processed;
-            oPressure.oPhrenic.Electrodes.Status = 'Processed';
+            if strcmp(oPressure.TimeSeries.Status,'Processed')
+                oPressure.oPhrenic.TimeSeries = oPressure.TimeSeries.Processed;
+                oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.RefSignal.Processed;
+                oPressure.oPhrenic.Electrodes.Status = 'Processed';
+            end
         end
         
         function ThresholdCurvature(oFigure, src, event)
@@ -483,6 +486,7 @@ classdef PressureAnalysis < SubFigure
                         oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.Processed = FilterData(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording, ...
                             oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.(oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.Status), ...
                             aInOptions.Inputs{1}, aInOptions.Inputs{2}, aInOptions.Inputs{3});
+
                         %Status should now be processed
                         oFigure.oParentFigure.oGuiHandle.oPressure.RefSignal.Status = 'Processed';
                     case 'Unemap Reference Signal'
@@ -559,19 +563,19 @@ classdef PressureAnalysis < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dMontageWidth dMontageHeight]);
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dMontageWidth dMontageHeight]);
-            %             %put on a title
-            %             aPathFolders = regexp(sPathName,'\\','split');
-            %             sFigureTitle = char(aPathFolders{end-1});
-            %             oChildren = get(oFigure.Plots(1).ID, 'children');
-            %             oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'FigureTitle');
-            %             if oHandle > 0
-            %                 set(oHandle, 'position', [0 -0.18]); %-0.25
-            %             else
-            %                 oFigureTitle = text('string', sFigureTitle, 'parent', oFigure.Plots(1).ID, 'tag', 'FigureTitle');
-            %                 set(oFigureTitle, 'units', 'normalized');
-            %                 set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
-            %                 set(oFigureTitle, 'position', [0 -0.18]); %-0.25
-            %             end
+            %put on a title
+            aPathFolders = regexp(sPathName,'\\','split');
+            sFigureTitle = char(aPathFolders{end-1});
+            oChildren = get(oFigure.Plots(1).ID, 'children');
+            oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'FigureTitle');
+            if oHandle > 0
+                set(oHandle, 'position', [0 -0.18]); %-0.25
+            else
+                oFigureTitle = text('string', sFigureTitle, 'parent', oFigure.Plots(1).ID, 'tag', 'FigureTitle');
+                set(oFigureTitle, 'units', 'normalized');
+                set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
+                set(oFigureTitle, 'position', [0 -0.18]); %-0.25
+            end
             oFigure.PrintFigureToFile(sLongDataFileName);
             %             Trim the white space
             sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.bmp', sLongDataFileName)}, ...
@@ -881,8 +885,7 @@ classdef PressureAnalysis < SubFigure
             
             %loop through the plots currently visible
             for i = 1:length(oPlots)
-                set(oPlots(i).ID,'fontsize',oFigure.FontSize);
-                set(oPlots(i).ID,'fontweight','bold');
+
                 switch (oPlots(i).Name)
                     case 'Pressure'
                         oFigure.PlotPressure(oPlots(i).ID);
@@ -895,7 +898,7 @@ classdef PressureAnalysis < SubFigure
                             transpose(oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries));
                     case 'Heart Rate'
                         switch (oFigure.SignalToUseForBeatDetection)
-                            case 'Phrenic'
+                            case {'Phrenic', 'Reference Signal'}
                                 oFigure.CurrentZoomLimits(2,:) = [999, 0];
                                 oFigure.PlotHeartRate(oPlots(i).ID, oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic);
                             case 'Optical Signal'
@@ -950,7 +953,10 @@ classdef PressureAnalysis < SubFigure
                     xlim(oPlots(i).ID,xLimits);
                 end
                 set(oPlots(i).ID,'linewidth',1.5);
-                
+                set(oPlots(i).ID, 'FontUnits', 'points');
+                set(oPlots(i).ID,'fontsize',oFigure.FontSize);
+                set(oPlots(i).ID,'fontweight','bold');
+                set(oPlots(i).ID,'box','off');
             end
         end
         
@@ -966,11 +972,11 @@ classdef PressureAnalysis < SubFigure
                 ymax = max(ymax, max(aData));
                 ymin = min(ymin, min(aData));
             end
+            ymax = 30;
+            ymin = -30;
             hold(oAxesHandle, 'off');
             ylim(oAxesHandle,[ymin-abs(ymin/5) ymax+ymax/5]);
             oLabel = ylabel(oAxesHandle,'Phrenic Signal (\muV)');
-            set(oLabel, 'FontUnits', 'points');
-            set(oLabel,'FontSize',oFigure.FontSize);
         end
         
         function PlotIntegral(oFigure, oAxesHandle)
@@ -978,9 +984,13 @@ classdef PressureAnalysis < SubFigure
             % if already calculated then plot what is there
             
             for j = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure)
-                if ~isfield(oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.Electrodes.Processed,'Integral')
-                    oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.ComputeIntegral(50);
-                end
+                %                 if
+                %                 ~isfield(oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.Electrodes.Processed,'Integral')
+                aBurstData = ComputeDWTFilteredSignalsKeepingScales(oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic, ...
+                    oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.Electrodes.Processed.Data./ ...
+                     (oFigure.oParentFigure.oGuiHandle.oPressure(j).oExperiment.Phrenic.Amp.OutGain*1000)*10^6,1);
+                oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.ComputeIntegral(200,aBurstData);
+                %                 end
             end
             
             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
@@ -993,7 +1003,7 @@ classdef PressureAnalysis < SubFigure
                 ymin = min(ymin,min(oFigure.oParentFigure.oGuiHandle.oPressure(i).oPhrenic.Electrodes.Processed.Integral));
             end
             set(oAxesHandle,'xticklabel',[]);
-            oLabel = ylabel(oAxesHandle,['Phrenic', 10, 'Integral (Vs)']);
+            oLabel = ylabel(oAxesHandle,['Phrenic', 10, 'Integral (\muVs)']);
             set(oLabel, 'FontUnits', 'points');
             set(oLabel,'FontSize',oFigure.FontSize);
             hold(oAxesHandle, 'off');
@@ -1173,14 +1183,17 @@ classdef PressureAnalysis < SubFigure
         function PlotHeartRate(oFigure, oAxesHandle, oRecording)
             %get electrode index
             if strcmp(oFigure.RecordingType, 'Extracellular')
+                if ~isfield(oRecording.Electrodes.Processed,'BeatRates')
                     switch (oFigure.SignalToUseForBeatDetection)
                         case {'Unemap Reference Signal','Reference Signal'}
-                            [aRateData aRates dPeaks] = oRecording.GetRateData(oFigure.Peaks(2,:));
-                            hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
+                            [aRateData dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
                         case 'VRMS'
                             [aRateData aRates dPeaks] = oRecording.CalculateSinusRateFromRMS();
-                            hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
                     end
+                else
+                    aRateData = oRecording.Electrodes.Processed.BeatRateData;
+                end
+                hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
             elseif strcmp(oFigure.RecordingType,'Optical')
                 switch (oFigure.SignalToUseForBeatDetection)
                     case 'Optical Signal'
@@ -1189,16 +1202,20 @@ classdef PressureAnalysis < SubFigure
                     case 'Phrenic'
                         [aRateData dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
                         hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
+                    case 'Reference Signal'
+                        [aRateData aRates dPeaks] = oRecording.GetRateData(oFigure.Peaks(2,:));
+                        hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
                 end
             end
             set(hline,'linewidth',1.5);
             YMin = min(oFigure.CurrentZoomLimits(2,1),min(aRateData));
             YMax = max(oFigure.CurrentZoomLimits(2,2),max(aRateData));
             oFigure.CurrentZoomLimits(2,:) = [YMin, YMax];
-            ylim(oAxesHandle,[YMin - 10, YMax + 10]);
+            ylim(oAxesHandle,[YMin - 2, YMax + 2]);
             oLabel = ylabel(oAxesHandle,['Sinus', 10, 'Rate (bpm)']);
             set(oLabel, 'FontUnits', 'points');
             set(oLabel,'FontSize',oFigure.FontSize);
+            set(oLabel,'FontWeight','bold');
             
             %             if strcmp(oFigure.RecordingType, 'Extracellular')
             %                 for k = 4:4:length(dPeaks)
@@ -1223,7 +1240,7 @@ classdef PressureAnalysis < SubFigure
         
         function PlotPhrenicBurstRate(oFigure, oAxesHandle)
             aRateData = oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.Electrodes.Processed.BurstRateData;
-            plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries, aRateData,'k');
+            hline = plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.TimeSeries, aRateData,'k');
             YMin = min(oFigure.CurrentZoomLimits(2,1),min(aRateData));
             YMax = max(oFigure.CurrentZoomLimits(2,2),max(aRateData));
             oFigure.CurrentZoomLimits(2,:) = [YMin, YMax];
@@ -1231,6 +1248,8 @@ classdef PressureAnalysis < SubFigure
             oLabel = ylabel(oAxesHandle,['Phrenic Burst', 10, 'Rate (bpm)']);
             set(oLabel, 'FontUnits', 'points');
             set(oLabel,'FontSize',oFigure.FontSize);
+            set(oLabel,'FontWeight','bold');
+            set(hline,'linewidth',1.5);
         end
         
         function TimeAlign(oFigure, src, event)

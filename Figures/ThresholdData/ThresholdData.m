@@ -69,6 +69,8 @@ classdef ThresholdData < SelectData
                     oFigure.Threshold = oFigure.GetEditInputDouble('oEdit');
                     %get indexes of values above threshold
                     aIndices = find(oFigure.YDataInput > oFigure.Threshold);
+                    aIndices = [1 ; aIndices];
+                    aIndices = [aIndices ; numel(oFigure.YDataInput)];
                     notify(oFigure,'ThresholdCalculated',DataPassingEvent(aIndices,oFigure.Threshold));
             end
             oFigure.Close_fcn;

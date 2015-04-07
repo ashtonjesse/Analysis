@@ -53,8 +53,21 @@ classdef Phrenic < BasePotential
             oPhrenic.Electrodes.Status = 'Processed';
         end
         
-        function ComputeIntegral(oPhrenic, iBinSize)
-            oPhrenic.Electrodes.Processed.Integral = oPhrenic.ComputeRectifiedBinIntegral(oPhrenic.Electrodes.(oPhrenic.Electrodes.Status).Data, iBinSize);
+        function ComputeIntegral(oPhrenic, varargin)
+            if nargin > 1
+                %data has been supplied so use it
+                oPhrenic.Electrodes.Processed.Integral = oPhrenic.ComputeRectifiedBinIntegral(varargin{2}, varargin{1});
+            elseif nargin == 1
+                oPhrenic.Electrodes.Processed.Integral = oPhrenic.ComputeRectifiedBinIntegral(oPhrenic.Electrodes.(oPhrenic.Electrodes.Status).Data, varargin{1});
+            end
+            if isfield(oPhrenic.Electrodes.Processed,'BurstIndexes')
+                %save the magnitude of each burst
+                oPhrenic.Electrodes.Processed.BurstMagnitude = zeros(size(oPhrenic.Electrodes.Processed.BurstIndexes,1),1);
+                for i = 1:size(oPhrenic.Electrodes.Processed.BurstIndexes,1)
+                    oPhrenic.Electrodes.Processed.BurstMagnitude(i) = max(oPhrenic.Electrodes.Processed.Integral(oPhrenic.Electrodes.Processed.BurstIndexes(i,1): ...
+                        oPhrenic.Electrodes.Processed.BurstIndexes(i,2)));
+                end
+            end
         end
         
         function CalculateBurstRate(oPhrenic, aIndices)
