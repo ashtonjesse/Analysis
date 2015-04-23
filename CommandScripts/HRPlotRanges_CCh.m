@@ -1,14 +1,18 @@
 % close all;
-% clear all;
+clear all;
 % % % open all the files 
-% aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh003\Pressure.mat', ...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh004\Pressure.mat' ...
-%     };
-% aPressureData = cell(1,numel(aFiles));
-% for i = 1:numel(aFiles)
-%     aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
-%     fprintf('Got file %s\n',char(aFiles{i}));
-% end
+aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh001\Pressure.mat', ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh002\Pressure.mat', ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh004\Pressure.mat', ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh005\Pressure.mat', ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh006\Pressure.mat', ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh007\Pressure.mat' ...
+    };
+aPressureData = cell(1,numel(aFiles));
+for i = 1:numel(aFiles)
+    aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
+    fprintf('Got file %s\n',char(aFiles{i}));
+end
 
 % %plot all the HR traces
 for j = 1:numel(aFiles)

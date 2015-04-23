@@ -12,22 +12,28 @@ for j = 1:numel(aFiles)
         
     % get pressure time
     
-    %get pressure data and filter
-    if numel(oPressure.TimeSeries.Original) == numel(oPressure.Original.Data)
-        aPressureTime = oPressure.TimeSeries.Original;
-        aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
-    else
-        aPressureTime = oPressure.TimeSeries.Original;
-        aPressureProcessedData = oPressure.Processed.Data;
-    end
-    
+    %     %get pressure data and filter
+    %     if numel(oPressure.TimeSeries.Original) == numel(oPressure.Original.Data)
+    %         aPressureTime = oPressure.TimeSeries.Original;
+    %         aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
+    %     else
+    %         aPressureTime = oPressure.TimeSeries.Original;
+    %         aPressureProcessedData = oPressure.Processed.Data;
+    %     end
+    aPressureProcessedData = oPressure.Processed.Data;
+    aPressureTime = oPressure.TimeSeries.Original;
     %get pressure slope values
     aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %get rate data
-    aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
-    aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+    if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes) || ~isfield(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed,'BeatRates')
+        aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates;
+        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+    else
+        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+    end
     
     %get rate slope values
     [aRateCurvature xbar] = EstimateDerivative(aRates',aTimes,2,500,5);

@@ -1,8 +1,9 @@
-function oMapData = fHardy(sFilesPath,rowdim,coldim,dRes,iScaleFactor,r2)
+function oMapData = fHardy(aActivationTimes,dRes,iScaleFactor,r2)
 
 %get activation data
-[aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(sFilesPath,rowdim,coldim,7);
-aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
+% [aHeaderInfo aActivationTimes aRepolarisationTimes aAPDs] = ReadOpticalDataCSVFile(sFilesPath,rowdim,coldim,7);
+% aActivationTimes = rot90(aActivationTimes(:,1:end-1),-1);
+aActivationTimes = rot90(aActivationTimes,-1);
 [rowIndices colIndices] = find(aActivationTimes > 0);
 aATPoints = aActivationTimes > 0;
 AT = aActivationTimes(aATPoints);

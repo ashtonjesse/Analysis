@@ -100,7 +100,7 @@ classdef Phrenic < BasePotential
             
             %check that there are not any peaks that are too close together
             %to be real
-            dPeaks = dPeaks(:,diff(dPeaks) > 1000);
+            dPeaks = dPeaks(:,diff(dPeaks) > 500);
             %make the call to getratedata
             [aRateData aRates dOutPeaks] = oPhrenic.GetRateData(dPeaks);
             oPhrenic.Electrodes.Processed.BeatRates = aRates;

@@ -25,10 +25,19 @@ for j = 1:numel(aFiles)
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %get rate data
-    aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates';
+    if isempty(oPressure.oRecording.Electrodes)
+        %use phrenic data
+        aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
+        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+    else
+        %use optical data
+        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates';
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+    end
+    
     oFilter = bartlett(5);
     aRates = filter(oFilter,sum(oFilter),aRates);
-    aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+    
     
     %get rate slope values
     [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,1,500,5);

@@ -64,8 +64,8 @@ classdef Pressure < BaseSignal
             oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, iCutoff);
             oPressure.Status = 'Processed';
             %take a second off each end to remove end effects
-            bOver = oPressure.TimeSeries.(oPressure.TimeSeries.Status) > 2;
-            bUnder = oPressure.TimeSeries.(oPressure.TimeSeries.Status) < max(oPressure.TimeSeries.(oPressure.TimeSeries.Status)) - 2;
+            bOver = oPressure.TimeSeries.(oPressure.TimeSeries.Status) > 1;
+            bUnder = oPressure.TimeSeries.(oPressure.TimeSeries.Status) < max(oPressure.TimeSeries.(oPressure.TimeSeries.Status)) - 1;
             bIndexesToKeep = bOver & bUnder;
             oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.oPhrenic.Electrodes.(oPressure.oPhrenic.Electrodes.Status).Data;
             oPressure.RefSignal.Processed = oPressure.RefSignal.(oPressure.RefSignal.Status);
@@ -179,6 +179,7 @@ classdef Pressure < BaseSignal
                 oPressure.TimeSeries.Original = [oPressure.TimeSeries.Original ; oPressure.TimeSeries.Original(end) + aFileContents(:,1)];
                 oPressure.RefSignal.Original = [oPressure.RefSignal.Original ; aFileContents(:,oPressure.oExperiment.PerfusionPressure.RefSignalColumn)];
                 oPressure.oPhrenic.Electrodes.Potential.Data = [oPressure.oPhrenic.Electrodes.Potential.Data ; aFileContents(:,oPressure.oExperiment.Phrenic.StorageColumn)];
+                oPressure.oPhrenic.TimeSeries = oPressure.TimeSeries.Original;
             else
                 %load it for the first time
                 oPressure.Original.Data = aFileContents(:,oPressure.oExperiment.PerfusionPressure.StorageColumn);

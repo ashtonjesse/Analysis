@@ -11,15 +11,25 @@ for j = 1:numel(aFiles)
     aIndices = regexp(sFile,'\');
     sName = sFile(aIndices(end-1)+1:aIndices(end)-1);
     %get rate data
-    aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates';
+    if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes) || ~isfield(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed,'BeatRates')
+        aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
+        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+    else
+        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates';
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+    end
     %     find the rates that fall within the time range specified by the
     %     start of the increase section of the challenge to the start of
     %     the heart rate plateau section
-    aTimePoints = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end) > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-        oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end) < oPressure.TimeSeries.Original(oPressure.Plateau.Range(1));
-    aBeatRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates(aTimePoints);
-    aTimePoints = [false aTimePoints];
-    aBeatTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(aTimePoints);
+    aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
+        aTimes < oPressure.TimeSeries.Original(oPressure.Plateau.Range(1));
+    aBeatRates = aRates(aTimePoints);
+    if size(aTimePoints,1) > size(aTimePoints,2)
+        aTimePoints = [false aTimePoints'];
+    else
+        aTimePoints = [false aTimePoints];
+    end
+    aBeatTimes = aTimes(aTimePoints);
     
     %get pressure data and filter
     if numel(oPressure.TimeSeries.Original) == numel(oPressure.Original.Data)
@@ -29,7 +39,7 @@ for j = 1:numel(aFiles)
     end
     
     %     get the corresponding pressures
-    aPressures = zeros(1,numel(aBeatTimes));
+    aPressures = zeros(size(aBeatTimes));
     for i = 1:numel(aBeatTimes)
         %         find the index that is closest to this time
         [MinVal MinIndex] = min(abs(oPressure.TimeSeries.Original - aBeatTimes(i)));
