@@ -103,7 +103,7 @@ aBurstData = ComputeDWTFilteredSignalsKeepingScales(oFirstPressure.oPhrenic, ...
     oFirstPressure.oPhrenic.Electrodes.Processed.Data./ ...
     (oFirstPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6,2);
 oFirstPressure.oPhrenic.ComputeIntegral(200,aBurstData);
-aData = oFirstPressure.oPhrenic.Electrodes.Processed.Integral;
+aData = oFirstPressure.oPhrenic.Electrodes.Processed.Integral/(200 * (1/oFirstPressure.oExperiment.PerfusionPressure.SamplingRate) * 1000);
 aTime = oFirstPressure.TimeSeries.(oFirstPressure.TimeSeries.Status);
 plot(oAxes,aTime, aData, 'k');
 %set axes colour
@@ -113,9 +113,9 @@ set(oAxes,'xticklabel',[]);
 set(oAxes,'yminortick','on');
 %set limits
 xlim(oAxes,[5,36]);
-ylim(oAxes,[0 1.5]);
+ylim(oAxes,[0 15]);
 %set labels
-oYlabel = ylabel(oAxes,['\intPND', 10, '(\muVs)']);
+oYlabel = ylabel(oAxes,['\intPND', 10, '(\muVms)']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
 oXLim = get(oAxes,'xlim');
@@ -228,7 +228,7 @@ aBurstData = ComputeDWTFilteredSignalsKeepingScales(oSecondPressure.oPhrenic, ..
     oSecondPressure.oPhrenic.Electrodes.Processed.Data./ ...
     (oSecondPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6,2);
 oSecondPressure.oPhrenic.ComputeIntegral(200,aBurstData);
-aData = oSecondPressure.oPhrenic.Electrodes.Processed.Integral;
+aData = oSecondPressure.oPhrenic.Electrodes.Processed.Integral/(200 * (1/oFirstPressure.oExperiment.PerfusionPressure.SamplingRate) * 1000);
 aTime = oSecondPressure.TimeSeries.(oSecondPressure.TimeSeries.Status);
 plot(oAxes,aTime, aData, 'k');
 %set axes colour
@@ -240,7 +240,7 @@ set(oAxes,'ytick',[]);
 set(oAxes,'yticklabel',[]);
 %set limits
 xlim(oAxes,[0,31]);
-ylim(oAxes,[0 1.5]);
+ylim(oAxes,[0 15]);
 
 
 %plot phrenic burst rate
@@ -284,5 +284,5 @@ oXLim = get(oAxes,'xlim');
 
 %% print figure
 % print(oFigure,'-dbmp','-r600',sSavePath)
-% print(oFigure,'-dps','-r600',sSavePath)
+print(oFigure,'-dps','-r600',sSavePath)
 

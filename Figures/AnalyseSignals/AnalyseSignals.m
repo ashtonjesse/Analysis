@@ -554,6 +554,7 @@ classdef AnalyseSignals < SubFigure
              aControlData{5} = {'CurrentElectrode','SelectedElectrodes','AllElectrodes'};
              oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique, beat selection and electrode selection for the new event.',aControlData);
              addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
+
          end
          
          function oMaxSpatialMenu_Callback(oFigure, src, event)

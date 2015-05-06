@@ -27,7 +27,7 @@ classdef WaveletAnalysis < SubFigure
             oFigure = oFigure@SubFigure(oParent,'WaveletAnalysis',@WaveletAnalysis_OpeningFcn);
 
             %Initialise properties
-            oFigure.NumberOfScales = 10;
+            oFigure.NumberOfScales = 8;
             
             %Set up beat slider
             oElectrodeSlider = SlideControl(oFigure,'Select Electrode',{'SlideSelectionChange'});
@@ -55,9 +55,10 @@ classdef WaveletAnalysis < SubFigure
             %Plot the Potential and processed data of the first signal
             oFigure.CreateSubPlot();
             oFigure.PlotPotential(1);
+            %ComputeDWTFilteredSignalsRemovingScales
             oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsRemovingScales(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.Data, 0:oFigure.NumberOfScales);
-            oFigure.PlotScalogram();
+                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Potential.Data, 1:oFigure.NumberOfScales);
+            oFigure.PlotScalogram(1);
             % --- Executes just before Figure is made visible.
             function WaveletAnalysis_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -118,11 +119,11 @@ classdef WaveletAnalysis < SubFigure
            oFigure.PlotPotential(iChannel);
             
            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsRemovingScales(...
-               oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Data, 1:oFigure.NumberOfScales); 
+               oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data, 1:oFigure.NumberOfScales); 
            %            oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
            %                 1:oFigure.NumberOfScales,'gaus1');
            
-            oFigure.PlotScalogram();
+            oFigure.PlotScalogram(iChannel);
         end
         
         %% Menu Callbacks
@@ -191,7 +192,7 @@ classdef WaveletAnalysis < SubFigure
 
         end
         
-        function PlotScalogram(oFigure)
+        function PlotScalogram(oFigure,iChannel)
             %Get the array of handles to the plot objects
             aPlotObjects = get(oFigure.oGuiHandle.oAxesPanel,'children');
             %Plot the scales
@@ -201,17 +202,17 @@ classdef WaveletAnalysis < SubFigure
                 set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oAxes);
                 set(oAxes,'NextPlot','replacechildren');
                 if ismember(i,[3 4])
-                    [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),3*std(oFigure.FilteredSignals(:,i)));
-                    plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
-                    hold(oAxes,'on');
+                    %                     [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),3*std(oFigure.FilteredSignals(:,i)));
+                    %                     plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
+                    %                     hold(oAxes,'on');
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
-                    hold(oAxes,'off');
+                    %                     hold(oAxes,'off');
                 elseif i == 2
-                    [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),2.5*std(oFigure.FilteredSignals(:,i)));
-                    plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
-                    hold(oAxes,'on');
+                    %                     [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),2.5*std(oFigure.FilteredSignals(:,i)));
+                    %                     plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
+                    %                     hold(oAxes,'on');
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
-                    hold(oAxes,'off');
+                    %                     hold(oAxes,'off');
                 else
                     plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
                 end

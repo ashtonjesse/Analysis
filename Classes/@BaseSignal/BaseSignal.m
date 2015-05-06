@@ -163,7 +163,7 @@ classdef BaseSignal < BaseEntity
                     iEnd = iStart + iBinSize;
                     %rectification through taking absolute value
                     dSum = sum(abs(aInData(iStart:iEnd)));
-                    dIntegrand = dSum / iBinSize;
+                    dIntegrand = dSum;
                     iBinCount = iBinCount + 1;
                 end
                 OutData(i) = dIntegrand;
