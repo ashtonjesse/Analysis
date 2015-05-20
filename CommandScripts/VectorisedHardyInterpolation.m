@@ -1,8 +1,8 @@
 % Read in file and get data
-clear all;
+% clear all;
 close all;
 % % Define inputs
-sDataSource = 'optical';
+sDataSource = 'unemap';
 switch (sDataSource)
     case 'optical'
         sFilesPath = 'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\APD30\20140821baro002Apd30_40.csv';
@@ -53,10 +53,10 @@ switch (sDataSource)
         %area
         aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),rowBoundary,colBoundary);
     case 'unemap'
-        disp('loading unemap...');
-        oUnemap = ...
-            GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro002\pabaro002_unemap.mat');
-        disp('done loading');
+%         disp('loading unemap...');
+%         oUnemap = ...
+%             GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro002\pabaro002_unemap.mat');
+%         disp('done loading');
         aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
         aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
         
@@ -64,9 +64,11 @@ switch (sDataSource)
         aCoords = cell2mat({aElectrodes(:).Coords})';
         rowlocs = aCoords(:,1);
         collocs = aCoords(:,2);
+        
         dInterpDim = 100;
         %Get the interpolated points array
         [xlin ylin] = meshgrid(min(aCoords(:,1)):(max(aCoords(:,1)) - min(aCoords(:,1)))/dInterpDim:max(aCoords(:,1)),min(aCoords(:,2)):(max(aCoords(:,2))-min(aCoords(:,2)))/dInterpDim:max(aCoords(:,2)));
+        
         aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
         aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
         aMeshPoints = [aXArray,aYArray];
@@ -117,8 +119,9 @@ switch (sDataSource)
         end
         AT = aActivationTimes(k,:)';
 end
-
-
+%calculate interpolant
+F = TriScatteredInterp(rowlocs,collocs,AT);
+qz = F(xlin,ylin);
 % % % % Approximate AT
 % [CVApprox,ConductionVector]=ReComputeCV([rowlocs,collocs],AT,24,0.1);
 % aIndices = ~isnan(CVApprox);
@@ -179,7 +182,7 @@ for i = 1:length(r2)
     %Reconstruct field
     oMapData(i).z(oMapData(i).Boundary) = oMapData(i).Interpolated;
     oMapData(i).z = reshape(oMapData(i).z,size(xlin,1),size(xlin,2));
-    oMapData(i).z = round(oMapData(i).z);
+    oMapData(i).z = oMapData(i).z;
 end
 %Find the indices of the closest interpolation points to each recording
 %point
@@ -222,6 +225,13 @@ iBeat = 1;
 [C, oContour] = contourf(oMapAxes,oMapData(iMinIndex).x,oMapData(iMinIndex).y,oMapData(iMinIndex).z,floor(cbarmin):1:ceil(cbarmax));
 colormap(oMapAxes, colormap(flipud(colormap(jet))));%
 colorbar();
+figure(5);oMapAxes = axes();
+iBeat = 1;
+%Assuming the potential field has been normalised.
+[C, oContour] = contourf(oMapAxes,oMapData(iMinIndex).x,oMapData(iMinIndex).y,qz,floor(cbarmin):1:ceil(cbarmax));
+colormap(oMapAxes, colormap(flipud(colormap(jet))));%
+colorbar();
+
 %if the colour bar should be visible then make
 %a new one
 % oColorBar = cbarf([cbarmin cbarmax], floor(cbarmin):1:ceil(cbarmax));

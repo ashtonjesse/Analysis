@@ -239,6 +239,20 @@ classdef BasePotential < BaseSignal
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
         end
         
+        function  [aRateData, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
+            %this function calculates heart rate data based on a set of
+            %peak locations
+            
+            %check that there are not any peaks that are too close together
+            %to be real
+            dPeaks = dPeaks(:,diff(dPeaks) > 500);
+            %make the call to getratedata
+            [aRateData aRates dOutPeaks] = oBasePotential.GetRateData(dPeaks);
+            oBasePotential.Electrodes.Processed.BeatRates = aRates;
+            oBasePotential.Electrodes.Processed.BeatRateData = aRateData;
+            oBasePotential.Electrodes.Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
+        end
+        
         function [aRateTrace, aRates, dOutPeaks] = CalculateSinusRateFromRMS(oBasePotential)
             %calculate the sinus rate from RMS data instead
             dPeaks = zeros(size(oBasePotential.Electrodes(1).Processed.BeatIndexes,1),1);

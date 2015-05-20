@@ -93,20 +93,6 @@ classdef Phrenic < BasePotential
             oPhrenic.Electrodes.Processed.BurstDurations = oPhrenic.TimeSeries(oPhrenic.Electrodes.Processed.BurstIndexes(:,2)) - ...
                 oPhrenic.TimeSeries(oPhrenic.Electrodes.Processed.BurstIndexes(:,1));
         end
-        
-        function  [aRateData, dPeaks] = GetHeartRateData(oPhrenic,dPeaks)
-            %this function calculates heart rate data based on a set of
-            %peak locations
-            
-            %check that there are not any peaks that are too close together
-            %to be real
-            dPeaks = dPeaks(:,diff(dPeaks) > 500);
-            %make the call to getratedata
-            [aRateData aRates dOutPeaks] = oPhrenic.GetRateData(dPeaks);
-            oPhrenic.Electrodes.Processed.BeatRates = aRates;
-            oPhrenic.Electrodes.Processed.BeatRateData = aRateData;
-            oPhrenic.Electrodes.Processed.BeatRateTimes = oPhrenic.TimeSeries(dPeaks);
-        end
     end
 end
 

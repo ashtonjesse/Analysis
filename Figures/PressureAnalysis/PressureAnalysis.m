@@ -126,6 +126,8 @@ classdef PressureAnalysis < SubFigure
                     for i = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
                         set(oRecChildren(i), 'visible', 'on', 'string', strcat(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name,'_',oFigure.Colours(i)));
                     end
+                elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Extracellular')
+                    oFigure.SelectedRecordings = 1;
                 end
             end
             dcm_obj = datacursormode(oFigure.oGuiHandle.(oFigure.sFigureTag));
@@ -686,6 +688,7 @@ classdef PressureAnalysis < SubFigure
                     
                     %Get the unemap reference data
                     oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = GetSpecificElectrodeFromTXTFile(Unemap, 289, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);
+                    oFigure.SelectedRecordings = 1;
                 elseif strcmp(oFigure.oParentFigure.oGuiHandle.oPressure.RecordingType, 'Optical') && isempty(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording)
                     [sDataFileName,sDataPathName]=uigetfile('*.*','Select a CSV file that contains an optical transmembrane recording',oFigure.DefaultPath,'MultiSelect','on');
                     %check if multiple files were selected
@@ -958,7 +961,7 @@ classdef PressureAnalysis < SubFigure
                             case {'Phrenic', 'Reference Signal'}
                                 oFigure.CurrentZoomLimits(2,:) = [999, 0];
                                 oFigure.PlotHeartRate(oPlots(i).ID, oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic);
-                            case 'Optical Signal'
+                            case {'Optical Signal','Unemap Reference Signal'}
                                 hold(oPlots(i).ID,'on');
                                 oFigure.CurrentZoomLimits(2,:) = [999, 0];
                                 for j = 1:length(oFigure.SelectedRecordings)

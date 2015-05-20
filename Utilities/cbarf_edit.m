@@ -259,8 +259,14 @@ else
     xt=linspace(yl(1),yl(2),Ntick);
     xtl=L(a:b+1);
   end
-  set(ax,'ytick',[],'xaxislocation','bottom','xtick',xt,'xticklabel',xtl);
+  set(ax,'ytick',[],'xaxislocation','bottom','xtick',xt,'xticklabel',[]);
   set(ax,'xlim',yl);
+  %create labels
+  dSpace = (L(end) - L(1))/(2*numel(L));
+  for i = 1:numel(xt)
+      oLabel = text(xt(i) - dSpace,-0.8,sprintf('%d',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+      set(oLabel,'fontsize',12);
+  end
 end
 hfill=get(ax,'Children');
 % axes(ax0)

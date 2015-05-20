@@ -9,7 +9,7 @@ close all;
 %set variables
 dWidth = 16;
 dHeight = 21.7;
-sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularPacemakerShift.eps';
+sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularPacemakerShift_20130904.eps';
 % sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Test.bmp';
 %Create plot panel that has 3 rows at top to contain pressure, electrogram and heart rate 
 
@@ -27,7 +27,7 @@ set(oFigure,'Resize','off');
 xrange = 5;
 yrange = 5;
 oSubplotPanel = panel(oFigure);
-oSubplotPanel.pack({0.25 0.71 0.04});
+oSubplotPanel.pack({0.27 0.71 0.02});
 oSubplotPanel(1).pack(3);
 oSubplotPanel(2).pack(xrange,yrange);
 oSubplotPanel(3).pack();
@@ -43,10 +43,11 @@ oSubplotPanel(3).fontsize = 12;
 oSubplotPanel(3).fontweight = 'bold';
 
 %% plot top panel
-%plot electrogram
+%plot phrenic
 oAxes = oSubplotPanel(1,2).select();
-aData = oUnemap.Electrodes(151).Processed.Data;
-aTime = oUnemap.TimeSeries;
+aData = oPressure.RefSignal.Processed ./ ...
+    (oPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
+aTime = oPressure.TimeSeries.Processed;
 hline = plot(oAxes,aTime,aData,'k');
 set(hline,'linewidth',1);
 %set axes colour
@@ -56,9 +57,10 @@ set(oAxes,'xticklabel',[]);
 %set limits
 % xlim(oAxes,oXLim);
 axis(oAxes,'tight');
+ylim(oAxes,[-10 10]);
 oXLim = get(oAxes,'xlim');
 %set labels
-oYlabel = ylabel(oAxes,['Electrogram', 10,'(mV)']);
+oYlabel = ylabel(oAxes,['PND', 10,'(\muV)']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
 oPosition(1) = oXLim(1) - 1.05;
@@ -101,6 +103,13 @@ for k = iStartBeat:2:iStartBeat+(xrange*yrange)-1
     end
     set(oBeatLabel,'FontSize',6);
 end
+%plot time scale
+hold(oAxes,'on');
+plot([oXLim(2)-2; oXLim(2)], [oYLim(1); oYLim(1)], '-k','LineWidth', 2)
+hold(oAxes,'off');
+oLabel = text(oXLim(2)-1,oYLim(1)-80, '2 s', 'parent',oAxes, ...
+        'FontUnits','points','horizontalalignment','center');
+set(oLabel,'FontSize',8);
 
 %plot pressure data
 oAxes = oSubplotPanel(1,1).select();
@@ -124,7 +133,7 @@ oYLim = get(oAxes,'ylim');
 oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 4;
 set(oYlabel,'position',oPosition);
 
-%plot maps
+% %plot maps
 % oUnemap.RotateArray();
 % oActivation = oUnemap.PrepareActivationMap(50, 'Contour', 1 ,[],[]);
 %plot the schematic
@@ -157,12 +166,7 @@ for i = 1:5
             set(oLabel,'fontsize',8);
             oLabel = text(5,1.8,'RA','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
             set(oLabel,'fontsize',8);
-            %label beat number and rate
-            oLabel = text(-2,4,sprintf('%d bpm',round(oUnemap.RMS.HeartRate.Rates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
-            set(oLabel,'fontsize',8);
-            oLabel = text(-2,5.5,sprintf('#%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
-            set(oLabel,'fontsize',12);
-        else
+         else
             oAxes = oSubplotPanel(2,i,j).select();
             oOverlay = axes('position',get(oAxes,'position'));
             imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20130904\20130904Schematic.bmp','Parent', oAxes);
@@ -175,12 +179,16 @@ for i = 1:5
             axis(oOverlay,'equal');
             set(oOverlay,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
             axis(oOverlay,'off');
-            %label beat number and rate
-            oLabel = text(-2,4,sprintf('%d',round(oUnemap.RMS.HeartRate.Rates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
-            set(oLabel,'fontsize',8);
-            oLabel = text(-2,5.5,sprintf('%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
-            set(oLabel,'fontsize',12);
         end
+        %label beat number, rate and pressure
+        %get pressure
+        [MinVal MinIndex] = min(abs(oPressure.TimeSeries.Processed - oUnemap.TimeSeries(oUnemap.RMS.HeartRate.Peaks(2,iBeat))));
+        oLabel = text(-2,4,sprintf('%d mmHg',round(oPressure.Processed.Data(MinIndex))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        set(oLabel,'fontsize',6);
+        oLabel = text(-2,3,sprintf('%d bpm',round(oUnemap.RMS.HeartRate.Rates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        set(oLabel,'fontsize',6);
+        oLabel = text(-2,5.5,sprintf('#%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        set(oLabel,'fontsize',12);
         %plot earliest activation
         [C iFirstActivationChannel] = min(oActivation.Beats(iBeat).FullActivationTimes);
         hold(oOverlay,'on');
@@ -191,7 +199,7 @@ for i = 1:5
 end
 oAxes = oSubplotPanel(3,1).select();
 cbarf_edit(aContourRange, aContours,'horiz','linear',oAxes);
-oXlabel = text(((aContourRange(2)-aContourRange(1))/2)-abs(aContourRange(1)),-1.2,'Activation Time (ms)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
+oXlabel = text(((aContourRange(2)-aContourRange(1))/2)-abs(aContourRange(1)),-2.2,'Activation Time (ms)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
 set(oXlabel,'fontsize',12);
 movegui(oFigure,'center');
 % print(oFigure,'-dbmp','-r600',sSavePath)
