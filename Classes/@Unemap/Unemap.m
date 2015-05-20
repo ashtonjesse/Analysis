@@ -862,14 +862,106 @@ classdef Unemap < BasePotential
                 oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Range(iBeat,2)), dTime);
             oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Index(iBeat) = iIndex; 
         end
+
+        function oMapData = PrepareEventMap(oUnemap,dInterpDim,iEventID)
+            %If no eventID has been specified then default to 1
+            if isempty(iEventID)
+                iEventID = 1;
+            end
+            
+            %get the accepted channels
+            aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
+            aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
+            aFullCoords = cell2mat({oUnemap.Electrodes(:).Coords});
+            aFullCoords = aFullCoords';
+            aCoords = cell2mat({aElectrodes(:).Coords});
+            aCoords = aCoords';
+            rowlocs = aCoords(:,1);
+            collocs = aCoords(:,2);
+            %Get the interpolated points array
+            [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),...
+                min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
+            aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
+            aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
+            aMeshPoints = [aXArray,aYArray];
+            %Find which points lie within the area of the array
+            [V,ConcaveTri] = alphavol(aCoords,1);
+            [FF BoundaryLocs] = freeBoundary(TriRep(ConcaveTri.tri,aCoords));
+            aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),BoundaryLocs(:,1),BoundaryLocs(:,2));
+            
+            %Initialise the map data struct
+            oMapData = struct('x', xlin(1,:)', 'y', ylin(:,1), 'Boundary', aInBoundaryPoints, 'CVx',aFullCoords(:,1),'CVy',aFullCoords(:,2));
+            %Initialise the Beats struct
+            aData = struct('FullActivationTimes',zeros(1, numel(oUnemap.Electrodes)),'ActivationTimes',...
+                zeros(1, numel(aElectrodes)),'z',NaN(size(xlin)),'CVApprox',zeros(1, numel(oUnemap.Electrodes)),...
+                'CVVectors',zeros(1, numel(oUnemap.Electrodes)),'ATgrad',zeros(1, numel(oUnemap.Electrodes)));
+            oMapData.Beats = repmat(aData,1,size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1));
+            %Get the activation indexes 
+            aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), numel(aElectrodes));
+            aFullActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), numel(oUnemap.Electrodes));
+            aFullActivationTimes = zeros(size(aFullActivationIndexes));
+            %track the number of accepted electrodes
+            m = 0;
+            for p = 1:numel(oUnemap.Electrodes)
+                if oUnemap.Electrodes(p).Accepted
+                    m = m + 1;
+                    aActivationIndexes(:,m) = aElectrodes(m).SignalEvent(iEventID).Index;
+                    aFullActivationIndexes(:,p) =  aElectrodes(m).SignalEvent(iEventID).Index + oUnemap.Electrodes(p).Processed.BeatIndexes(:,1);
+                    aFullActivationTimes(:,p) = oUnemap.TimeSeries(aFullActivationIndexes(:,p));
+                else
+                    %hold the unaccepted electrode places with inf
+                    aFullActivationTimes(:,p) =  Inf;
+                end
+            end
+            %initialise the activation times array
+            aActivationTimes = zeros(size(aActivationIndexes));
+            %do delaunay triangulation
+            DT = DelaunayTri(aCoords);
+            %set up wait bar
+            oWaitbar = waitbar(0,'Please wait...');
+            %Loop through the beats
+            for k = 1:size(aActivationIndexes,1)
+                %Get the activation time fields for all time points during this
+                %beat
+                waitbar(k/size(aActivationIndexes,1),oWaitbar,sprintf('Please wait... Processing Beat %d',k));
+                aActivationIndexes(k,:) = aActivationIndexes(k,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(k,1);
+                aTimesToUse = oUnemap.TimeSeries(aActivationIndexes(k,:));
+                aActivationTimes(k,:) = aTimesToUse;
+                %convert to ms
+                aActivationTimes(k,:) = 1000*(oUnemap.TimeSeries(aActivationIndexes(k,:)) - min(aTimesToUse));
+                aFullActivationTimes(k,:) = 1000*(aFullActivationTimes(k,:) - min(aFullActivationTimes(k,:)));
+            
+                %save to struct
+                oMapData.Beats(k).FullActivationTimes = aFullActivationTimes(k,:).';
+                oMapData.Beats(k).ActivationTimes = aActivationTimes(k,:).';
+
+                %do interpolation
+                %calculate interpolant
+                oInterpolant = TriScatteredInterp(DT,oMapData.Beats(k).ActivationTimes);
+                %evaluate interpolant
+                oInterpolatedField = oInterpolant(xlin,ylin);
+                %rearrange to be able to apply boundary
+                aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
+                %apply boundary
+                aQZArray(~aInBoundaryPoints) = NaN;
+                %save result back in proper format
+                oMapData.Beats(k).z  = reshape(aQZArray,size(xlin,1),size(xlin,2));
+                
+                %Calculate the CV and save the results
+                [CVApprox,CVVectors,ATgrad]=ReComputeCV([aFullCoords(:,1),aFullCoords(:,2)],oMapData.Beats(k).FullActivationTimes,24,0.1);
+                oMapData.Beats(k).CVApprox = CVApprox;
+                oMapData.Beats(k).CVVectors = CVVectors;
+                oMapData.Beats(k).ATgrad = ATgrad;
+            end
+            close(oWaitbar);
+        end
         
         function oMapData = PrepareActivationMap(oUnemap, dInterpDim, sPlotType, iEventID, iBeatIndex, oActivationData)
             %Get the inputs for a mapping call for activation times,
             %returning a struct containing the x and y locations of the
             %electrodes and the activation times for each. dInterpDim is
             %the number of interpolation points in each direction
-            
-            
+                        
             %If no eventID has been specified then default to 1
             if isempty(iEventID)
                 iEventID = 1;
@@ -929,7 +1021,6 @@ classdef Unemap < BasePotential
                     oMapData.ATgrad = ATgrad;
                     close(oWaitbar);
                 case 'Contour'
-                    
                     %get the accepted channels
                     aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
                     aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
@@ -943,8 +1034,10 @@ classdef Unemap < BasePotential
                     aCoords = aCoords';
                     rowlocs = aCoords(:,1);
                     collocs = aCoords(:,2);
+                    
                     %Get the interpolated points array
-                    [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
+                    [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),...
+                        min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
                     aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
                     aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
 

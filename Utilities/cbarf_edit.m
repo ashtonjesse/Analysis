@@ -264,7 +264,7 @@ else
   %create labels
   dSpace = (L(end) - L(1))/(2*numel(L));
   for i = 1:numel(xt)
-      oLabel = text(xt(i) - dSpace,-0.8,sprintf('%d',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+      oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
       set(oLabel,'fontsize',12);
   end
 end

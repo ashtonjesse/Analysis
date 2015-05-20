@@ -55,7 +55,7 @@ switch (sDataSource)
     case 'unemap'
 %         disp('loading unemap...');
 %         oUnemap = ...
-%             GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro002\pabaro002_unemap.mat');
+%             GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
 %         disp('done loading');
         aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
         aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
@@ -74,9 +74,12 @@ switch (sDataSource)
         aMeshPoints = [aXArray,aYArray];
         %Find which points lie within the area of the array
         DT = DelaunayTri(aCoords);
-        aIndices = pointLocation(DT,aMeshPoints);
-        aIndices(isnan(aIndices)) = 0;
-        aInBoundaryPoints = logical(aIndices);
+        [V,S] = ALPHAVOL(aCoords,1);
+        [FF XF] = freeBoundary(TriRep(S.tri,aCoords));
+        %         aIndices = pointLocation(DT,aMeshPoints);
+        %         aIndices(isnan(aIndices)) = 0;
+        %         aInBoundaryPoints = logical(aIndices);
+        aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),XF(:,1),XF(:,2));
         clear aIndices;
                 
         iEventID = 1;
@@ -98,7 +101,7 @@ switch (sDataSource)
                 aOutActivationTimes(:,p) =  NaN;
             end
         end
-        k=1;
+        k=27;
         aActivationTimes = zeros(size(aActivationIndexes));
         aActivationIndexes(k,:) = aActivationIndexes(k,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(k,1);
         aAcceptedTimes = oUnemap.TimeSeries(aActivationIndexes(k,:));
@@ -120,8 +123,11 @@ switch (sDataSource)
         AT = aActivationTimes(k,:)';
 end
 %calculate interpolant
-F = TriScatteredInterp(rowlocs,collocs,AT);
+F = TriScatteredInterp(DT,AT);
 qz = F(xlin,ylin);
+aQZArray = reshape(qz,size(qz,1)*size(qz,2),1);
+aQZArray(~aInBoundaryPoints) = NaN;
+NewQz = reshape(aQZArray,size(xlin,1),size(xlin,2));
 % % % % Approximate AT
 % [CVApprox,ConductionVector]=ReComputeCV([rowlocs,collocs],AT,24,0.1);
 % aIndices = ~isnan(CVApprox);
@@ -149,6 +155,8 @@ figure(2);
 scatter(rowlocs,collocs,'filled');
 hold on;
 scatter(aXArray(aInBoundaryPoints),aYArray(aInBoundaryPoints),'r');
+scatter(XF(:,1),XF(:,2),'g','filled');
+trimesh(S.tri,aCoords(:,1),aCoords(:,2));
 hold off;
 axis equal; axis tight;
 figure(4);
@@ -198,6 +206,9 @@ figure();
 plot(r2,aDataToPlot);
 hold on
 plot(r2(iMinIndex),C,'r+');
+% PI = nearestNeighbor(DT,aMeshPoints);
+% aQZArray = reshape(qz,size(qz,1)*size(qz,2),1);
+% LinearRMS = sqrt(sum((aCVPart(PI,1) - aQZArray(aInBoundaryPoints)).^2,1)/size(PI,1));
 
 %check if there is an existing colour bar
 %get figure children
@@ -228,7 +239,7 @@ colorbar();
 figure(5);oMapAxes = axes();
 iBeat = 1;
 %Assuming the potential field has been normalised.
-[C, oContour] = contourf(oMapAxes,oMapData(iMinIndex).x,oMapData(iMinIndex).y,qz,floor(cbarmin):1:ceil(cbarmax));
+[C, oContour] = contourf(oMapAxes,oMapData(1).x,oMapData(1).y,NewQz,floor(cbarmin):1:ceil(cbarmax));
 colormap(oMapAxes, colormap(flipud(colormap(jet))));%
 colorbar();
 

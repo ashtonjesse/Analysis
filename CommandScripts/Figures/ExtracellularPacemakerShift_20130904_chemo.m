@@ -1,7 +1,7 @@
 close all;
 %Open unemap file
-% oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
-% oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\chemo002_pressure.mat','Extracellular');
+oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
+oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\chemo002_pressure.mat','Extracellular');
 %set variables
 dWidth = 16;
 dHeight = 21.7;
@@ -116,15 +116,12 @@ set(oYlabel,'position',oPosition);
 
 %plot pressure data
 oAxes = oSubplotPanel(1,1).select();
-aData =  oPressure.FilterData(oPressure.Processed.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
-aTime = oPressure.TimeSeries.Processed;
-aData(aTime < 1.2) = NaN;
-aData(aTime > 19.3) = NaN;
-hline = plot(oAxes,aTime,aData,'r');
-hold(oAxes,'on');
+% aData =  oPressure.FilterData(oPressure.Processed.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
 aData = oPressure.Processed.Data;
-plot(oAxes,aTime,aData,'k');
-hold(oAxes,'off');
+aTime = oPressure.TimeSeries.Processed;
+% aData(aTime < 1.2) = NaN;
+% aData(aTime > 19.3) = NaN;
+hline = plot(oAxes,aTime,aData,'k');
 set(hline,'linewidth',1);
 %set axes colour
 set(oAxes,'xcolor',[1 1 1]);
@@ -144,27 +141,7 @@ set(oYlabel,'position',oPosition);
 
 % %plot maps
 % oUnemap.RotateArray();
-% oActivation = oUnemap.PrepareActivationMap(50, 'Contour', 1 ,[],[]);
-aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
-aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
-
-%...and turn the coords into a 2 column matrix
-aCoords = cell2mat({aElectrodes(:).Coords})';
-rowlocs = aCoords(:,1);
-collocs = aCoords(:,2);
-
-dInterpDim = 100;
-%Get the interpolated points array
-[xlin ylin] = meshgrid(min(aCoords(:,1)):(max(aCoords(:,1)) - min(aCoords(:,1)))/dInterpDim:max(aCoords(:,1)), ...
-    min(aCoords(:,2)):(max(aCoords(:,2))-min(aCoords(:,2)))/dInterpDim:max(aCoords(:,2)));
-iEventID = 1;
-%Get the electrode processed data
-aActivationIndexes = zeros(size(oUnemap.Electrodes(1).SignalEvent(iEventID).Index,1), length(aElectrodes));
-%track the number of accepted electrodes
-for p = 1:numel(aElectrodes)
-        aActivationIndexes(:,p) = aElectrodes(p).SignalEvent(iEventID).Index;
-end
-
+% oActivation = oUnemap.PrepareEventMap(100, 1);
 %plot the schematic
 
 iBeatCount = 0;
@@ -175,16 +152,6 @@ aContours = aContourRange(1):1:aContourRange(2);
 for i = 1:yrange
     for j = 1:xrange
         iBeat = iStartBeat + iBeatCount;
-        k = iBeat;
-        aActivationIndexes(k,:) = aActivationIndexes(k,:) + oUnemap.Electrodes(1).Processed.BeatIndexes(k,1);
-        aAcceptedTimes = oUnemap.TimeSeries(aActivationIndexes(k,:));
-        aActivationTimes = aAcceptedTimes;
-        %Convert to ms
-        aActivationTimes = 1000*(oUnemap.TimeSeries(aActivationIndexes(k,:)) - min(aAcceptedTimes));
-        AT = aActivationTimes';
-        %calculate interpolant
-        F = TriScatteredInterp(rowlocs,collocs,AT);
-        qz = F(xlin,ylin);
         if (i == 1) && (j == 1)
             oAxes = oSubplotPanel(2,1,1).select();
             oOverlay = axes('position',get(oAxes,'position'));
@@ -192,7 +159,7 @@ for i = 1:yrange
             set(oAxes,'box','off','color','none');
             axis(oAxes,'tight');
             axis(oAxes,'off');
-            [C, oContour] = contourf(oOverlay,xlin(1,:),ylin(:,1),qz,aContours);
+            [C, oContour] = contourf(oOverlay,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContours);
             caxis(aContourRange);
             colormap(oOverlay, colormap(flipud(colormap(jet))));
             axis(oOverlay,'equal');
@@ -212,10 +179,7 @@ for i = 1:yrange
             set(oAxes,'box','off','color','none');
             axis(oAxes,'tight');
             axis(oAxes,'off');
-            %             [C, oContour] =
-            %             contourf(oOverlay,oActivation.x,oActivation.y,oActivation.Bea
-            %             ts(iBeat).z,aContours);
-            contourf(oOverlay,xlin(1,:),ylin(:,1),qz,aContours);
+            [C, oContour] = contourf(oOverlay,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContours);
             caxis(aContourRange);
             colormap(oOverlay, colormap(flipud(colormap(jet))));
             axis(oOverlay,'equal');
@@ -232,11 +196,17 @@ for i = 1:yrange
         oLabel = text(aXlim(1),5.5,sprintf('#%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',12);
         %plot earliest activation
-        %         [C iFirstActivationChannel] = min(oActivation.Beats(iBeat).FullActivationTimes);
-        [C iFirstActivationChannel] = min(AT);
+        oFirstElectrodes = oUnemap.Electrodes(~logical(oActivation.Beats(iBeat).FullActivationTimes));
+        aCoords = cell2mat({oFirstElectrodes(:).Coords});
+        aCoords = aCoords';
+        dMarksize = 3;
+        if size(aCoords,1) < 3
+            aCoords = aCoords(1,:);
+            dMarksize = 4;
+        end
         hold(oOverlay,'on');
-        plot(oOverlay, oUnemap.Electrodes(iFirstActivationChannel).Coords(1), oUnemap.Electrodes(iFirstActivationChannel).Coords(2), ...
-            'MarkerSize',5,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
+        scatter(oOverlay, aCoords(:,1), aCoords(:,2), 'filled', ...
+            'SizeData',dMarksize,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
         iBeatCount = iBeatCount + 1;
     end
 end
