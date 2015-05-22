@@ -168,9 +168,10 @@ i2=find(L<Mv); i2=i2(end);
 % check if need to add triangles at top/right and bottom/left:
 addUp  = 0;
 addBot = 0;
-if L(end) < Mv, addUp  = 1; end
+if L(end) <= Mv, addUp  = 1; end
 if L(1)   >= mv, addBot = 1; end
-
+addUp  = 0;
+addBot = 0;
 % draw the rectangles:
 Nrec=1;
 a=max(1,i1);
@@ -194,23 +195,20 @@ for i=a:b
   end
   Nrec=Nrec+1;
 end
-hold(ax,'off');
 yl=[L(a) L(b+1)];
-
-% addUp = 0;
-% % add triangle at top/right:
-% if addUp
-%   cor=caxcolor(Mv,clim,cmap);
-%   ap=get(ax,'position');
-%   if isVertical
-%     fill([0 1 .5],[L(end) L(end) L(end)+diff(yl)/15],cor,'clipping','off');
-%     set(ax,'position',[ap(1:3) ap(4)-ap(4)/15])
-%   else
-%     fill([L(end) L(end) L(end)+diff(yl)/15],[0 1 .5],cor,'clipping','off');
-%     set(ax,'position',[ap(1:2) ap(3)-ap(3)/15 ap(4)])
-%     Nrec=Nrec+1;
-%   end
-% end
+% add triangle at top/right:
+if addUp
+  cor=caxcolor(Mv,clim,cmap);
+  ap=get(ax,'position');
+  if isVertical
+    fill([0 1 .5],[L(end) L(end) L(end)+diff(yl)/15],cor,'clipping','off');
+    set(ax,'position',[ap(1:3) ap(4)-ap(4)/15])
+  else
+    fill([L(end) L(end) L(end)+diff(yl)/15],[0 1 .5],cor,'clipping','off');
+    set(ax,'position',[ap(1:2) ap(3)-ap(3)/15 ap(4)])
+    Nrec=Nrec+1;
+  end
+end
 % 
 % addBot = 0;
 % % add triangle at bottom/left:
@@ -225,6 +223,8 @@ yl=[L(a) L(b+1)];
 %   end
 %   Nrec=Nrec+1;
 % end
+hold(ax,'off');
+
 
 % set limits, ticks and ticklabels:
 if isVertical
@@ -264,7 +264,7 @@ else
   %create labels
   dSpace = (L(end) - L(1))/(2*numel(L));
   for i = 1:numel(xt)
-      oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+      oLabel = text(xt(i),-0.8,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
       set(oLabel,'fontsize',12);
   end
 end

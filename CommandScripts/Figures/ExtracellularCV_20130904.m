@@ -8,7 +8,7 @@ close all;
 % oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro001\baro001_pressure.mat','Extracellular');
 %set variables
 dWidth = 16;
-dHeight = 21.7;
+dHeight = 23.2;
 sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularCV_20130904.eps';
 % sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Test.bmp';
 %Create plot panel that has 3 rows at top to contain pressure, electrogram and heart rate 
@@ -27,13 +27,14 @@ set(oFigure,'Resize','off');
 xrange = 5;
 yrange = 5;
 oSubplotPanel = panel(oFigure);
-oSubplotPanel.pack({0.27 0.71 0.02});
-oSubplotPanel(1).pack();
+oSubplotPanel.pack({0.25 0.73 0.02});
+oSubplotPanel(1).pack('h',{0.065,0.935});
 oSubplotPanel(2).pack(xrange,yrange);
-oSubplotPanel(3).pack();
+oSubplotPanel(3).pack('h',{0.95});
+movegui(oFigure,'center');
 
-oSubplotPanel.margin = [15 11 5 5];
-oSubplotPanel(1).margin = [0 10 0 0];
+oSubplotPanel.margin = [5 12 5 5];
+oSubplotPanel(1).margin = [0 8 0 0];
 oSubplotPanel(2).margin = [0 0 0 0];
 oSubplotPanel(3).margin = [0 0 0 5];
 
@@ -49,7 +50,7 @@ aCVRange = [0.2 1];
 iStartBeat = 30;
 iBoxXLocation = 1;
 % %plot HR
-oAxes = oSubplotPanel(1,1).select();
+oAxes = oSubplotPanel(1,2).select();
 aXTickLabels = cell(1,xrange*yrange);
 for k = iStartBeat:1:iStartBeat+(xrange*yrange)-1
     idxCV = find(~isnan(oActivation.Beats(k).CVApprox));
@@ -67,7 +68,7 @@ set(oAxes,'xlim',[0 iBoxXLocation]);
 set(oAxes,'ylim',aCVRange);
 set(oAxes,'xticklabel',aXTickLabels);
 xlabel(oAxes,'Beat #');
-oYlabel = ylabel(oAxes,['Apparent', 10,'CV (ms^{-1})']);
+oYlabel = ylabel(oAxes,['Apparent', 10,'CV (m/s)']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
 oPosition(1) = - 1.8;
@@ -145,20 +146,17 @@ for i = 1:5
         aCoords = cell2mat({oFirstElectrodes(:).Coords});
         aCoords = aCoords';
         dMarksize = 6;
-        if size(aCoords,1) < 3
-            aCoords = aCoords(1,:);
-            dMarksize = 8;
-        end
         hold(oOverlay,'on');
         scatter(oOverlay, aCoords(:,1), aCoords(:,2), 'filled', ...
             'SizeData',dMarksize,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
         iBeatCount = iBeatCount + 1;
+        hold(oOverlay,'off');
     end
 end
 oAxes = oSubplotPanel(3,1).select();
 cbarf_edit(aCVRange, aCVContours,'horiz','linear',oAxes);
-oXlabel = text(((aCVRange(2)-aCVRange(1))/2)+abs(aCVRange(1)),-2.2,'Apparent CV (ms^{-1})','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
+oXlabel = text(((aCVRange(2)-aCVRange(1))/2)+abs(aCVRange(1)),-2.2,'Apparent CV (m/s)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
 set(oXlabel,'fontsize',12);
-movegui(oFigure,'center');
+
 % print(oFigure,'-dbmp','-r600',sSavePath)
 print(oFigure,'-dpsc','-r600',sSavePath)
