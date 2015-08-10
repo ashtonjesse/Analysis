@@ -3,21 +3,21 @@
 
 close all;
 % clear all;
-% % % %Read in the file containing all the optical data 
-% sCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\baro001_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
-% [path name ext ver] = fileparts(sCSVFileName);
-% if strcmpi(ext,'.csv')
-%     aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
-%     save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
-% elseif strcmpi(ext,'.mat')
-%     load(sCSVFileName);
-% end
-% %% read in the experiment file
-% sExperimentFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718_experiment.txt';
-% oExperiment = GetExperimentFromTxtFile(Experiment, sExperimentFileName);
-% % %% read in the optical entity
-% sOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Optical.mat';
-% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % %Read in the file containing all the optical data 
+sCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\baro001_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
+[path name ext ver] = fileparts(sCSVFileName);
+if strcmpi(ext,'.csv')
+    aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
+    save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
+elseif strcmpi(ext,'.mat')
+    load(sCSVFileName);
+end
+%% read in the experiment file
+sExperimentFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718_experiment.txt';
+oExperiment = GetExperimentFromTxtFile(Experiment, sExperimentFileName);
+% %% read in the optical entity
+sOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Optical.mat';
+oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
 
 
 % %%% set save path

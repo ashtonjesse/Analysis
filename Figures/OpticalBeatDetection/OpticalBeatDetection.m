@@ -18,6 +18,7 @@ classdef OpticalBeatDetection < BaseFigure
             set(oFigure.oGuiHandle.oSmoothMenu, 'callback', @(src, event) oSmoothMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDetectBeatsMenu, 'callback', @(src, event) oDetectBeatsMenu_Callback(oFigure, src, event));
             
+            
             %set up axes
             oFigure.oGuiHandle.oPanel = panel(oFigure.oGuiHandle.(oFigure.sFigureTag));
             oFigure.oGuiHandle.oPanel.pack(1,1);
@@ -74,10 +75,8 @@ classdef OpticalBeatDetection < BaseFigure
             end
             %get the optical data
             sLongDataFileName=strcat(sDataPathName,char(sDataFileName));
-            oFigure.oGuiHandle.oOptical = GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, [],6);%6
+            oFigure.oGuiHandle.oOptical = GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, []);
             oFigure.Replot();
-            oFigure.oSmoothMenu_Callback(src,event);
-            oFigure.oDetectBeatsMenu_Callback(src,event);
         end
         
         function oFigure = oSmoothMenu_Callback(oFigure,src,event)
@@ -122,7 +121,7 @@ classdef OpticalBeatDetection < BaseFigure
         function Replot(oFigure)
             if ~isempty(oFigure.oGuiHandle.oOptical)
                 %plot data
-                oElectrode = oFigure.oGuiHandle.oOptical.Electrodes;
+                oElectrode = oFigure.oGuiHandle.oOptical.Electrodes(1);
                 if strcmp(oElectrode.Status,'Processed')
                     if isfield(oElectrode.Processed,'Beats')
                         %then need to set up axes for plotting both HR and

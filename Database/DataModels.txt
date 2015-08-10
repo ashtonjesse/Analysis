@@ -76,6 +76,8 @@ oExperiment.Plot.Electrodes.yDim
 oExperiment.Array.Bounds
 oExperiment.Array.XSpacing
 oExperiment.Array.YSpacing
+oExperiment.Optical.SamplingRate
+oExperiment.Optical.SpatialResolution
 
 ECG: (BasePotential)
 oECG.oExperiment;

@@ -197,44 +197,66 @@ classdef PotentialDAL < BaseDAL
             oUnemap.TimeSeries = [1:1:size(aFileContents,1)]*(1/oUnemap.oExperiment.Unemap.ADConversion.SamplingRate);
         end
         
-        function GetOpticalDataFromCSVFile(oPotentialDAL, oOptical, sFilePath,iHeaderLines)
+        function GetOpticalDataFromCSVFile(oPotentialDAL, oOptical, sFilePath)
             %Get the potential data for a given channel from the input
-            %signal (txt) file.
+            %signal (csv) file.
             
              %Load the potential data from the txt file
              fid = fopen(sFilePath,'r');
              %scan the header information in
-             for i = 1:iHeaderLines
+             bStillHeader = true;
+             iLineCount = 0;
+             while bStillHeader
                  tline = fgets(fid);
+                 iLineCount = iLineCount + 1;
                  [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
-                 switch (splitstring{1})
-                     case {'frm num','frm_num'}
-                         iNumFrames = str2double(splitstring{2});
-                     case 'position'
-                         [xLoc yLoc] = strread(splitstring{2},'[%d][%d]');
-                         oOptical.Electrodes.Name = strcat(sprintf('%d',xLoc),'_',sprintf('%d',yLoc));
-                         oOptical.Electrodes.Location = [xLoc yLoc];
+                 if isnan(str2double(splitstring{1}))
+                     %splitstring is not a number 
+                     switch (splitstring{1})
+                         case {'frm num','frm_num'}
+                             iNumFrames = str2double(splitstring{2});
+                         case 'position'
+                             [xLoc yLoc] = strread(splitstring{2},'[%d][%d]');
+                             oOptical.Electrodes.Name = strcat(sprintf('%d',xLoc),'_',sprintf('%d',yLoc));
+                             oOptical.Electrodes.Location = [xLoc yLoc];
+                         case 'time(msec)'
+                             if numel(splitstring) > 3
+                                 %this file contains data from a full set
+                                 %of electrodes
+                                 oOptical.Electrodes = repmat(oOptical.Electrodes,1,numel(splitstring)-2);
+                                 iElectrodeCount = 1;
+                                 %get the electrode location data
+                                 for i = 2:numel(splitstring)-1
+                                     sPixel = regexprep(char(splitstring{i}),'[','');
+                                     [~,~,~,~,~,~,sPixel] = regexpi(sPixel,']');
+                                     oOptical.Electrodes(iElectrodeCount).Location(1,1) = str2double(sPixel{2});%row, 0-based, so need to add 1 for indexing
+                                     oOptical.Electrodes(iElectrodeCount).Location(2,1) = str2double(sPixel{1}); %col, 0-based, so need to add 1 for indexing
+                                     oOptical.Electrodes(iElectrodeCount).Coords(1,1) = oOptical.Electrodes(iElectrodeCount).Location(1,1) * ...
+                                         oOptical.oExperiment.Optical.SpatialResolution;
+                                     oOptical.Electrodes(iElectrodeCount).Coords(2,1) = oOptical.Electrodes(iElectrodeCount).Location(2,1) * ...
+                                         oOptical.oExperiment.Optical.SpatialResolution;
+                                     oOptical.Electrodes(iElectrodeCount).Name = [sPixel{2},'-',sPixel{1}];
+                                     iElectrodeCount = iElectrodeCount + 1;
+                                 end
+                             end
+                     end
+                 else
+                     %splitstring is a number so stop looping
+                     bStillHeader = false;
                  end
              end
-             aData = zeros(iNumFrames,1);
-             %Get the potential values
-             for i = 1:iNumFrames;
-                 tline = fgets(fid);
-                 [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
-                 aData(i) = str2double(splitstring{2});
-             end
+             %close the file
              fclose(fid);
-
-            %Get the potential data and initialise processed.data
-            %check if the data needs to be inverted 
-            if max(aData) < 0
-                oOptical.Electrodes.Potential.Data = -aData;
-            else
-                oOptical.Electrodes.Potential.Data = aData;
-            end
-            oOptical.Electrodes.Processed.Data = NaN(size(aData,1),1);
-            %Get the Timeseries data
-            oOptical.TimeSeries = [0:1:size(aData,1)-1]*(1/oOptical.oExperiment.Optical.SamplingRate);
+             %Read the data (including last column which is empty)
+             aData = dlmread(sFilePath, ',', iLineCount, 1);
+             %check if the data needs to be inverted
+             if max(aData(:,1)) < 0
+                 aData = -aData;
+             end
+             %deal data except for last column
+             oOptical.Electrodes = oOptical.oDAL.oHelper.MultiLevelSubsAsgn(oOptical.Electrodes,'Potential','Data',aData(:,1:end-1));
+             %create time series array
+             oOptical.TimeSeries = [0:1:size(aData,1)-1]*(1/oOptical.oExperiment.Optical.SamplingRate);
         end
         
         function GetSignalEventInformationFromTextFile(oPotentialDAL, oBasePotential, iSignalEventID, sFilePath)
