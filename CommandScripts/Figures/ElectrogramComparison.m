@@ -5,8 +5,8 @@
 
 close all;
 %Open unemap file
-% oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130619\0619baro001\pabaro001_unemap.mat');
-% oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130619\0619baro001\baro001_pressure.mat','Extracellular');
+oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130619\0619baro001\pabaro001_unemap.mat');
+oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130619\0619baro001\baro001_pressure.mat','Extracellular');
 %set variables
 dWidth = 16;
 dHeight = 12;

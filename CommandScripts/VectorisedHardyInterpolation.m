@@ -53,10 +53,10 @@ switch (sDataSource)
         %area
         aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),rowBoundary,colBoundary);
     case 'unemap'
-%         disp('loading unemap...');
-%         oUnemap = ...
-%             GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
-%         disp('done loading');
+        disp('loading unemap...');
+        oUnemap = ...
+            GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
+        disp('done loading');
         aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
         aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
         
@@ -74,7 +74,7 @@ switch (sDataSource)
         aMeshPoints = [aXArray,aYArray];
         %Find which points lie within the area of the array
         DT = DelaunayTri(aCoords);
-        [V,S] = ALPHAVOL(aCoords,1);
+        [V,S] = alphavol(aCoords,1);
         [FF XF] = freeBoundary(TriRep(S.tri,aCoords));
         %         aIndices = pointLocation(DT,aMeshPoints);
         %         aIndices(isnan(aIndices)) = 0;

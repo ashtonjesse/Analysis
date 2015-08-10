@@ -226,17 +226,18 @@ classdef BasePotential < BaseSignal
             dPeaks = zeros(size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
             %Loop through the beats and find max slope
             for i = 1:size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1);
-                aInData = oBasePotential.Electrodes(iElectrodeNumber).Processed.Data...
+                aSlope = oBasePotential.Electrodes(iElectrodeNumber).Processed.Slope...
                     (oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
-                aSlope = oBasePotential.CalculateSlope(aInData, 5, 3);
                 [val, loc] = max(aSlope);
                 %Add the first index of this beat
                 dPeaks(i,1) = loc + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
             end
             [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = aRates;
+             %need to add a NaN to the start because otherwise this won't
+            %match the beatindexes array
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = [NaN aRates];
             oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
+            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = [NaN oBasePotential.TimeSeries(dOutPeaks(2,:))];
         end
         
         function  [aRateData, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
@@ -250,26 +251,26 @@ classdef BasePotential < BaseSignal
             [aRateData aRates dOutPeaks] = oBasePotential.GetRateData(dPeaks);
             oBasePotential.Electrodes.Processed.BeatRates = aRates;
             oBasePotential.Electrodes.Processed.BeatRateData = aRateData;
-            oBasePotential.Electrodes.Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
+            oBasePotential.Electrodes.Processed.BeatRateTimes = oBasePotential.TimeSeries(dOutPeaks(2,:));
         end
         
         function [aRateTrace, aRates, dOutPeaks] = CalculateSinusRateFromRMS(oBasePotential)
             %calculate the sinus rate from RMS data instead
-            dPeaks = zeros(size(oBasePotential.Electrodes(1).Processed.BeatIndexes,1),1);
+            dPeaks = zeros(size(oBasePotential.RMS.HeartRate.BeatIndexes,1),1);
             %Loop through the beats and find max curvature
-            for i = 1:size(oBasePotential.Electrodes(1).Processed.BeatIndexes,1);
+            for i = 1:size(oBasePotential.RMS.HeartRate.BeatIndexes,1);
                 aInData = oBasePotential.RMS.Smoothed...
-                    (oBasePotential.Electrodes(1).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(1).Processed.BeatIndexes(i,2));
+                    (oBasePotential.RMS.HeartRate.BeatIndexes(i,1):oBasePotential.RMS.HeartRate.BeatIndexes(i,2));
                 aCurvature = oBasePotential.CalculateCurvature(aInData, 20, 5);
                 [val, loc] = max(aCurvature);
                 
                 %Add the first index of this beat
-                dPeaks(i,1) = loc + oBasePotential.Electrodes(1).Processed.BeatIndexes(i,1);
+                dPeaks(i,1) = loc + oBasePotential.RMS.HeartRate.BeatIndexes(i,1);
             end
             [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = aRates;
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = oBasePotential.TimeSeries(dPeaks);
+            oBasePotential.RMS.HeartRate.BeatRates = aRates;
+            oBasePotential.RMS.HeartRate.BeatRateData = aRateData;
+            oBasePotential.RMS.HeartRate.BeatRateTimes = oBasePotential.TimeSeries(dOutPeaks(2,:));
         end
         
         function [aRateTrace, aRates, dPeaks] = GetRateData(oBasePotential,dPeaks)
@@ -299,6 +300,7 @@ classdef BasePotential < BaseSignal
             for i = 1:size(dPeaks,2)
                 aRateTrace(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
             end
+            
         end
         
         function RefreshBeatData(oBasePotential, varargin)

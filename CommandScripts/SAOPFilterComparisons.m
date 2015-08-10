@@ -1,6 +1,6 @@
 close all;
 % clear all;
-% %% load the signal data
+%% load the signal data
 % [sFileName,sPathName]=uigetfile('*.*','Select file(s) that contain optical transmembrane recordings','multiselect','on');
 % if iscell(sFileName)
 %     % % Make sure the dialogs return char objects
@@ -11,26 +11,26 @@ close all;
 %     %remap file indices
 %     sFiles = cell(size(sFileName));
 %     % Format for 20140821baro002
-%     %     sFiles{1} = sFileName{5};
-%     %     sFiles{2} = sFileName{4};
-%     %     sFiles{3} = sFileName{1};
-%     %     sFiles{4} = sFileName{2};
-%     %     sFiles{5} = sFileName{3};
-%     %     sFiles{6} = sFileName{9};
-%     %     sFiles{7} = sFileName{6};
-%     %     sFiles{8} = sFileName{7};
-%     %     sFiles{9} = sFileName{8};
+%         sFiles{1} = sFileName{6};
+%         sFiles{2} = sFileName{1};
+%         sFiles{3} = sFileName{2};
+%         sFiles{4} = sFileName{3};
+%         sFiles{5} = sFileName{4};
+%         sFiles{6} = sFileName{5};
+%         sFiles{7} = sFileName{7};
+%         sFiles{8} = sFileName{8};
+%         sFiles{9} = sFileName{9};
 %     
 %     % Format for temporal filter sets
-%     sFiles{1} = sFileName{5};
-%     sFiles{2} = sFileName{1};
-%     sFiles{3} = sFileName{2};
-%     sFiles{4} = sFileName{3};
-%     sFiles{5} = sFileName{4};
-%     sFiles{6} = sFileName{6};
-%     sFiles{7} = sFileName{7};
-%     sFiles{8} = sFileName{8};
-%     sFiles{9} = sFileName{9};
+% %     sFiles{1} = sFileName{5};
+% %     sFiles{2} = sFileName{1};
+% %     sFiles{3} = sFileName{2};
+% %     sFiles{4} = sFileName{3};
+% %     sFiles{5} = sFileName{4};
+% %     sFiles{6} = sFileName{6};
+% %     sFiles{7} = sFileName{7};
+% %     sFiles{8} = sFileName{8};
+% %     sFiles{9} = sFileName{9};
 %     
 %     % Format for spatial filter sets
 %     %     sFiles{1} = sFileName{3};
@@ -61,67 +61,67 @@ close all;
 %     end
 %     
 % end
-%% load the beat data
-[sBeatFileName,sBeatPathName]=uigetfile('*.*','Select CSV file(s) that contain optical beat data','multiselect','on');
-% %Make sure the dialogs return char objects
-
-if iscell(sBeatFileName)
-    %Make sure the dialogs return char objects
-    if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
-        break
-    end
-    %remap file indices
-    sFiles = cell(size(sBeatFileName));
-    % format for 20140821baro002
-    %     sFiles{1} = sBeatFileName{5};
-    %     sFiles{2} = sBeatFileName{4};
-    %     sFiles{3} = sBeatFileName{1};
-    %     sFiles{4} = sBeatFileName{2};
-    %     sFiles{5} = sBeatFileName{3};
-    %     sFiles{6} = sBeatFileName{9};
-    %     sFiles{7} = sBeatFileName{6};
-    %     sFiles{8} = sBeatFileName{7};
-    %     sFiles{9} = sBeatFileName{8};
-    
-    % Format for temporal filter sets
-    sFiles{1} = sBeatFileName{5};
-    sFiles{2} = sBeatFileName{1};
-    sFiles{3} = sBeatFileName{2};
-    sFiles{4} = sBeatFileName{3};
-    sFiles{5} = sBeatFileName{4};
-    sFiles{6} = sBeatFileName{6};
-    sFiles{7} = sBeatFileName{7};
-    sFiles{8} = sBeatFileName{8};
-    sFiles{9} = sBeatFileName{9};
-    
-    %     sFiles{1} = sBeatFileName{3};
-    %     sFiles{2} = sBeatFileName{8};
-    %     sFiles{3} = sBeatFileName{7};
-    %     sFiles{4} = sBeatFileName{6};
-    %     sFiles{5} = sBeatFileName{5};
-    %     sFiles{6} = sBeatFileName{4};
-    %     sFiles{7} = sBeatFileName{2};
-    %     sFiles{8} = sBeatFileName{1};
-    sBeatFileName = sFiles;
-    
-    %intialise arrays to hold beat information
-    rowdim = 42;
-    coldim = 41;
-    aAllActivationTimes = zeros(rowdim,coldim,length(sBeatFileName));
-    aAllRepolarisationTimes = zeros(rowdim,coldim,length(sBeatFileName));
-    aAllAPDs = zeros(rowdim,coldim,length(sBeatFileName));
-    %get the beat data
-    for i = 1:length(sBeatFileName)
-        sLongDataFileName=strcat(sBeatPathName,char(sBeatFileName{i}));
-        [aHeaderInfo aAllActivationTimes(:,:,i) aAllRepolarisationTimes(:,:,i) aAllAPDs(:,:,i)] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
-    end
-else
-    if (~ischar(sBeatFileName) && ~ischar(sBeatPathName))
-        break
-    end
-    %get the beat data
-    [aHeaderInfo aAllActivationTimes aAllRepolarisationTimes aAllAPDs] = ReadOpticalDataCSVFile(strcat(sBeatPathName,sBeatFileName),rowdim,coldim,7);
-end
+% %% load the beat data
+% [sBeatFileName,sBeatPathName]=uigetfile('*.*','Select CSV file(s) that contain optical beat data','multiselect','on');
+% % %Make sure the dialogs return char objects
+% rowdim = 44;
+% coldim = 40;
+% if iscell(sBeatFileName)
+%     %Make sure the dialogs return char objects
+%     if (isempty(sBeatFileName) && ~ischar(sBeatPathName))
+%         break
+%     end
+%     %remap file indices
+%     sFiles = cell(size(sBeatFileName));
+%     % format for 20140821baro002
+%         sFiles{1} = sBeatFileName{1};
+%         sFiles{2} = sBeatFileName{2};
+%         sFiles{3} = sBeatFileName{3};
+%         sFiles{4} = sBeatFileName{4};
+%         sFiles{5} = sBeatFileName{5};
+%         sFiles{6} = sBeatFileName{6};
+%         sFiles{7} = sBeatFileName{7};
+%         sFiles{8} = sBeatFileName{8};
+%         sFiles{9} = sBeatFileName{9};
+%     
+%     % Format for temporal filter sets
+% %     sFiles{1} = sBeatFileName{5};
+% %     sFiles{2} = sBeatFileName{1};
+% %     sFiles{3} = sBeatFileName{2};
+% %     sFiles{4} = sBeatFileName{3};
+% %     sFiles{5} = sBeatFileName{4};
+% %     sFiles{6} = sBeatFileName{6};
+% %     sFiles{7} = sBeatFileName{7};
+% %     sFiles{8} = sBeatFileName{8};
+% %     sFiles{9} = sBeatFileName{9};
+%     
+%     %     sFiles{1} = sBeatFileName{3};
+%     %     sFiles{2} = sBeatFileName{8};
+%     %     sFiles{3} = sBeatFileName{7};
+%     %     sFiles{4} = sBeatFileName{6};
+%     %     sFiles{5} = sBeatFileName{5};
+%     %     sFiles{6} = sBeatFileName{4};
+%     %     sFiles{7} = sBeatFileName{2};
+%     %     sFiles{8} = sBeatFileName{1};
+%     sBeatFileName = sFiles;
+%     
+%     %intialise arrays to hold beat information
+%    
+%     aAllActivationTimes = zeros(rowdim,coldim,length(sBeatFileName));
+%     aAllRepolarisationTimes = zeros(rowdim,coldim,length(sBeatFileName));
+%     aAllAPDs = zeros(rowdim,coldim,length(sBeatFileName));
+%     %get the beat data
+%     for i = 1:length(sBeatFileName)
+%         sLongDataFileName=strcat(sBeatPathName,char(sBeatFileName{i}));
+%         [aHeaderInfo aAllActivationTimes(:,:,i) aAllRepolarisationTimes(:,:,i) aAllAPDs(:,:,i)] = ReadOpticalDataCSVFile(sLongDataFileName,rowdim,coldim,7);
+%     end
+% else
+%     if (~ischar(sBeatFileName) && ~ischar(sBeatPathName))
+%         break
+%     end
+%     %get the beat data
+%     [aHeaderInfo aAllActivationTimes aAllRepolarisationTimes aAllAPDs] = ReadOpticalDataCSVFile(strcat(sBeatPathName,sBeatFileName),rowdim,coldim,7);
+% end
 
 %% Get S/N, power spectra and candidates for dVdtMax
 
@@ -146,7 +146,7 @@ aNewPaceSettersToPlot = cell(iNumFiles,1);
 aLocationsToPlot = cell(iNumFiles,1);
 
 %create array to hold subplot figure handles
-iNumberOfSubplotsFigures = 10;
+iNumberOfSubplotsFigures = 9;
 aSubplotFigures = zeros(iNumberOfSubplotsFigures,1);
 aSubplotAxes = cell(iNumberOfSubplotsFigures,1);
 aSubplotHandles = zeros(iNumFiles,iNumberOfSubplotsFigures,2);
@@ -310,14 +310,14 @@ for i = [2:iNumFiles 1]
         [aPSDX(:,j,i) Fxx] = periodogram(aData,oWindow,iNumDataPoints,iSamplingFreq);
         j = j + 1;
     end
-    if i == iNumFiles 
-        for n = 1:length(aSubplotFigures)
-            set(aSubplotHandles(iNumFiles,n,1),'xticklabel',XLabel);
-            set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'string','Time (ms)');
-            set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'fontunits','points');
-            set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'fontsize',6);
-        end
-    end
+%     if i == iNumFiles 
+%         for n = 1:length(aSubplotFigures)
+%             set(aSubplotHandles(iNumFiles,n,1),'xticklabel',XLabel);
+%             set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'string','Time (ms)');
+%             set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'fontunits','points');
+%             set(get(aSubplotHandles(iNumFiles,n,1),'xlabel'),'fontsize',6);
+%         end
+%     end
     iStoN = mean(aSignaltoNoise,2);
     fprintf('Mean signal to noise for %s is %0.2f\n', char(sFileName{i}), iStoN(i));
     

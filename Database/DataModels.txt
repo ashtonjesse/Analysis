@@ -12,6 +12,10 @@ oUnemap.RMS.Curvature.Values
 oUnemap.RMS.Curvature.Peaks
 oUnemap.RMS.Curvature.Threshold
 oUnemap.RMS.Curvature.SDMultiplier
+oUnemap.RMS.HeartRate.BeatIndexes
+oUnemap.RMS.HeartRate.BeatRates
+oUnemap.RMS.HeartRate.BeatRateData
+oUnemap.RMS.HeartRate.BeatTimes
 
 Electrodes: (not wrapped by a class)
 Electrodes(i).Accepted

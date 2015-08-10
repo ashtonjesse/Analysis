@@ -1,24 +1,20 @@
 % close all;
-%Open unemap file
-oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro001\pabaro001_unemap.mat');
-oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro001\baro001_pressure.mat','Extracellular');
-for i = 1:numel(oUnemap.Electrodes)
-    oUnemap.Electrodes(i).SignalEvent(1).Range = vertcat(oUnemap.Electrodes(i).SignalEvent(1).Range, [0 0]);
-    oUnemap.Electrodes(i).SignalEvent(1).Index = vertcat(oUnemap.Electrodes(i).SignalEvent(1).Index, 0);
-end
-for i = 1:numel(oUnemap.Electrodes)
-    [x b] = oUnemap.CalculateSinusRate(i);
-    oUnemap.Electrodes(i).Processed.BeatRateData = oUnemap.Electrodes(i).Processed.BeatRateData';
-    oUnemap.Electrodes(i).Processed.BeatRates = oUnemap.Electrodes(i).Processed.BeatRates';
-    oUnemap.Electrodes(i).Processed.BeatRateTimes = oUnemap.Electrodes(i).Processed.BeatRateTimes';
-end
-oUnemap.RotateArray();
-oActivation = oUnemap.PrepareEventMap(100, 1,35);
+% % % Open unemap file
+% oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20140505\20140505baro002\pabaro002_unemap.mat');
+% oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20140505\20140505baro002\baro002_pressure.mat','Extracellular');
+% for i = 1:numel(oUnemap.Electrodes)
+%     [x b] = oUnemap.CalculateSinusRate(i);
+%     oUnemap.Electrodes(i).Processed.BeatRateData = oUnemap.Electrodes(i).Processed.BeatRateData';
+%     oUnemap.Electrodes(i).Processed.BeatRates = oUnemap.Electrodes(i).Processed.BeatRates';
+%     oUnemap.Electrodes(i).Processed.BeatRateTimes = oUnemap.Electrodes(i).Processed.BeatRateTimes';
+% end
+% % % % % oUnemap.RotateArray();
+% oActivation = oUnemap.PrepareEventMap(100, 1, 35);
 
 %set variables
 dWidth = 16;
 dHeight = 23.2;
-sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularCV_20130904.eps';
+sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularCV_20140505.eps';
 % sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Test.bmp';
 %Create plot panel that has 3 rows at top to contain pressure, electrogram and heart rate 
 
@@ -33,11 +29,11 @@ set(oFigure,'Units','centimeters');
 set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
 set(oFigure,'Resize','off');
 %set up panel
-xrange = 5;
-yrange = 5;
+xrange = 6;
+yrange = 6;
 oSubplotPanel = panel(oFigure);
 oSubplotPanel.pack({0.25 0.73 0.02});
-oSubplotPanel(1).pack('h',{0.065,0.935});
+oSubplotPanel(1).pack('h',{0.06,0.94});
 oSubplotPanel(2).pack(xrange,yrange);
 oSubplotPanel(3).pack('h',{0.95});
 movegui(oFigure,'center');
@@ -52,9 +48,9 @@ oSubplotPanel(1).fontweight = 'normal';
 oSubplotPanel(3).fontsize = 12;
 oSubplotPanel(3).fontweight = 'bold';
 
-aCVRange = [0.2 1];
+aCVRange = [0 1];
 %% plot top panel
-iStartBeat = 30;
+iStartBeat = 6;
 iBoxXLocation = 1;
 % %plot HR
 oAxes = oSubplotPanel(1,2).select();
@@ -63,7 +59,7 @@ for k = iStartBeat:1:iStartBeat+(xrange*yrange)-1
     iMapBeat = k + 1;
     idxCV = find(~isnan(oActivation.Beats(iMapBeat).CVApprox));
     aCVdata = oActivation.Beats(iMapBeat).CVApprox(idxCV);
-    bplot(aCVdata,oAxes,iBoxXLocation,'nolegend','nooutliers','nomean','tukey','linewidth',1);
+    bplot(aCVdata,oAxes,iBoxXLocation,'nolegend','nomean','nooutliers','tukey','linewidth',1);
     aXTickLabels{1,iBoxXLocation} = sprintf('%d',k);
     iBoxXLocation = iBoxXLocation + 1;
     hold(oAxes,'on');
@@ -79,7 +75,7 @@ xlabel(oAxes,'Beat #');
 oYlabel = ylabel(oAxes,['Apparent', 10,'CV (m/s)']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
-oPosition(1) = - 1.8;
+oPosition(1) = - 2.5;
 oYLim = get(oAxes,'ylim');
 oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 2;
 set(oYlabel,'position',oPosition);
@@ -94,17 +90,17 @@ aMeanTimes = mean(aTimeData,2);
 
 % %plot maps
 iBeatCount = 0;
-aXlim = [-2 6.4];
-aYlim = [-2 6.4];
+aXlim = [-1.5 6];
+aYlim = [-1.5 6];
 aCVContours = aCVRange(1):0.1:aCVRange(2);
-for i = 1:5
-    for j = 1:5
+for i = 1:yrange
+    for j = 1:xrange
         iBeat = iStartBeat + iBeatCount;
         iMapBeat = iBeat + 1;
         if (i == 1) && (j == 1)
             oAxes = oSubplotPanel(2,1,1).select();
             oOverlay = axes('position',get(oAxes,'position'));
-            imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20130904\20130904Schematic.bmp','Parent', oAxes, 'Border', 'tight');
+            imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140501\Schematic.bmp','Parent', oAxes, 'Border', 'tight');
             set(oAxes,'box','off','color','none');
             axis(oAxes,'tight');
             axis(oAxes,'off');
@@ -122,23 +118,23 @@ for i = 1:5
             set(oOverlay,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
             axis(oOverlay,'off');
             %create labels
-            oLabel = text(3,6.4,'SVC','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+            oLabel = text(3,6,'SVC','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
             set(oLabel,'fontsize',8);
-            oLabel = text(-2,-1,'IVC','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','right');
+            oLabel = text(0,0.3,'IVC','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','right');
             set(oLabel,'fontsize',8);
-            oLabel = text(5,1.8,'RA','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+            oLabel = text(5,0.5,'RA','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
             set(oLabel,'fontsize',8);
          else
             oAxes = oSubplotPanel(2,i,j).select();
             oOverlay = axes('position',get(oAxes,'position'));
-            imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20130904\20130904Schematic.bmp','Parent', oAxes);
+            imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140501\Schematic.bmp','Parent', oAxes);
             set(oAxes,'box','off','color','none');
             axis(oAxes,'tight');
             axis(oAxes,'off');
             idxCV = find(~isnan(oActivation.Beats(iMapBeat).CVApprox));
             aCVdata = oActivation.Beats(iMapBeat).CVApprox(idxCV);
             aCVdata(aCVdata > 1) = 1;
-            scatter(oOverlay,oActivation.CVx(idxCV),oActivation.CVy(idxCV),12,aCVdata,'filled');
+            scatter(oOverlay,oActivation.CVx(idxCV),oActivation.CVy(idxCV),10,aCVdata,'filled');
             hold(oOverlay, 'on');
             quiver(oOverlay,oActivation.CVx(idxCV),oActivation.CVy(idxCV),oActivation.Beats(iMapBeat).CVVectors(idxCV,1), ...
                 oActivation.Beats(iMapBeat).CVVectors(idxCV,2),'color','k','linewidth',0.6);
@@ -152,17 +148,17 @@ for i = 1:5
         %label beat number, rate and pressure
         %get pressure
         [MinVal MinIndex] = min(abs(oPressure.TimeSeries.Processed - aMeanTimes(iBeat)));
-        oLabel = text(-2,4,sprintf('%d mmHg',round(oPressure.Processed.Data(MinIndex))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        oLabel = text(aXlim(1),4,sprintf('%d mmHg',round(oPressure.Processed.Data(MinIndex))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',6);
-        oLabel = text(-2,3,sprintf('%d bpm',round(aMeanRates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        oLabel = text(aXlim(1),3,sprintf('%d bpm',round(aMeanRates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',6);
-        oLabel = text(-2,5.5,sprintf('#%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        oLabel = text(aXlim(1),5.5,sprintf('#%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',12);
         %plot earliest activation
         oFirstElectrodes = oUnemap.Electrodes(~logical(oActivation.Beats(iMapBeat).FullActivationTimes));
         aCoords = cell2mat({oFirstElectrodes(:).Coords});
         aCoords = aCoords';
-        dMarksize = 8;
+        dMarksize = 10;
         hold(oOverlay,'on');
         scatter(oOverlay, aCoords(:,1), aCoords(:,2), 'filled', ...
             'SizeData',dMarksize,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');

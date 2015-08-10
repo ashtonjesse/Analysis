@@ -171,6 +171,9 @@ classdef Unemap < BasePotential
             %Split again into the Electrodes
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','Beats',cell2mat(aOutData(1)));
             oUnemap.Electrodes = MultiLevelSubsAsgn(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
+            %save info to RMS field too
+            oUnemap.RMS.HeartRate.BeatIndexes = cell2mat(aOutData(2));
+            [~, ~, ~] = oUnemap.CalculateSinusRateFromRMS();
         end
         
         function ProcessArrayData(oUnemap, aInOptions)
@@ -863,7 +866,7 @@ classdef Unemap < BasePotential
             oUnemap.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Index(iBeat) = iIndex; 
         end
 
-        function oMapData = PrepareEventMap(oUnemap,dInterpDim,iEventID)
+        function oMapData = PrepareEventMap(oUnemap,dInterpDim,iEventID,iSupportPoints)
             %If no eventID has been specified then default to 1
             if isempty(iEventID)
                 iEventID = 1;
@@ -948,7 +951,7 @@ classdef Unemap < BasePotential
                 oMapData.Beats(k).z  = reshape(aQZArray,size(xlin,1),size(xlin,2));
                 
                 %Calculate the CV and save the results
-                [CVApprox,CVVectors,ATgrad]=ReComputeCV([aFullCoords(:,1),aFullCoords(:,2)],oMapData.Beats(k).FullActivationTimes,24,0.1);
+                [CVApprox,CVVectors,ATgrad]=ReComputeCV([aFullCoords(:,1),aFullCoords(:,2)],oMapData.Beats(k).FullActivationTimes,iSupportPoints,0.1);
                 oMapData.Beats(k).CVApprox = CVApprox;
                 oMapData.Beats(k).CVVectors = CVVectors;
                 oMapData.Beats(k).ATgrad = ATgrad;

@@ -1,24 +1,20 @@
 % close all;
 %Open unemap file
-oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro001\pabaro001_unemap.mat');
-oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904baro001\baro001_pressure.mat','Extracellular');
-for i = 1:numel(oUnemap.Electrodes)
-    oUnemap.Electrodes(i).SignalEvent(1).Range = vertcat(oUnemap.Electrodes(i).SignalEvent(1).Range, [0 0]);
-    oUnemap.Electrodes(i).SignalEvent(1).Index = vertcat(oUnemap.Electrodes(i).SignalEvent(1).Index, 0);
-end
-for i = 1:numel(oUnemap.Electrodes)
-    [x b] = oUnemap.CalculateSinusRate(i);
-    oUnemap.Electrodes(i).Processed.BeatRateData = oUnemap.Electrodes(i).Processed.BeatRateData';
-    oUnemap.Electrodes(i).Processed.BeatRates = oUnemap.Electrodes(i).Processed.BeatRates';
-    oUnemap.Electrodes(i).Processed.BeatRateTimes = oUnemap.Electrodes(i).Processed.BeatRateTimes';
-end
-oUnemap.RotateArray();
-oActivation = oUnemap.PrepareEventMap(100, 1,35);
+% oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
+% oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\chemo002_pressure.mat','Extracellular');
+% for i = 1:numel(oUnemap.Electrodes)
+%     [x b] = oUnemap.CalculateSinusRate(i);
+%     oUnemap.Electrodes(i).Processed.BeatRateData = oUnemap.Electrodes(i).Processed.BeatRateData';
+%     oUnemap.Electrodes(i).Processed.BeatRates = oUnemap.Electrodes(i).Processed.BeatRates';
+%     oUnemap.Electrodes(i).Processed.BeatRateTimes = oUnemap.Electrodes(i).Processed.BeatRateTimes';
+% end
+% % % oUnemap.RotateArray();
+% oActivation = oUnemap.PrepareEventMap(100, 1,35);
 
 %set variables
 dWidth = 16;
 dHeight = 23.2;
-sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularCV_20130904.eps';
+sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ExtracellularCV_20130904_chemo.eps';
 % sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Test.bmp';
 %Create plot panel that has 3 rows at top to contain pressure, electrogram and heart rate 
 
@@ -33,8 +29,8 @@ set(oFigure,'Units','centimeters');
 set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
 set(oFigure,'Resize','off');
 %set up panel
-xrange = 5;
-yrange = 5;
+xrange = 6;
+yrange = 6;
 oSubplotPanel = panel(oFigure);
 oSubplotPanel.pack({0.25 0.73 0.02});
 oSubplotPanel(1).pack('h',{0.065,0.935});
@@ -54,7 +50,7 @@ oSubplotPanel(3).fontweight = 'bold';
 
 aCVRange = [0.2 1];
 %% plot top panel
-iStartBeat = 30;
+iStartBeat = 20;
 iBoxXLocation = 1;
 % %plot HR
 oAxes = oSubplotPanel(1,2).select();
@@ -79,7 +75,7 @@ xlabel(oAxes,'Beat #');
 oYlabel = ylabel(oAxes,['Apparent', 10,'CV (m/s)']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
-oPosition(1) = - 1.8;
+oPosition(1) = - 2.4;
 oYLim = get(oAxes,'ylim');
 oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 2;
 set(oYlabel,'position',oPosition);
@@ -97,8 +93,8 @@ iBeatCount = 0;
 aXlim = [-2 6.4];
 aYlim = [-2 6.4];
 aCVContours = aCVRange(1):0.1:aCVRange(2);
-for i = 1:5
-    for j = 1:5
+for i = 1:yrange
+    for j = 1:xrange
         iBeat = iStartBeat + iBeatCount;
         iMapBeat = iBeat + 1;
         if (i == 1) && (j == 1)

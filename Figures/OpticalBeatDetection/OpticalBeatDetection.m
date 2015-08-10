@@ -163,6 +163,7 @@ classdef OpticalBeatDetection < BaseFigure
             
             oFigure.oGuiHandle.oOptical.Electrodes.Processed.Beats = cell2mat(aOutData(1));
             oFigure.oGuiHandle.oOptical.Electrodes.Processed.BeatIndexes = cell2mat(aOutData(2));
+            oFigure.oGuiHandle.oOptical.CalculateSinusRate(1);
             oFigure.Replot();
         end
     end

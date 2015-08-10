@@ -1162,7 +1162,7 @@ classdef AnalyseSignals < SubFigure
                  plot(oAxes,aTime,aBeatData,'-g');
                  plot(oAxes,aSelectedTime,aSelectedBeat,'-b');
                  %Loop through beats and label
-                 for j = 1:size(aBeatIndexes,1);
+                 for j = 1:4:size(aBeatIndexes,1);
                      oBeatLabel = text(aTime(aBeatIndexes(j,1)),YMax, num2str(j));
                      set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','normalized');
                      set(oBeatLabel,'FontSize',0.10);
@@ -1220,7 +1220,7 @@ classdef AnalyseSignals < SubFigure
                  oFigure.oParentFigure.oGuiHandle.oPressure.(oFigure.oParentFigure.oGuiHandle.oPressure.Status).Data,'k');
              axis(oFigure.oGuiHandle.oECGAxes,[TimeMin, TimeMax, YMin - 10, YMax + 10]);
              oXLabel = get(oFigure.oGuiHandle.oECGAxes,'XLabel');
-             set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
+%              set(oXLabel,'string','Time (s)','Position',get(oXLabel,'Position') + [0 10 0]);
          end
          
          function PlotSinusRate(oFigure)

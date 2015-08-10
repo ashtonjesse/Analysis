@@ -1,4 +1,4 @@
-function [ax,hfill]=cbarf(v,L,mode,scale,oAxes);
+function [ax,hfill]=cbarf(v,L,mode,scale,oAxes,sType);
 %CBARF   Real filled colorbar.
 %   Similar to the well known colorbarf but more realistic.
 %   There are two things missing in colorbar and colorbarf:
@@ -170,8 +170,10 @@ addUp  = 0;
 addBot = 0;
 if L(end) <= Mv, addUp  = 1; end
 if L(1)   >= mv, addBot = 1; end
-addUp  = 0;
-addBot = 0;
+if strcmp(sType,'AT')
+    addUp  = 0;
+    addBot = 0;
+end
 % draw the rectangles:
 Nrec=1;
 a=max(1,i1);
@@ -264,7 +266,12 @@ else
   %create labels
   dSpace = (L(end) - L(1))/(2*numel(L));
   for i = 1:numel(xt)
-      oLabel = text(xt(i),-0.8,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+      switch (sType)
+          case 'AT'
+              oLabel = text(xt(i),-0.8,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+          case 'CV'
+              oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+      end
       set(oLabel,'fontsize',12);
   end
 end

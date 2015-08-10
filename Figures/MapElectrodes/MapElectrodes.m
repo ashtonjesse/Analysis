@@ -496,7 +496,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour', oFigure.oParentFigure.SelectedEventID,[],[]);
+                oFigure.Activation = oFigure.oParentFigure.oParentFigure.oGuiHandle.oUnemap.PrepareEventMap(100, oFigure.oParentFigure.SelectedEventID);
             end
             
             %Update the plot type

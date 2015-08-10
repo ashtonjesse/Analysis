@@ -81,8 +81,13 @@ classdef BaseFigure < handle
         
         function PrintFigureToFile(oFigure, sFilePath)
             %print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dpng','-r500',sFilePath);
-                        print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dbmp','-r300',sFilePath)
-%             print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dps','-r600',sFilePath)
+            [pathstr, name, ext, versn] = fileparts(sFilePath);
+            switch (ext)
+                case '.bmp'
+                    print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dbmp','-r600',sFilePath)
+                case '.eps'
+                    print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dpsc','-r300',sFilePath)
+            end
         end
         
         function nValue = GetSliderIntegerValue(oFigure, sSliderTag)
