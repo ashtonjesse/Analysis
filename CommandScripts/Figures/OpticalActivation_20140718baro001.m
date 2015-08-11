@@ -2,26 +2,28 @@
 %of maps covers the whole space - 06/08/2015
 
 close all;
-% clear all;
-% % % % %Read in the file containing all the optical data 
-% sCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\baro001_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
-% [path name ext ver] = fileparts(sCSVFileName);
-% if strcmpi(ext,'.csv')
-%     aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
-%     save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
-% elseif strcmpi(ext,'.mat')
-%     load(sCSVFileName);
-% end
-% %%% read in the experiment file
-% sExperimentFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718_experiment.txt';
-% oExperiment = GetExperimentFromTxtFile(Experiment, sExperimentFileName);
-% % % %% read in the optical entity
-% sOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Optical.mat';
-% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
-% % % % read in the pressure entity
-% oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Pressure.mat','Optical');
-% % % % get needle points
-% oNeedlePoints = GetNeedlePointLocationsFromCSV('G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\NeedlePoints.csv',0,0);
+clear all;
+% % % %Read in the file containing all the optical data
+sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\';
+sSubDir = [sBaseDir,'20140718baro003\'];
+sCSVFileName = [sSubDir,'baro003_3x3_1ms_7x_g10_LP100Hz-waveEach.csv'];
+[path name ext ver] = fileparts(sCSVFileName);
+if strcmpi(ext,'.csv')
+    aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
+    save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
+elseif strcmpi(ext,'.mat')
+    load(sCSVFileName);
+end
+%%% read in the experiment file
+sExperimentFileName = [sBaseDir,'20140718_experiment.txt'];
+oExperiment = GetExperimentFromTxtFile(Experiment, sExperimentFileName);
+% % %% read in the optical entity
+sOpticalFileName = [sSubDir,'Optical.mat'];
+oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % % read in the pressure entity
+oPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
+% % % get needle points
+oNeedlePoints = GetNeedlePointLocationsFromCSV([sSubDir,'NeedlePoints.csv'],0,0);
 
 %set variables
 dWidth = 16;

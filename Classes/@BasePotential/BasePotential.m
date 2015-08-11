@@ -121,7 +121,6 @@ classdef BasePotential < BaseSignal
             oBasePotential.Electrodes(iChannel).Status = 'Processed';
             %Calculate slope and curvature
             oBasePotential.GetSlope('Data',iChannel);
-            oBasePotential.GetCurvature(iChannel);
         end
         
         function ClearProcessedData(oBasePotential, iChannel)
@@ -230,7 +229,7 @@ classdef BasePotential < BaseSignal
                     (oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
                 [val, loc] = max(aSlope);
                 %Add the first index of this beat
-                dPeaks(i,1) = loc + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
+                dPeaks(i,1) = loc - 1 + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
             end
             [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
              %need to add a NaN to the start because otherwise this won't
@@ -265,7 +264,7 @@ classdef BasePotential < BaseSignal
                 [val, loc] = max(aCurvature);
                 
                 %Add the first index of this beat
-                dPeaks(i,1) = loc + oBasePotential.RMS.HeartRate.BeatIndexes(i,1);
+                dPeaks(i,1) = loc - 1 + oBasePotential.RMS.HeartRate.BeatIndexes(i,1);
             end
             [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
             oBasePotential.RMS.HeartRate.BeatRates = aRates;
@@ -384,6 +383,12 @@ classdef BasePotential < BaseSignal
                 waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
             end
             close(oWaitbar);
+        end
+        
+        function aSpatialLimits = GetSpatialLimits(oBasePotential)
+            %get the coordinates and return extent
+            aCoords = cell2mat({oBasePotential.Electrodes(:).Coords});
+            aSpatialLimits = [min(aCoords(1,:)), max(aCoords(1,:)); min(aCoords(2,:)), max(aCoords(2,:))];
         end
     end
     

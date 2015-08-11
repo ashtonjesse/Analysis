@@ -453,7 +453,6 @@ classdef AnalyseSignals < SubFigure
              oFigure.SelectedBeat = event.Value;
              notify(oFigure,'BeatSelectionChange',DataPassingEvent([1 size(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1)],oFigure.SelectedBeat));
              oFigure.Replot();
-             
          end
          
          function TimeSlideValueListener(oFigure, src, event)
@@ -515,7 +514,7 @@ classdef AnalyseSignals < SubFigure
          
          function oMapMenu_Callback(oFigure, src, event)
             %Open a electrode map plot
-            oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.SubPlotXdim,oFigure.SubPlotYdim);
+            oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.oParentFigure);
             %Add a listener so that the figure knows when a user has
             %made a channel selection
             addlistener(oMapElectrodesFigure,'ChannelGroupSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
@@ -526,7 +525,7 @@ classdef AnalyseSignals < SubFigure
          
          function oBeatWindowMenu_Callback(oFigure, src, event)
             %Open a beat plot
-            oBeatPlotFigure = BeatPlot(oFigure);
+            oBeatPlotFigure = BeatPlot(oFigure,oFigure.oParentFigure);
             addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
             addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.SignalEventDeleted(src,event));
             addlistener(oBeatPlotFigure,'SignalEventSelected',@(src,event) oFigure.SignalEventSelected(src,event));

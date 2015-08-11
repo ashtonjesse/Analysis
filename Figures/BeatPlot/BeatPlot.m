@@ -7,6 +7,7 @@ classdef BeatPlot < SubFigure
         SelectedEventID;
         ElectrodesForAction = [];
         BeatsForAction = [];
+        oRootFigure;
     end
     
     events
@@ -18,9 +19,10 @@ classdef BeatPlot < SubFigure
     end
     
     methods
-        function oFigure = BeatPlot(oParent)
+        function oFigure = BeatPlot(oParent,oRootFigure)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'BeatPlot',@OpeningFcn);
+            oFigure.oRootFigure = oRootFigure;
             %Add a listener so that the figure knows when a user has
             %made a beat selection
             addlistener(oFigure.oParentFigure,'BeatSelectionChange',@(src,event) oFigure.BeatSelectionListener(src, event));

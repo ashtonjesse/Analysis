@@ -1,23 +1,27 @@
-% % % % load an optical data file and a corresponding optical entity
-% close all;
-% clear all;
-% % % % %Read in the file containing all the optical data 
-% sCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\baro001_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
-% [path name ext ver] = fileparts(sCSVFileName);
-% if strcmpi(ext,'.csv')
-%     aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
-%     save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
-% elseif strcmpi(ext,'.mat')
-%     load(sCSVFileName);
-% end
-% %%% read in the experiment file
-% sExperimentFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718_experiment.txt';
-% oExperiment = GetExperimentFromTxtFile(Experiment, sExperimentFileName);
-% % % %% read in the optical entity
-% sOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Optical.mat';
-% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
-% % % % get needle points
-% oNeedlePoints = GetNeedlePointLocationsFromCSV('G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\NeedlePoints.csv',0,0);
+% % % load an optical data file and a corresponding optical entity
+close all;
+clear all;
+% % % %Read in the file containing all the optical data
+sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140718\';
+sSubDir = [sBaseDir,'20140718baro003\'];
+sCSVFileName = [sSubDir,'baro003_3x3_1ms_7x_g10_LP100Hz-waveEach.csv'];
+[path name ext ver] = fileparts(sCSVFileName);
+if strcmpi(ext,'.csv')
+    aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
+    save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
+elseif strcmpi(ext,'.mat')
+    load(sCSVFileName);
+end
+%%% read in the experiment file
+sExperimentFileName = [sBaseDir,'20140718_experiment.txt'];
+oExperiment = GetExperimentFromTxtFile(Experiment, sExperimentFileName);
+% % %% read in the optical entity
+sOpticalFileName = [sSubDir,'Optical.mat'];
+oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % % read in the pressure entity
+oPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
+% % % get needle points
+oNeedlePoints = GetNeedlePointLocationsFromCSV([sSubDir,'NeedlePoints.csv'],0,0);
 
 % % % % % % % clear unwanted variables
 % % % % % % % clear path name ext ver
@@ -47,42 +51,46 @@ iCols = iCurrentGuess;
 oPanel.pack(iRows,iCols);
 oPanel.margin = [1 1 1 1];
 oPanel.de.margin = 0;
-% % % % % %set dimensions of maps
-% rowdim = 41;
-% coldim = 41;
-% % % initialise array to hold activation times
-% aThisOAP.ActivationArray = -ones(rowdim,coldim,size(oOptical.Electrodes.Processed.BeatIndexes,1),'int16');
-% % % % % % create a variable to store the AT indexes
-% aThisOAP.ActivationIndex = zeros(size(aThisOAP.Locations,2),size(oOptical.Electrodes.Processed.BeatIndexes,1),'uint16');
-% % % % % %loop through the locations
-% % iPrevAvrgIndex = 0;
-% oNewFigure = figure();oAxes = axes('parent',oNewFigure);
-% for j = 1:size(aThisOAP.Locations,2)
-%     %get location details
-%     XLoc = aThisOAP.Locations(1,j)+1; %these locations are 0 based so add 1
-%     YLoc = aThisOAP.Locations(2,j)+1; %yloc refers to the row of the matrix
-%     % %     %compute slope for this location
-%     aSlope = oOptical.CalculateSlope(-aThisOAP.Data(:,j),5,3);
-%     
-%     for i = 1:size(oOptical.Electrodes.Processed.BeatIndexes,1)
-%         % %         %get the slope for this beat
-%         aSubSlope = aSlope(oOptical.Electrodes.Processed.BeatIndexes(i,1):oOptical.Electrodes.Processed.BeatIndexes(i,2));
-%         [dMaxVal iMaxIndex] = max(aSubSlope);
-%         aThisOAP.ActivationIndex(j,i) = iMaxIndex-1+oOptical.Electrodes.Processed.BeatIndexes(i,1); %subtract one so that it can be used to index the time array directly
-%         aThisOAP.ActivationArray(YLoc,XLoc,i) = aThisOAP.ActivationIndex(j,i);
-% %         plotyy(oOptical.TimeSeries(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20),...
-% %             -aThisOAP.Data(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20,j),...
-% %             oOptical.TimeSeries(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20),...
-% %             aSlope(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20));
-%     end
-% 
-% end
+% % % % %set dimensions of maps
+rowdim = 41;
+coldim = 41;
+% % initialise array to hold activation times
+aThisOAP.ActivationArray = -ones(rowdim,coldim,size(oOptical.Electrodes.Processed.BeatIndexes,1),'int16');
+% % % % % create a variable to store the AT indexes
+aThisOAP.ActivationIndex = zeros(size(aThisOAP.Locations,2),size(oOptical.Electrodes.Processed.BeatIndexes,1),'uint16');
+% % % % %loop through the locations
+% iPrevAvrgIndex = 0;
+oNewFigure = figure();oAxes = axes('parent',oNewFigure);
+for j = 1:size(aThisOAP.Locations,2)
+    %get location details
+    XLoc = aThisOAP.Locations(1,j)+1; %these locations are 0 based so add 1
+    YLoc = aThisOAP.Locations(2,j)+1; %yloc refers to the row of the matrix
+    % %     %compute slope for this location
+    aSlope = oOptical.CalculateSlope(-aThisOAP.Data(:,j),5,3);
+    
+    for i = 1:size(oOptical.Electrodes.Processed.BeatIndexes,1)
+        % %         %get the slope for this beat
+        aSubSlope = aSlope(oOptical.Electrodes.Processed.BeatIndexes(i,1):oOptical.Electrodes.Processed.BeatIndexes(i,2));
+        [dMaxVal iMaxIndex] = max(aSubSlope);
+        aThisOAP.ActivationIndex(j,i) = iMaxIndex-1+oOptical.Electrodes.Processed.BeatIndexes(i,1); %subtract one so that it can be used to index the time array directly
+        aThisOAP.ActivationArray(YLoc,XLoc,i) = aThisOAP.ActivationIndex(j,i);
+%         plotyy(oOptical.TimeSeries(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20),...
+%             -aThisOAP.Data(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20,j),...
+%             oOptical.TimeSeries(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20),...
+%             aSlope(oOptical.Electrodes.Processed.BeatIndexes(i,1)+20:oOptical.Electrodes.Processed.BeatIndexes(i,2)-20));
+    end
+
+end
 
 
 % %loop through beats and map them
 iAxesRow = 1;
 iAxesCol = 1;
 dRes = 0.2;
+aLocs = aThisOAP.Locations;
+aLocs(1,:) = aThisOAP.Locations(2,:);
+aLocs(2,:) = aThisOAP.Locations(1,:);
+aThisOAP.Locations = aLocs;
 aCoords = aThisOAP.Locations'.*dRes;
 rowlocs = aCoords(:,1);
 collocs = aCoords(:,2);
