@@ -514,7 +514,7 @@ classdef AnalyseSignals < SubFigure
          
          function oMapMenu_Callback(oFigure, src, event)
             %Open a electrode map plot
-            oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.oParentFigure);
+            oMapElectrodesFigure = MapElectrodes(oFigure,oFigure.oParentFigure,'oUnemap');
             %Add a listener so that the figure knows when a user has
             %made a channel selection
             addlistener(oMapElectrodesFigure,'ChannelGroupSelection',@(src,event) oFigure.ChannelSelectionChange(src, event));
@@ -525,7 +525,7 @@ classdef AnalyseSignals < SubFigure
          
          function oBeatWindowMenu_Callback(oFigure, src, event)
             %Open a beat plot
-            oBeatPlotFigure = BeatPlot(oFigure,oFigure.oParentFigure);
+            oBeatPlotFigure = BeatPlot(oFigure,oFigure.oParentFigure,'oUnemap');
             addlistener(oBeatPlotFigure,'SignalEventRangeChange',@(src,event) oFigure.SignalEventRangeListener(src, event));
             addlistener(oBeatPlotFigure,'SignalEventDeleted',@(src,event) oFigure.SignalEventDeleted(src,event));
             addlistener(oBeatPlotFigure,'SignalEventSelected',@(src,event) oFigure.SignalEventSelected(src,event));
@@ -553,7 +553,6 @@ classdef AnalyseSignals < SubFigure
              aControlData{5} = {'CurrentElectrode','SelectedElectrodes','AllElectrodes'};
              oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique, beat selection and electrode selection for the new event.',aControlData);
              addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
-
          end
          
          function oMaxSpatialMenu_Callback(oFigure, src, event)

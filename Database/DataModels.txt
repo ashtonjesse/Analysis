@@ -37,7 +37,7 @@ Electrodes(i).Processed.CentralDifference
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
 Electrodes(i).Processed.Beats %%An array containing just the processed data between each of the two beat indexes and nans everywhere else
-Electrodes(i).Processed.BeatIndexes %%A 2 column array that contains the start and end indexes of Processed.Data for each beat. Is stored for each electrode but actually is the same for all electrodes
+Electrodes(i).Processed.BeatIndexes 
 Electrodes(i).Processed.BeatRates %An array containing the rate for each beat
 Electrodes(i).Processed.BeatRateData %An array containing the rate for each time point for the whole recording
 Electrodes(i).Processed.BeatRateTimes %An array containing the time points at which the beats occur

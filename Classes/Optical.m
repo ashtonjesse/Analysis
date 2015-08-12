@@ -44,20 +44,6 @@ classdef Optical < BasePotential
             oOptical.TimeSeries = oData.oEntity.TimeSeries;
             oOptical.Name = oData.oEntity.Name;
         end
-    end
-    
-    methods (Access = protected)
-        %% Inherited protected methods
-        function SaveEntity(oOptical,sPath)
-            SaveEntity@BaseEntity(oOptical,sPath);
-        end
-    end
-    
-    methods (Access = public)
-        %% Public methods
-        function Save(oOptical,sPath)
-            SaveEntity(oOptical,sPath);
-        end
         
         function oOptical = GetOpticalRecordingFromCSVFile(oOptical, sFileName, oExperiment)
             %   Get an entity by loading data from a CSV file 
@@ -85,6 +71,20 @@ classdef Optical < BasePotential
             sResult = regexp(sPath,'\\','split');
             oOptical.Name = char(sResult{end});
         end
+    end
+    
+    methods (Access = protected)
+        %% Inherited protected methods
+        function SaveEntity(oOptical,sPath)
+            SaveEntity@BaseEntity(oOptical,sPath);
+        end
+    end
+    
+    methods (Access = public)
+        %% Public methods
+        function Save(oOptical,sPath)
+            SaveEntity(oOptical,sPath);
+        end
         
         function oOptical = GetArrayBeats(oOptical,aPeaks)
             %get the beat information and put it into the electrode struct
@@ -100,6 +100,163 @@ classdef Optical < BasePotential
             for i = 1:numel(oOptical.Electrodes)
                 oOptical.FinishProcessing(i);
                 oOptical.CalculateSinusRate(i);
+            end
+        end
+        
+        function oMapData = PrepareActivationMap(oOptical, dInterpDim, sPlotType, iEventID, iSupportPoints, iBeatIndex, oActivationData)
+            %Get the inputs for a mapping call for activation times,
+            %returning a struct containing the x and y locations of the
+            %electrodes and the activation times for each. dInterpDim is
+            %the number of interpolation points in each direction
+                        
+            %If no eventID has been specified then default to 1
+            if isempty(iEventID)
+                iEventID = 1;
+            end
+            
+            switch (sPlotType)
+                case 'Scatter'
+                    oWaitbar = waitbar(0,'Please wait...');
+                    close(oWaitbar);
+                case 'Contour'
+                    %get the accepted channels
+                    aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'Accepted');
+                    aElectrodes = oOptical.Electrodes(logical(aAcceptedChannels));
+                    aFullCoords = cell2mat({oOptical.Electrodes(:).Coords});
+                    aFullCoords = aFullCoords';
+                    aCoords = cell2mat({aElectrodes(:).Coords});
+                    aCoords = aCoords';
+                    rowlocs = aCoords(:,1);
+                    collocs = aCoords(:,2);
+                    %Get the interpolated points array
+                    [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),...
+                        min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
+                    aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
+                    aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
+                    aMeshPoints = [aXArray,aYArray];
+                    %Find which points lie within the area of the array
+                    [V,ConcaveTri] = alphavol(aCoords,1);
+                    [FF BoundaryLocs] = freeBoundary(TriRep(ConcaveTri.tri,aCoords));
+                    aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),BoundaryLocs(:,1),BoundaryLocs(:,2));
+                    %do delaunay triangulation
+                    DT = DelaunayTri(aCoords);
+                    if isempty(oActivationData)
+                         %Initialise the map data struct
+                        oMapData = struct('x', xlin(1,:)', 'y', ylin(:,1), 'Boundary', aInBoundaryPoints, 'r2', [],'CVx',aFullCoords(:,1),'CVy',aFullCoords(:,2));
+                        %Initialise the Beats struct
+                        aData = struct('FullActivationTimes',zeros(1, numel(oOptical.Electrodes)),'ActivationTimes',...
+                            zeros(1, numel(aElectrodes)),'z',NaN(size(xlin)),'CVApprox',zeros(1, numel(oOptical.Electrodes)),...
+                            'CVVectors',zeros(1, numel(oOptical.Electrodes)),'ATgrad',zeros(1, numel(oOptical.Electrodes)));
+                        oMapData.Beats = repmat(aData,1,size(oOptical.Electrodes(1).SignalEvent(iEventID).Index,1));
+                        %Get the activation indexes
+                        aActivationIndexes = zeros(size(oOptical.Electrodes(1).SignalEvent(iEventID).Index,1), numel(aElectrodes));
+                        aFullActivationIndexes = zeros(size(oOptical.Electrodes(1).SignalEvent(iEventID).Index,1), numel(oOptical.Electrodes));
+                        aFullActivationTimes = zeros(size(aFullActivationIndexes));
+                        %track the number of accepted electrodes
+                        m = 0;
+                        for p = 1:numel(oOptical.Electrodes)
+                            if oOptical.Electrodes(p).Accepted
+                                m = m + 1;
+                                aActivationIndexes(:,m) = aElectrodes(m).SignalEvent(iEventID).Index;
+                                aFullActivationIndexes(:,p) =  aElectrodes(m).SignalEvent(iEventID).Index + oOptical.Electrodes(p).Processed.BeatIndexes(:,1);
+                                aFullActivationTimes(:,p) = oOptical.TimeSeries(aFullActivationIndexes(:,p));
+                            else
+                                %hold the unaccepted electrode places with inf
+                                aFullActivationTimes(:,p) =  Inf;
+                            end
+                        end
+                        %initialise the activation times array
+                        aActivationTimes = zeros(size(aActivationIndexes));
+                        %set up wait bar
+                        oWaitbar = waitbar(0,'Please wait...');
+                        %Loop through the beats
+                        for k = 1:size(aActivationIndexes,1)
+                            %Get the activation time fields for all time points during this
+                            %beat
+                            waitbar(k/size(aActivationIndexes,1),oWaitbar,sprintf('Please wait... Processing Beat %d',k));
+                            aActivationIndexes(k,:) = aActivationIndexes(k,:) + oOptical.Electrodes(1).Processed.BeatIndexes(k,1);
+                            aTimesToUse = oOptical.TimeSeries(aActivationIndexes(k,:));
+                            aActivationTimes(k,:) = aTimesToUse;
+                            %convert to ms
+                            aActivationTimes(k,:) = 1000*(oOptical.TimeSeries(aActivationIndexes(k,:)) - min(aTimesToUse));
+                            aFullActivationTimes(k,:) = 1000*(aFullActivationTimes(k,:) - min(aFullActivationTimes(k,:)));
+                            
+                            %save to struct
+                            oMapData.Beats(k).FullActivationTimes = aFullActivationTimes(k,:).';
+                            oMapData.Beats(k).ActivationTimes = aActivationTimes(k,:).';
+                            
+                            %do interpolation
+                            %calculate interpolant
+                            oInterpolant = TriScatteredInterp(DT,oMapData.Beats(k).ActivationTimes);
+                            %evaluate interpolant
+                            oInterpolatedField = oInterpolant(xlin,ylin);
+                            %rearrange to be able to apply boundary
+                            aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
+                            %apply boundary
+                            aQZArray(~aInBoundaryPoints) = NaN;
+                            %save result back in proper format
+                            oMapData.Beats(k).z  = reshape(aQZArray,size(xlin,1),size(xlin,2));
+                            
+                            %Calculate the CV and save the results
+                            [CVApprox,CVVectors,ATgrad]=ReComputeCV([aFullCoords(:,1),aFullCoords(:,2)],oMapData.Beats(k).FullActivationTimes,iSupportPoints,0.1);
+                            oMapData.Beats(k).CVApprox = CVApprox;
+                            oMapData.Beats(k).CVVectors = CVVectors;
+                            oMapData.Beats(k).ATgrad = ATgrad;
+                        end
+                        close(oWaitbar);
+                    end
+                    
+                    if ~isempty(oActivationData) && ~isempty(iBeatIndex)
+                        %Activation data is not empty and a beat index has
+                        %been supplied so only refresh the map for this
+                        %beat
+                        aTempData = oOptical.oDAL.oHelper.MultiLevelSubsRef(aElectrodes,'SignalEvent','Index',iEventID);
+                        aActivationIndexes = aTempData(iBeatIndex,:) + oOptical.Electrodes(1).Processed.BeatIndexes(iBeatIndex,1);
+                        aTempData = oOptical.oDAL.oHelper.MultiLevelSubsRef(oOptical.Electrodes,'SignalEvent','Index',iEventID);
+                        aOutActivationIndexes = aTempData(iBeatIndex,:) + oOptical.Electrodes(1).Processed.BeatIndexes(iBeatIndex,1);
+                        clear aTempData;
+                        aOutActivationTimes = oOptical.TimeSeries(aOutActivationIndexes);
+                        aOutActivationTimes(~logical(aAcceptedChannels)) = Inf;
+                        aAcceptedTimes = oOptical.TimeSeries(aActivationIndexes);
+                        %Convert to ms
+                        aActivationTimes = 1000*(oOptical.TimeSeries(aActivationIndexes) - min(aAcceptedTimes));
+                        aOutActivationTimes = 1000*(aOutActivationTimes - min(aOutActivationTimes));
+
+                        %reinitialise z array
+                        oActivationData.Beats(iBeatIndex).z = [];
+                        oActivationData.Beats(iBeatIndex).z = NaN(size(xlin));
+                        oActivationData.Beats(iBeatIndex).FullActivationTimes = aOutActivationTimes.';
+                        oActivationData.Beats(iBeatIndex).ActivationTimes = aActivationTimes.';
+                        
+                        %do interpolation
+                        %calculate interpolant
+                        oInterpolant = TriScatteredInterp(DT,oActivationData.Beats(iBeatIndex).ActivationTimes);
+                        %evaluate interpolant
+                        oInterpolatedField = oInterpolant(xlin,ylin);
+                        %rearrange to be able to apply boundary
+                        aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
+                        %apply boundary
+                        aQZArray(~aInBoundaryPoints) = NaN;
+                        %save result back in proper format
+                        oActivationData.Beats(iBeatIndex).z  = reshape(aQZArray,size(xlin,1),size(xlin,2));
+                        
+                        %Calculate the CV and save the results
+                        [CVApprox,CVVectors,ATgrad]=ReComputeCV([aFullCoords(:,1),aFullCoords(:,2)],oActivationData.Beats(iBeatIndex).FullActivationTimes,iSupportPoints,0.1);
+                        oActivationData.Beats(iBeatIndex).CVApprox = CVApprox;
+                        oActivationData.Beats(iBeatIndex).CVVectors = CVVectors;
+                        oActivationData.Beats(iBeatIndex).ATgrad = ATgrad;
+                        oMapData = oActivationData;
+                        clear oActivationData;
+                    else
+                        oWaitbar = waitbar(0,'Please wait...');
+                        %neither a beatindex or activationdata has been
+                        %specified so refresh for all
+                        %Loop through the beats
+                        for k = 1:size(aActivationIndexes,1)
+                            
+                        end
+                        close(oWaitbar);
+                    end
             end
         end
     end

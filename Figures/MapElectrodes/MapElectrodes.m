@@ -17,6 +17,7 @@ classdef MapElectrodes < SubFigure
         PlotLimits;
         oHiddenAxes;
         oRootFigure;
+        BasePotentialFile;
     end
     
     events
@@ -27,10 +28,11 @@ classdef MapElectrodes < SubFigure
     end
     
     methods
-        function oFigure = MapElectrodes(oParent,oRootFigure)
+        function oFigure = MapElectrodes(oParent,oRootFigure,sBasePotentialFile)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'MapElectrodes',@MapElectrodes_OpeningFcn);
             oFigure.oRootFigure = oRootFigure;
+            oFigure.BasePotentialFile = sBasePotentialFile;
             %Callbacks
             set(oFigure.oGuiHandle.oDataCursorTool, 'oncallback', @(src, event) oDataCursorOnTool_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDataCursorTool, 'offcallback', @(src, event) oDataCursorOffTool_Callback(oFigure, src, event));
@@ -75,15 +77,16 @@ classdef MapElectrodes < SubFigure
             %selection change has been made
             addlistener(oFigure.oParentFigure,'SignalEventSelectionChange',@(src,event) oFigure.SignalEventSelectionListener(src, event));
             addlistener(oFigure.oParentFigure,'SignalEventLoaded',@(src,event) oFigure.SignalEventSelectionListener(src, event));
+            addlistener(oFigure.oParentFigure,'EventMarkChange',@(src,event) oFigure.SignalEventMarkChangeListener(src, event));
             %Set plot position and plot type 
             oFigure.PlotPosition = [0.05 0.05 0.88 0.88];
             oFigure.PlotType = 'JustElectrodes';
-            oFigure.PlotLimits = oFigure.oRootFigure.oGuiHandle.oUnemap.GetSpatialLimits()+[-0.1,0.1;-0.1,0.1];
+            oFigure.PlotLimits = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetSpatialLimits()+[-0.1,0.1;-0.1,0.1];
             %Plot the electrodes
             oFigure.CreatePlots();
             oFigure.PlotData();
             %Set default selection
-            oFigure.SelectedChannels = 1:length(oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes);
+            oFigure.SelectedChannels = 1:length(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes);
             %set the keypressfcn
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', @(src,event) ThisKeyPressFcn(oFigure, src, event));
             %save the old keypressfcn
@@ -186,7 +189,7 @@ classdef MapElectrodes < SubFigure
 %                         %Save series of activation maps
             
             %             for i =
-            %             1:size(oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1);
+            %             1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).Processed.BeatIndexes,1);
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
             iStartBeat = oFigure.oParentFigure.SelectedBeat;
             %Set figure size
@@ -242,7 +245,7 @@ classdef MapElectrodes < SubFigure
             set(oBeatLabel,'parent',oMapPlot);
             oFigure.PrintFigureToFile(sLongDataFileName);
             
-            for i = oFigure.oParentFigure.SelectedBeat+1:min(size(oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes(1).Processed.BeatIndexes,1),oFigure.oParentFigure.SelectedBeat+iMontageX*iMontageY-1)
+            for i = oFigure.oParentFigure.SelectedBeat+1:min(size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).Processed.BeatIndexes,1),oFigure.oParentFigure.SelectedBeat+iMontageX*iMontageY-1)
                 %Get the full file name and save it to string attribute
                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
                 oFigure.oParentFigure.SelectedBeat = i;
@@ -332,10 +335,10 @@ classdef MapElectrodes < SubFigure
         
         function oRotateArrayMenu_Callback(oFigure, src, event)
             %Calls a function to rotate the array
-            oFigure.oRootFigure.oGuiHandle.oUnemap.RotateArray();
+            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).RotateArray();
             oFigure.Activation = [];
             oFigure.PlotPosition = [0.05 0.05 0.88 0.88];
-            oFigure.PlotLimits = oFigure.oRootFigure.oGuiHandle.oUnemap.GetSpatialLimits()+[-0.1,0.1;-0.1,0.1];
+            oFigure.PlotLimits = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetSpatialLimits()+[-0.1,0.1;-0.1,0.1];
             %Plot the electrodes
             oFigure.ReplotElectrodes();
             %Notify listeners
@@ -361,7 +364,7 @@ classdef MapElectrodes < SubFigure
                         idxCV = find(~isnan(oFigure.Activation.Beats(1).CVApprox));
                         %Need to update if I have multiple events I want to
                         %write out 
-                        aRowHeader = cell2mat({oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes(idxCV).Name});
+                        aRowHeader = cell2mat({oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(idxCV).Name});
                         aRowHeader = reshape(aRowHeader,5,length(idxCV));
                         aRowHeader = cellstr(aRowHeader');
                         aRowData = cell2mat({oFigure.Activation.Beats(:).CVApprox});
@@ -436,13 +439,13 @@ classdef MapElectrodes < SubFigure
             iRows = oFigure.GetEditInputDouble('edtRows');
             iCols = oFigure.GetEditInputDouble('edtCols');
             aInOptions.KernelBounds = [iRows iCols];
-            oFigure.oRootFigure.oGuiHandle.oUnemap.ApplyNeighbourhoodAverage(aInOptions);
+            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).ApplyNeighbourhoodAverage(aInOptions);
         end
         
         function oActAverageMenu_Callback(oFigure, src, event)
             %Prepare average activation maps for beats preceeding, during
             %and after stimulation period
-            oAverageData = oFigure.oRootFigure.oGuiHandle.oUnemap.CalculateAverageActivationMap(oFigure.Activation);
+            oAverageData = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).CalculateAverageActivationMap(oFigure.Activation);
             %Produce average maps
             oPlotData = struct();
             oPlotData.x = oAverageData.x;
@@ -477,7 +480,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the potential data needs to be prepared
             if isempty(oFigure.Potential)
-                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.oUnemap.PreparePotentialMap(50);
+                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(50);
             end
             
             %Update the plot type
@@ -497,7 +500,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the activation data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.oUnemap.PrepareEventMap(100, oFigure.oParentFigure.SelectedEventID);
+                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, [], []);
             end
             
             %Update the plot type
@@ -516,7 +519,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the conduction velocity data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.oUnemap.PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID);
+                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID);
             end
             
             %Update the plot type
@@ -567,12 +570,22 @@ classdef MapElectrodes < SubFigure
             
         end
         
+        function SignalEventMarkChangeListener(oFigure, src, event)
+            %Change the map according to the new signalevent selection
+            switch (oFigure.PlotType)
+                case 'JustElectrodes'
+                    oFigure.ReplotElectrodes();
+                case 'Activation2DContour'
+                    oFigure.RefreshActivationData(oFigure.oParentFigure.SelectedBeat);
+            end
+        end
+        
         function oHiddenAxes_Callback(oFigure, src, event)
             %Get the selected point and find the closest electrode 
             oPoint = get(src,'currentpoint');
             xLoc = oPoint(1,1);
             yLoc = oPoint(1,2);
-            iChannel = oFigure.oRootFigure.oGuiHandle.oUnemap.GetNearestElectrodeID(xLoc, yLoc);
+            iChannel = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetNearestElectrodeID(xLoc, yLoc);
             %Notify listeners about the new electrode selection
             notify(oFigure, 'ElectrodeSelected', DataPassingEvent([],iChannel));
         end
@@ -650,21 +663,21 @@ classdef MapElectrodes < SubFigure
                  %a beat has been specified
                  iBeatIndex = cell2mat(varargin(1,1));
                  if strcmpi(oFigure.PlotType,'Activation2DScatter')
-                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID,oFigure.oParentFigure.SelectedBeat,oFigure.Activation);
+                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID,24,oFigure.oParentFigure.SelectedBeat,oFigure.Activation);
                  elseif strcmpi(oFigure.PlotType,'Activation2DContour')
-                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour',oFigure.oParentFigure.SelectedEventID,oFigure.oParentFigure.SelectedBeat,oFigure.Activation);
+                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour',oFigure.oParentFigure.SelectedEventID,24,oFigure.oParentFigure.SelectedBeat,oFigure.Activation);
                  end
              else
                  %a beat has not been specified 
                  if strcmpi(oFigure.PlotType,'Activation2DScatter')
-                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Scatter',oFigure.oParentFigure.SelectedEventID,[],[]);
+                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID,24,[],[]);
                  elseif strcmpi(oFigure.PlotType,'Activation2DContour')
-                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.oUnemap.PrepareActivationMap(50, 'Contour',oFigure.oParentFigure.SelectedEventID,[],[]);
+                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour',oFigure.oParentFigure.SelectedEventID,24,[],[]);
                  end
              end
              
              %Plot a 2D activation map
-             oFigure.PlotData(0);
+             oFigure.PlotData(1);
          end
          
          function ParentFigureDeleted(oFigure,src, event)
@@ -678,7 +691,7 @@ classdef MapElectrodes < SubFigure
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
              
              %Get the electrodes
-             oElectrodes = oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes;
+             oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
              %Get the number of channels
              [i NumChannels] = size(oElectrodes);
              %Loop through the electrodes plotting their locations
@@ -830,7 +843,7 @@ classdef MapElectrodes < SubFigure
              %Get the electrodes and plot the selected electrode
              %and the electrode with the earliest activation
              hold(oMapAxes,'on');
-             oElectrodes = oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes;
+             oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                      'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
@@ -923,7 +936,7 @@ classdef MapElectrodes < SubFigure
              %Get the electrodes and plot the selected electrode
              %and the electrode with the earliest activation
              hold(oMapAxes,'on');
-             oElectrodes = oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes;
+             oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                      'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
@@ -1038,7 +1051,7 @@ classdef MapElectrodes < SubFigure
                      iChannel = oFigure.oParentFigure.SelectedChannel;
                      %Get the electrodes
                      hold(oMapAxes,'on');
-                     oElectrodes = oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes;
+                     oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
                      if oFigure.ElectrodeMarkerVisible
                          plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                              'MarkerSize',18,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
@@ -1055,8 +1068,8 @@ classdef MapElectrodes < SubFigure
                      
                      hold(oMapAxes,'off');
              end
-             oTitle = title(oMapAxes,sprintf('Potential Field for time %5.5f s',oFigure.oRootFigure.oGuiHandle.oUnemap.TimeSeries(...
-                 oFigure.oRootFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.BeatIndexes(iBeat,1)+iTimeIndex)));
+             oTitle = title(oMapAxes,sprintf('Potential Field for time %5.5f s',oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(...
+                 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Processed.BeatIndexes(iBeat,1)+iTimeIndex)));
              set(oTitle,'fontsize',20,'fontweight','bold');
          end
      end

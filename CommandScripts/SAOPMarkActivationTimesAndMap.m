@@ -87,10 +87,10 @@ end
 iAxesRow = 1;
 iAxesCol = 1;
 dRes = 0.2;
-aLocs = aThisOAP.Locations;
-aLocs(1,:) = aThisOAP.Locations(2,:);
-aLocs(2,:) = aThisOAP.Locations(1,:);
-aThisOAP.Locations = aLocs;
+% aLocs = aThisOAP.Locations;
+% aLocs(1,:) = aThisOAP.Locations(2,:);
+% aLocs(2,:) = aThisOAP.Locations(1,:);
+% aThisOAP.Locations = aLocs;
 aCoords = aThisOAP.Locations'.*dRes;
 rowlocs = aCoords(:,1);
 collocs = aCoords(:,2);

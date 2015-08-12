@@ -229,13 +229,13 @@ classdef PotentialDAL < BaseDAL
                                  for i = 2:numel(splitstring)-1
                                      sPixel = regexprep(char(splitstring{i}),'[','');
                                      [~,~,~,~,~,~,sPixel] = regexpi(sPixel,']');
-                                     oOptical.Electrodes(iElectrodeCount).Location(1,1) = str2double(sPixel{2});%row, 0-based, so need to add 1 for indexing
-                                     oOptical.Electrodes(iElectrodeCount).Location(2,1) = str2double(sPixel{1}); %col, 0-based, so need to add 1 for indexing
+                                     oOptical.Electrodes(iElectrodeCount).Location(1,1) = str2double(sPixel{2});%row, 0-based 
+                                     oOptical.Electrodes(iElectrodeCount).Location(2,1) = str2double(sPixel{1}); %col, 0-based 
                                      oOptical.Electrodes(iElectrodeCount).Coords(1,1) = oOptical.Electrodes(iElectrodeCount).Location(1,1) * ...
                                          oOptical.oExperiment.Optical.SpatialResolution;
                                      oOptical.Electrodes(iElectrodeCount).Coords(2,1) = oOptical.Electrodes(iElectrodeCount).Location(2,1) * ...
                                          oOptical.oExperiment.Optical.SpatialResolution;
-                                     oOptical.Electrodes(iElectrodeCount).Name = [sPixel{2},'-',sPixel{1}];
+                                     oOptical.Electrodes(iElectrodeCount).Name = [sPixel{1},'-',sPixel{2}]; %keep the name so that it matches the source (bvana)
                                      iElectrodeCount = iElectrodeCount + 1;
                                  end
                              end

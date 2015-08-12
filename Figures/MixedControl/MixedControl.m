@@ -18,6 +18,7 @@ classdef MixedControl < SubFigure
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
             %Delete the figure if the parent is deleted
             addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) oFigure.ParentFigureDeleted(src, event));
+            addlistener(oFigure.oParentFigure,'NewSignalEventCreated',@(src,event) oFigure.Close_fcn(src, event));
             
             % --- Executes just before the figure is made visible.
             function OpeningFcn(hObject, eventdata, handles, varargin)
