@@ -54,6 +54,7 @@ classdef BaseFigure < handle
             %remove the closerequestfcn from the figure, this prevents an
             %infitie loop with the following delete command
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', '');
+            
             %delete the figure
             delete(oFigure.oGuiHandle.(oFigure.sFigureTag));
             %clear out the pointer to the figure - prevents memory leaks

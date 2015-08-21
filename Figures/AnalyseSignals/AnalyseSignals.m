@@ -496,7 +496,7 @@ classdef AnalyseSignals < SubFigure
                          iChannel = aElectrodes(i);
                          oFigure.oParentFigure.oGuiHandle.oUnemap.CreateNewEvent(iChannel, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}));
                      end
-                 case 'SingleBeat'
+                 case 'SelectedBeat'
                      iBeat = oFigure.SelectedBeat;
                      for i = 1:length(aElectrodes);
                          iChannel = aElectrodes(i);

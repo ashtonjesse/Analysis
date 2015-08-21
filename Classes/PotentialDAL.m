@@ -235,7 +235,7 @@ classdef PotentialDAL < BaseDAL
                                          oOptical.oExperiment.Optical.SpatialResolution;
                                      oOptical.Electrodes(iElectrodeCount).Coords(2,1) = oOptical.Electrodes(iElectrodeCount).Location(2,1) * ...
                                          oOptical.oExperiment.Optical.SpatialResolution;
-                                     oOptical.Electrodes(iElectrodeCount).Name = [sPixel{1},'-',sPixel{2}]; %keep the name so that it matches the source (bvana)
+                                     oOptical.Electrodes(iElectrodeCount).Name = [sPixel{1},'-',sPixel{2}];
                                      iElectrodeCount = iElectrodeCount + 1;
                                  end
                              end
@@ -250,9 +250,9 @@ classdef PotentialDAL < BaseDAL
              %Read the data (including last column which is empty)
              aData = dlmread(sFilePath, ',', iLineCount, 1);
              %check if the data needs to be inverted
-             if max(aData(:,1)) < 0
+%              if max(aData(:,1)) < 0
                  aData = -aData;
-             end
+%              end
              %deal data except for last column
              oOptical.Electrodes = oOptical.oDAL.oHelper.MultiLevelSubsAsgn(oOptical.Electrodes,'Potential','Data',aData(:,1:end-1));
              %create time series array

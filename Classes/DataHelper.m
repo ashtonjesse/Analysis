@@ -11,73 +11,79 @@ classdef DataHelper
         end
         
         function oEntity = ParseFileIntoEntity(oDataHelper,oEntity,sPath)
-%         Parses the file specified by sPath and creates an entity that
-%         contains all fields specified in the file
-
-
-%             Open the file and put into fid handle
+            %         Parses the file specified by sPath and creates an entity that
+            %         contains all fields specified in the file
+            
+            
+            %             Open the file and put into fid handle
             fid = fopen(sPath);
-%             Get the first line
+            %             Get the first line
             tline = fgets(fid);
-%             Loop while there are new lines
+            %             Loop while there are new lines
             while ischar(tline)
-%                 Split the current line on the =
+                %                 Split the current line on the =
                 [~,~,~,~,~,~,splitstring] = regexpi(tline,'=');
-%                 Trim any white space off the split strings
+                %                 Trim any white space off the split strings
                 sField = strtrim(char(splitstring(1,1)));
                 oValue  = strtrim(char(splitstring(1,2)));
-%                 Check if the value string contains any numeric digits
-                [matchstart] = regexp(oValue,'\d');
-%                 If it does contain numeric digits then convert the
-%                 strings to doubles
-                if ~isempty(matchstart)
-                    %Check if it is an array variable (assumes only a 2 x 2
-                    %structure)
-                    [matchstart,~,~,~,~,~,splitstring] = regexp(oValue,'[');
+                %                 Check if the value string contains
+                %                 backslashes
+                [matchstart] = regexp(oValue,'\\');
+                if isempty(matchstart)
+                    %                 Check if the value string contains any numeric digits
+                    [matchstart] = regexp(oValue,'\d');
+                    %                 If it does contain numeric digits then convert the
+                    %                 strings to doubles
                     if ~isempty(matchstart)
-                        % Get the array contents
-                        oValue  = strtrim(char(splitstring(1,2)));
-                        % Split the rows
-                        [~,~,~,~,~,~,splitstring] = regexp(oValue,';');
-                        aFirstRow = strtrim(char(splitstring(1,1)));
-                        aSecondRow = strtrim(char(splitstring(1,2)));
-                        %Remove the last bracket
-                        [~,~,~,~,~,~,splitstring] = regexp(aSecondRow,']');
-                        aSecondRow = strtrim(char(splitstring(1,1)));
-                        %Split the contents of each row
-                        [~,~,~,~,~,~,splitstring] = regexp(aFirstRow,',');
-                        dOneOne = strtrim(char(splitstring(1,1)));
-                        dOneTwo = strtrim(char(splitstring(1,2)));
-                        [~,~,~,~,~,~,splitstring] = regexp(aSecondRow,',');
-                        dTwoOne = strtrim(char(splitstring(1,1)));
-                        dTwoTwo = strtrim(char(splitstring(1,2)));
-                        %Reconstruct the array
-                        oValue = [dOneOne, dOneTwo; dTwoOne, dTwoTwo];
-                    else
-                        %Is just a numeric digit
-                        oValue = str2double(oValue);
+                        %Check if it is an array variable (assumes only a 2 x 2
+                        %structure)
+                        [matchstart,~,~,~,~,~,splitstring] = regexp(oValue,'[');
+                        if ~isempty(matchstart)
+                            % Get the array contents
+                            oValue  = strtrim(char(splitstring(1,2)));
+                            % Split the rows
+                            [~,~,~,~,~,~,splitstring] = regexp(oValue,';');
+                            aFirstRow = strtrim(char(splitstring(1,1)));
+                            aSecondRow = strtrim(char(splitstring(1,2)));
+                            %Remove the last bracket
+                            [~,~,~,~,~,~,splitstring] = regexp(aSecondRow,']');
+                            aSecondRow = strtrim(char(splitstring(1,1)));
+                            %Split the contents of each row
+                            [~,~,~,~,~,~,splitstring] = regexp(aFirstRow,',');
+                            dOneOne = strtrim(char(splitstring(1,1)));
+                            dOneTwo = strtrim(char(splitstring(1,2)));
+                            [~,~,~,~,~,~,splitstring] = regexp(aSecondRow,',');
+                            dTwoOne = strtrim(char(splitstring(1,1)));
+                            dTwoTwo = strtrim(char(splitstring(1,2)));
+                            %Reconstruct the array
+                            oValue = [str2double(dOneOne), str2double(dOneTwo); ...
+                                str2double(dTwoOne), str2double(dTwoTwo)];
+                        else
+                            %Is just a numeric digit
+                            oValue = str2double(oValue);
+                        end
                     end
                 end
-%                 See if this string contains more than one level of
-%                 structured array
+                %                 See if this string contains more than one level of
+                %                 structured array
                 [matchstart] = regexpi(sField,'\.');
                 if isempty(matchstart)
-%                     If only one level then just add this to the entity
+                    %                     If only one level then just add this to the entity
                     oEntity.(sField) = oValue;
                 else
-%                     If more than one level then create a temporary
-%                     structured array that has two fields - type and 
-%                     subs where subs contains the names of the fields 
-%                     to add to the structured array
-                     temp = struct('type','.','subs',regexp(sField,'\.','split'));
-%                      Assign these fields to the entity structured array
-%                      and set the value 
-                     subsasgn(oEntity, temp, oValue);
+                    %                     If more than one level then create a temporary
+                    %                     structured array that has two fields - type and
+                    %                     subs where subs contains the names of the fields
+                    %                     to add to the structured array
+                    temp = struct('type','.','subs',regexp(sField,'\.','split'));
+                    %                      Assign these fields to the entity structured array
+                    %                      and set the value
+                    subsasgn(oEntity, temp, oValue);
                 end
-%                 Get the next line 
+                %                 Get the next line
                 tline = fgets(fid);
             end
-%           Close the file
+            %           Close the file
             fclose(fid);
         end
         

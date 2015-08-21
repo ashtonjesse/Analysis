@@ -267,21 +267,26 @@ classdef BeatPlot < SubFigure
              oBasePotential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile);
              %Get the current event for this channel
              iEvent = oFigure.SelectedEventID;
+             oWaitbar = waitbar(0,'Please wait...');
              if length(oFigure.BeatsForAction) > 1
                  %apply to all beats
-                 for i = 1:length(oFigure.ElectrodesForAction)
+                 iLength= length(oFigure.ElectrodesForAction);
+                 for i = 1:iLength
                          oBasePotential.MarkEvent(oFigure.ElectrodesForAction(i), iEvent);
+                         waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                  end
              else
                  %apply to the selected beat
                  iBeat = oFigure.oParentFigure.SelectedBeat;
-                 for i = 1:length(oFigure.ElectrodesForAction)
+                 iLength = length(oFigure.ElectrodesForAction);
+                 for i = 1:iLength
                      oBasePotential.MarkEvent(oFigure.ElectrodesForAction(i), iEvent, iBeat);
+                     waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                  end
              end
-             
+             close(oWaitbar);
              %Notify listeners
-             notify(oFigure,'SignalEventRangeChange');
+             notify(oFigure,'SignalEventMarkChange');
              %Refresh the plot
              oFigure.PlotBeat();
          end
@@ -432,7 +437,7 @@ classdef BeatPlot < SubFigure
              %ticks
              set(oSignalPlot, 'Tag', 'SignalPlot', 'NextPlot', 'replacechildren');
 %              set(oSignalPlot,'xticklabel',0:5:30);
-             set(get(oSignalPlot,'xlabel'),'string','Time (ms)');
+             set(get(oSignalPlot,'xlabel'),'string','Time (s)');
              set(oSignalPlot,'fontsize',8);
              cla(oSignalPlot);
              
