@@ -454,13 +454,11 @@ classdef BasePotential < BaseSignal
                  %initialise and build ID
                  oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).ID = oBasePotential.MakeEventID(char(varargin{1}), ...
                      oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Type(1),oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Method);
-                 if strcmp(char(varargin{3}),'SteepestPositiveSlope')
-                     oBasePotential.MarkEvent(iElectrodeNumber, iEvent);
-                 else
-                     for m = 1:numel(aBeats)
-                         oBasePotential.MarkEvent(iElectrodeNumber, iEvent, aBeats(m));
-                     end
-                 end
+                 
+                 oBasePotential.MarkEvent(iElectrodeNumber, iEvent);
+                 oBasePotential.MarkEvent(iElectrodeNumber, iEvent, aBeats(m));
+                 
+                 
                  
                  waitbar(i/numel(aElectrodes),oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
              end
@@ -631,7 +629,7 @@ classdef BasePotential < BaseSignal
                             dMagnitude = (dPeak+sign(dBaseLine)*(-1)*abs(dBaseLine))/2;
                             iHalfIndex = find(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1):...
                                 oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,2))>(dBaseLine + abs(dMagnitude)),1,'first')-1;
-                            if isempty(iHalfIndex)
+                            if isempty(iHalfIndex) || dPeak < 1.1*dBaseLine
                                 iHalfIndex = oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,2) - oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) + 1;
                             end
                             oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(iBeat) = iHalfIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) - ...

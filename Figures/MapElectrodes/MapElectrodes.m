@@ -7,6 +7,7 @@ classdef MapElectrodes < SubFigure
         ElectrodeMarkerVisible = 1;
         ColourBarVisible = 1;
         ColourBarOrientation = 'vert';
+        ColourBarLevels = 0:1:12;
         Potential = [];
         Activation = [];
         CV = [];
@@ -876,49 +877,15 @@ classdef MapElectrodes < SubFigure
                  %there might be a horizontal bar
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
-             if oHandle < 0 || bUpdateColorBar
-                 %Get a new min and max
-                 oFigure.cbarmax = 0;
-                 oFigure.cbarmin = 2000; %arbitrary
-                 ibmax = 0;
-                 ibmin = 0;
-                 for i = 1:length(oActivation.Beats)
-                     %Loop through the beats to find max and min
-                     dMin = min(min(oActivation.Beats(i).z));
-                     dMax = max(max(oActivation.Beats(i).z));
-                     if dMin < oFigure.cbarmin
-                         oFigure.cbarmin = dMin;
-                         ibmin = i;
-                     end
-                     if dMax > oFigure.cbarmax
-                         oFigure.cbarmax = dMax;
-                         ibmax = i;
-                     end
-                 end
-                 %Might need to change this if I start analysing pacing
-                 %data but at the moment sinus will always start at 0.
-             end
-             aContourRange = round(oFigure.cbarmin):1:round(oFigure.cbarmax);
+             aContourRange = oFigure.ColourBarLevels;
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContourRange);
-             caxis([oFigure.cbarmin oFigure.cbarmax]);
+             caxis([aContourRange(1) aContourRange(end)]);
              colormap(oMapAxes, colormap(flipud(colormap(jet))));
              if oHandle < 0 
                  if oFigure.ColourBarVisible
-                     %if the colour bar should be visible then make
-                     %a new one
-                     oColorBar = cbarf([aContourRange(1) aContourRange(end)], aContourRange,oFigure.ColourBarOrientation);
-                     oTitle = get(oColorBar, 'title');
-                     if strcmpi(oFigure.ColourBarOrientation, 'horiz')
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'fontsize',8);
-                         set(oTitle,'string','Activation Time (ms)','position',[0.5 2.5]);
-                     else
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'fontsize',12);
-                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
-                     end
+                     oColorBar = oFigure.MakeColorBar(aContourRange, oFigure.ColourBarOrientation);
                  end
              else
                  if ~oFigure.ColourBarVisible
@@ -931,17 +898,7 @@ classdef MapElectrodes < SubFigure
                      delete(oHandle);
                      set(oMapAxes,'userdata',[]);
                      set(oMapAxes,'Position',oFigure.PlotPosition);
-                     oColorBar = cbarf([aContourRange(1) aContourRange(end)], aContourRange,oFigure.ColourBarOrientation);
-                     oTitle = get(oColorBar, 'title');
-                     if strcmpi(oFigure.ColourBarOrientation, 'horiz')
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'fontsize',8);
-                         set(oTitle,'string','Activation Time (ms)','position',[0.5 2.5]);
-                     else
-                         set(oTitle,'units','normalized');
-                         set(oTitle,'fontsize',12);
-                         set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
-                     end
+                     oColorBar = oFigure.MakeColorBar(aContourRange, oFigure.ColourBarOrientation);
                  else
                      oTitle = get(oHandle, 'title');
                      set(oTitle,'units','normalized');
@@ -1254,7 +1211,18 @@ classdef MapElectrodes < SubFigure
          end
          
          function oColorBar = MakeColorBar(oFigure, aContourRange, sColourBarOrientation)
-             
+             %make a new one
+             oColorBar = cbarf([aContourRange(1) aContourRange(end)], aContourRange, sColourBarOrientation);
+             oTitle = get(oColorBar, 'title');
+             if strcmpi(oFigure.ColourBarOrientation, 'horiz')
+                 set(oTitle,'units','normalized');
+                 set(oTitle,'fontsize',8);
+                 set(oTitle,'string','Activation Time (ms)','position',[0.5 2.5]);
+             else
+                 set(oTitle,'units','normalized');
+                 set(oTitle,'fontsize',12);
+                 set(oTitle,'string','Time (ms)','position',[0.5 1.02]);
+             end
          end
      end
 end
