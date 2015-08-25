@@ -145,8 +145,7 @@ classdef OpticalBeatDetection < BaseFigure
             if isfield(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1),'SignalEvent')
                 oFigure.SelectedEventID = 1;
             end
-            if isfield(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).(...
-                    oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Status),'BeatIndexes')
+            if ~isempty(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats)
                 oFigure.SelectedBeat = 1;
                 oFigure.OpenBeatSlider();
             end
@@ -179,7 +178,7 @@ classdef OpticalBeatDetection < BaseFigure
                     oElectrodes(oFigure.SelectedChannel).Processed.Data = oElectrodes.Potential.Data;
                     oElectrodes(oFigure.SelectedChannel).Status = 'Processed';
                 end
-                aData = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).CalculateCurvature(oElectrodes(oFigure.SelectedChannel).Processed.Data,20,5);
+                aData = abs(oElectrodes(oFigure.SelectedChannel).Processed.Curvature);                   
                 aOptions = {{'oInstructionText','string','Select a range of data during quiescence'} ; ...
                     {'oBottomText','string','How many standard deviations to apply?'} ; ...
                     {'oBottomPopUp','string',{'1','2','3','4','5'}} ; ...
@@ -218,8 +217,8 @@ classdef OpticalBeatDetection < BaseFigure
             
             %Open a time point slider
             oTimeSliderControl = SlideControl(oFigure,'Select Time Point',{'TimeSelectionChange'});
-            iBeatLength = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,2) - ...
-                oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,1);
+            iBeatLength = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes(oFigure.SelectedBeat,2) - ...
+                oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes(oFigure.SelectedBeat,1);
             set(oTimeSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iBeatLength, 'Value', oFigure.SelectedTimePoint,'SliderStep',[1/iBeatLength  0.02]);
             set(oTimeSliderControl.oGuiHandle.oSliderTxtLeft,'string',1);
@@ -233,7 +232,7 @@ classdef OpticalBeatDetection < BaseFigure
              aControlData{1} = {'r','g','b','k','c','m','y'};
              aControlData{2} = {'Activation','Repolarisation'};
              aControlData{3} = {'SteepestPositiveSlope','SteepestNegativeSlope','MaxSignalMagnitude','HalfSignalMagnitude'};
-             aControlData{4} = {'SelectedBeat','AllBeats'};
+             aControlData{4} = {'AllBeats','SelectedBeat'};
              aControlData{5} = {'AllElectrodes'};
              oMixedControl = MixedControl(oFigure,'Enter the label colour, event type, marking technique, beat selection and electrode selection for the new event.',aControlData);
              addlistener(oMixedControl,'ValuesEntered',@(src,event) oFigure.NewEventCreated(src, event));
@@ -282,7 +281,7 @@ classdef OpticalBeatDetection < BaseFigure
             %Is called when the user selects a new beat using the
             %SlideControl
             oFigure.SelectedBeat = event.Value;
-            notify(oFigure,'BeatSelectionChange',DataPassingEvent([1 size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes,1)], oFigure.SelectedBeat));
+            notify(oFigure,'BeatSelectionChange',DataPassingEvent([1 size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes,1)], oFigure.SelectedBeat));
             oFigure.Replot(oFigure.SelectedChannel);
         end
          
@@ -292,8 +291,8 @@ classdef OpticalBeatDetection < BaseFigure
              %SlideControl
              %Save the value and pass on the event notification
              oFigure.SelectedTimePoint = event.Value;
-             iBeatLength = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,2) - ...
-                oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes(oFigure.SelectedBeat,1);
+             iBeatLength = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes(oFigure.SelectedBeat,2) - ...
+                oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes(oFigure.SelectedBeat,1);
              notify(oFigure,'TimeSelectionChange', DataPassingEvent([1 iBeatLength],oFigure.SelectedTimePoint));
          end
         
@@ -303,6 +302,7 @@ classdef OpticalBeatDetection < BaseFigure
         end
         
         function SignalEventDeleted(oFigure,src,event)
+            oFigure.SelectedEventID = [];
             oFigure.Replot(oFigure.SelectedChannel);
         end
         
@@ -316,7 +316,7 @@ classdef OpticalBeatDetection < BaseFigure
         function SignalEventMarkChange(oFigure, src, event)
             %Replot just the specified channel
             notify(oFigure,'EventMarkChange');
-            oFigure.Replot(event.Value);
+            oFigure.Replot(oFigure.SelectedChannel);
         end
         
          function NewEventCreated(oFigure,src,event)
@@ -331,13 +331,13 @@ classdef OpticalBeatDetection < BaseFigure
              end
              switch (char(event.Values{4}))
                  case 'AllBeats'
-                     aBeats = 1:1:size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes,1);
+                     aBeats = 1:1:size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes,1);
                  case 'SelectedBeat'
                      aBeats = oFigure.SelectedBeat;
              end
              oFigure.oGuiHandle.oOptical.CreateNewEvent(aElectrodes, aBeats, char(event.Values{1}), char(event.Values{2}), char(event.Values{3}));
              if isempty(oFigure.SelectedEventID)
-                 oFigure.SelectedEventID = 1;
+                 oFigure.SelectedEventID = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).SignalEvents{1};
              end
              oFigure.Replot(oFigure.SelectedChannel);
              notify(oFigure,'NewSignalEventCreated');
@@ -369,7 +369,7 @@ classdef OpticalBeatDetection < BaseFigure
             if ~isempty(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile))
                 %plot data
                 oElectrode = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(iChannel);
-                
+                oOptical = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile);
                 if strcmp(oElectrode.Status,'Processed')
                     if isfield(oElectrode.Processed,'Beats')
                         %then need to set up axes for plotting both HR and
@@ -382,15 +382,15 @@ classdef OpticalBeatDetection < BaseFigure
                         %plot the processed data
                         oDataAxes = oFigure.oGuiHandle.oPanel(oFigure.DataAxes,1).select();
                         if oElectrode.Accepted
-                            plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
+                            plot(oDataAxes,oOptical.TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
                             hold(oDataAxes,'on');
-                            plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.Processed.Beats,'-g');
-                            plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries(...
-                                oElectrode.Processed.BeatIndexes(oFigure.SelectedBeat,1):...
-                                oElectrode.Processed.BeatIndexes(oFigure.SelectedBeat,2)),...
+                            plot(oDataAxes,oOptical.TimeSeries,oElectrode.Processed.Beats,'-g');
+                            plot(oDataAxes,oOptical.TimeSeries(...
+                                oOptical.Beats.Indexes(oFigure.SelectedBeat,1):...
+                                oOptical.Beats.Indexes(oFigure.SelectedBeat,2)),...
                                 oElectrode.Processed.Data(...
-                                oElectrode.Processed.BeatIndexes(oFigure.SelectedBeat,1):...
-                                oElectrode.Processed.BeatIndexes(oFigure.SelectedBeat,2)),'-b');
+                                oOptical.Beats.Indexes(oFigure.SelectedBeat,1):...
+                                oOptical.Beats.Indexes(oFigure.SelectedBeat,2)),'-b');
                             hold(oDataAxes,'off');
                         else
                             plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.(oElectrode.Status).Data,'r');
@@ -398,12 +398,22 @@ classdef OpticalBeatDetection < BaseFigure
                         
                         %plot the rate data
                         oRateAxes = oFigure.oGuiHandle.oPanel(oFigure.HeartRateAxes,1).select();
-                        [aRateData dPeaks] = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).CalculateSinusRate(iChannel);
-                        hline = plot(oRateAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries, aRateData,'k');
+                        aRateData = oOptical.GetBeatRateData(iChannel);
+                        hline = plot(oRateAxes,oOptical.TimeSeries, aRateData,'k');
                         set(hline,'linewidth',1.5);
+                        if oFigure.SelectedBeat > 1
+                            hold(oRateAxes,'on');
+                            hline = plot(oRateAxes,oOptical.TimeSeries(...
+                                oElectrode.Processed.BeatRateIndexes(oFigure.SelectedBeat-1):...
+                                oElectrode.Processed.BeatRateIndexes(oFigure.SelectedBeat)), ...
+                                aRateData(oElectrode.Processed.BeatRateIndexes(oFigure.SelectedBeat-1):...
+                                oElectrode.Processed.BeatRateIndexes(oFigure.SelectedBeat)),'r');
+                            hold(oRateAxes,'off');
+                            set(hline,'linewidth',1.5);
+                        end
                         set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
                         for i = 2:4:numel(oElectrode.Processed.BeatRates)
-                            oBeatLabel = text(oElectrode.Processed.BeatRateTimes(i),...
+                            oBeatLabel = text(oOptical.TimeSeries(oElectrode.Processed.BeatRateIndexes(i)),...
                                 oElectrode.Processed.BeatRates(i), sprintf('%d',i),'parent',oRateAxes);
                             set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','normalized','horizontalalignment','center');
                             set(oBeatLabel,'FontSize',0.05);
@@ -412,18 +422,18 @@ classdef OpticalBeatDetection < BaseFigure
                         %just plot processed data
                         oDataAxes = oFigure.oGuiHandle.oPanel(oFigure.DataAxes,1).select();
                         if oElectrode.Accepted
-                            plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
+                            plot(oDataAxes,oOptical.TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
                         else
-                            plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.(oElectrode.Status).Data,'r');
+                            plot(oDataAxes,oOptical.TimeSeries,oElectrode.(oElectrode.Status).Data,'r');
                         end
                     end
                 else
                     %just plot potential data
                     oDataAxes = oFigure.oGuiHandle.oPanel(oFigure.DataAxes,1).select();
                     if oElectrode.Accepted
-                        plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
+                        plot(oDataAxes,oOptical.TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
                     else
-                        plot(oDataAxes,oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TimeSeries,oElectrode.(oElectrode.Status).Data,'r');
+                        plot(oDataAxes,oOptical.TimeSeries,oElectrode.(oElectrode.Status).Data,'r');
                     end
                 end
             end
@@ -433,7 +443,7 @@ classdef OpticalBeatDetection < BaseFigure
         function OpenBeatSlider(oFigure)
             %Set up beat slider
             oBeatSliderControl = SlideControl(oFigure,'Select Beat', {'BeatSelectionChange','NewBeatInserted'});
-            iNumBeats = size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(1).Processed.BeatIndexes,1);
+            iNumBeats = size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes,1);
             set(oBeatSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumBeats, 'Value', 1 ,'SliderStep',[1/iNumBeats  0.02]);
             set(oBeatSliderControl.oGuiHandle.oSliderTxtLeft,'string',1);
@@ -442,12 +452,12 @@ classdef OpticalBeatDetection < BaseFigure
             addlistener(oBeatSliderControl,'SlideValueChanged',@(src,event) oFigure.BeatSlideValueListener(src, event));
         end
         
-        function iEventNumber = GetEventNumberFromTag(oFigure, sTag)
-            %Find the event number specified by the input handle tag
-            [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
-            iEventNumber = str2double(char(splitstring(1,2)));
+        function sEventID = GetEventIDFromTag(oFigure, sTag)
+             %Find the event number specified by the input handle tag
+             [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');
+             sEventID = char(splitstring(1,2));
         end
-        
+         
         function iChannel = GetChannelFromTag(oFigure, sTag)
             %Find the channel specified by the input handle tag
             [~,~,~,~,~,~,splitstring] = regexpi(sTag,'_');

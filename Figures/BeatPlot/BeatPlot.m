@@ -144,7 +144,7 @@ classdef BeatPlot < SubFigure
              %Get the selected event
              oSelectedEvent = get(event.NewValue);
              %Convert the string into an integer index and set property
-             oFigure.SelectedEventID = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetEventIndex(oFigure.oParentFigure.SelectedChannel,oSelectedEvent.String);
+             oFigure.SelectedEventID = oSelectedEvent.String;
          end
          
           function oElectrodeButtonGroup_SelectionChangeFcn(oFigure, src, event)
@@ -172,7 +172,7 @@ classdef BeatPlot < SubFigure
                  case 'rbThisBeat'
                      oFigure.BeatsForAction = oFigure.oParentFigure.SelectedBeat;
                  case 'rbAllBeats'
-                     oFigure.BeatsForAction = 1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).Processed.BeatIndexes,1);
+                     oFigure.BeatsForAction = 1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes,1);
              end
           end
          
@@ -195,7 +195,7 @@ classdef BeatPlot < SubFigure
                  case 'rbThisBeat'
                      oFigure.BeatsForAction = oFigure.oParentFigure.SelectedBeat;
                  case 'rbAllBeats'
-                     oFigure.BeatsForAction = 1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).Processed.BeatIndexes,1);
+                     oFigure.BeatsForAction = 1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes,1);
              end
           end
           
@@ -225,9 +225,8 @@ classdef BeatPlot < SubFigure
                      [row, colIndices] = find(brushedIdx);
                      if ~isempty(colIndices)
                          aEventRange = [colIndices(1) colIndices(end)];
-                         iEventIndex = oFigure.SelectedEventID;
                          %Update the event range
-                         oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(iEventIndex, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
+                         oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(oFigure.SelectedEventID, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
                      else
                          error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
                      end
@@ -251,7 +250,7 @@ classdef BeatPlot < SubFigure
              if strcmp(oSelectedEvent.Visible,'on')
                  %Get the string id of the event
                  sEventID = oSelectedEvent.String;
-                 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).DeleteEvent(sEventID, oFigure.ElectrodesForAction);
+                 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).DeleteEvent(sEventID);
                  oFigure.SelectedEventID = [];
              end
              %Refresh the plot
@@ -262,29 +261,11 @@ classdef BeatPlot < SubFigure
          function btnRefreshSignalEvent_callback(oFigure, src, event)
              %Update the event mark as it is no longer accurate.
              
-             
              %get a local copy of the unemap struct
              oBasePotential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile);
              %Get the current event for this channel
-             iEvent = oFigure.SelectedEventID;
-             oWaitbar = waitbar(0,'Please wait...');
-             if length(oFigure.BeatsForAction) > 1
-                 %apply to all beats
-                 iLength= length(oFigure.ElectrodesForAction);
-                 for i = 1:iLength
-                         oBasePotential.MarkEvent(oFigure.ElectrodesForAction(i), iEvent);
-                         waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
-                 end
-             else
-                 %apply to the selected beat
-                 iBeat = oFigure.oParentFigure.SelectedBeat;
-                 iLength = length(oFigure.ElectrodesForAction);
-                 for i = 1:iLength
-                     oBasePotential.MarkEvent(oFigure.ElectrodesForAction(i), iEvent, iBeat);
-                     waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
-                 end
-             end
-             close(oWaitbar);
+             sEventID = oFigure.SelectedEventID;
+             oBasePotential.MarkEvent(sEventID,oFigure.BeatsForAction,oFigure.ElectrodesForAction);
              %Notify listeners
              notify(oFigure,'SignalEventMarkChange');
              %Refresh the plot
@@ -334,15 +315,15 @@ classdef BeatPlot < SubFigure
                     case 'S'
                         %SignalEventLine
                         %Get the current event for this channel
-                        iEvent = oFigure.oParentFigure.GetEventNumberFromTag(oFigure.CurrentPlotLine);
+                        sEventID = oFigure.oParentFigure.GetEventIDFromTag(oFigure.CurrentPlotLine);
                         
                         %Reset the range for this event to the beat indexes as the
                         %user is manually changing the event time
-                        oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(iEvent, iBeat, iChannelNumber, ...
-                            [0 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).Processed.BeatIndexes(iBeat,2) - ...
-                            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).Processed.BeatIndexes(iBeat,1)]);
+                        oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(sEventID, iBeat, iChannelNumber, ...
+                            [0 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2) - ...
+                            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1)]);
                         %Update the signal event for this electrode and beat number
-                        oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateSignalEventMark(iChannelNumber, iEvent, iBeat, dXdata(1));
+                        oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateSignalEventMark(iChannelNumber, sEventID, iBeat, dXdata(1));
                         notify(oFigure, 'SignalEventMarkChange',DataPassingEvent([],iChannelNumber));
                 end
                 %Refresh the plot
@@ -399,22 +380,23 @@ classdef BeatPlot < SubFigure
              iBeat = oFigure.oParentFigure.SelectedBeat;
              %Find the max and min Y axis values for this selection
              oElectrode = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(oFigure.oParentFigure.SelectedChannel);
+             oBasePotential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile);
              %Get the data associated with this channel in individual
              %arrays
-             aData = oElectrode.Processed.Data(oElectrode.Processed.BeatIndexes(iBeat,1):...
-                 oElectrode.Processed.BeatIndexes(iBeat,2),:);
-             aSlope = oElectrode.Processed.Slope(oElectrode.Processed.BeatIndexes(iBeat,1):...
-                 oElectrode.Processed.BeatIndexes(iBeat,2),:);
+             aData = oElectrode.Processed.Data(oBasePotential.Beats.Indexes(iBeat,1):...
+                 oBasePotential.Beats.Indexes(iBeat,2),:);
+             aSlope = oElectrode.Processed.Slope(oBasePotential.Beats.Indexes(iBeat,1):...
+                 oBasePotential.Beats.Indexes(iBeat,2),:);
              aEnvelope = [];
              aEnvelopeLimits = [];
              if isfield(oElectrode.Processed,'CentralDifference')
-                 aEnvelope = abs(oElectrode.Processed.CentralDifference(oElectrode.Processed.BeatIndexes(iBeat,1):...
-                     oElectrode.Processed.BeatIndexes(iBeat,2),:));
+                 aEnvelope = abs(oElectrode.Processed.CentralDifference(oBasePotential.Beats.Indexes(iBeat,1):...
+                     oBasePotential.Beats.Indexes(iBeat,2),:));
                  aEnvelopeLimits = [min(aEnvelope), max(aEnvelope)];
              end
-             aTime =  oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(...
-                 oElectrode.Processed.BeatIndexes(iBeat,1):...
-                 oElectrode.Processed.BeatIndexes(iBeat,2));
+             aTime =  oBasePotential.TimeSeries(...
+                 oBasePotential.Beats.Indexes(iBeat,1):...
+                 oBasePotential.Beats.Indexes(iBeat,2));
              
              %Get the min/max values
              SignalYMax = max(max(aData));
@@ -480,37 +462,37 @@ classdef BeatPlot < SubFigure
                  %Plot the slope data
                  plot(aTime,aSlope,'color','r','parent',oSlopePlot);
                  %Loop through events
-                 if isfield(oElectrode, 'SignalEvent')
-                     for j = 1:length(oElectrode.SignalEvent)
+                 if isfield(oElectrode,'SignalEvents')
+                     for j = 1:length(oElectrode.SignalEvents)
                          %Mark the event times with a line
-                         oLine = line([aTime(oElectrode.SignalEvent(j).Index(iBeat)) ...
-                             aTime(oElectrode.SignalEvent(j).Index(iBeat))], [SignalYMax, SignalYMin]);
-                         sLineTag = strcat(sprintf('SignalEventLine%d',oFigure.oParentFigure.SelectedChannel),'_',sprintf('%d',j));
-                         set(oLine,'Tag',sLineTag,'color', oElectrode.SignalEvent(j).Label.Colour, 'parent',oSignalEventPlot, ...
+                         oLine = line([aTime(oElectrode.(oElectrode.SignalEvents{j}).Index(iBeat)) ...
+                             aTime(oElectrode.(oElectrode.SignalEvents{j}).Index(iBeat))], [SignalYMax, SignalYMin]);
+                         sLineTag = strcat(sprintf('SignalEventLine%d',oFigure.oParentFigure.SelectedChannel),'_',oElectrode.SignalEvents{j});
+                         set(oLine,'Tag',sLineTag,'color', oElectrode.(oElectrode.SignalEvents{j}).Label.Colour, 'parent',oSignalEventPlot, ...
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
                          %Label the line with the event time
                          if isfield(oElectrode,'Pacing')
                              %This is a sequence of paced beats so express
                              %the time relative to the pacing index
-                             sLabel = num2str((aTime(oElectrode.SignalEvent(j).Index(iBeat)) - ...
+                             sLabel = num2str((aTime(oElectrode.(oElectrode.SignalEvents{j}).Index(iBeat)) - ...
                                  oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(oElectrode.Pacing.Index(iBeat)))*1000,'% 10.2f');
                          else
                              %Just express the time relative to the start
                              %of the recording
-                             sLabel = num2str(aTime(oElectrode.SignalEvent(j).Index(iBeat)),'% 10.4f');
+                             sLabel = num2str(aTime(oElectrode.(oElectrode.SignalEvents{j}).Index(iBeat)),'% 10.4f');
                          end
                          oEventLabel = text(TimeMax-dWidth*0.4, SignalYMax - dHeight*j*0.2, sLabel);
-                         set(oEventLabel,'color',oElectrode.SignalEvent(j).Label.Colour,'FontWeight','bold','FontUnits','points');
+                         set(oEventLabel,'color',oElectrode.(oElectrode.SignalEvents{j}).Label.Colour,'FontWeight','bold','FontUnits','points');
                          set(oEventLabel,'FontSize',10);
                          set(oEventLabel,'parent',oSignalEventPlot);
-                         set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'string',oElectrode.SignalEvent(j).ID);
+                         set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'string',oElectrode.SignalEvents{j});
                          set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'visible','on');
                          set(oSlopePlot,'yaxislocation','right');
                      end
-                     if isempty(oFigure.SelectedEventID) && ~isempty(oElectrode.SignalEvent)
+                     if isempty(oFigure.SelectedEventID) && ~isempty(oElectrode.SignalEvents)
                          set(oFigure.oGuiHandle.oEventButtonGroup,'SelectedObject',oFigure.oGuiHandle.rbtnEvent1);
-                         oFigure.SelectedEventID = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetEventIndex(oFigure.oParentFigure.SelectedChannel,get(oFigure.oGuiHandle.rbtnEvent1,'string'));
+                         oFigure.SelectedEventID = get(oFigure.oGuiHandle.rbtnEvent1,'string');
                      end
                  end
              else

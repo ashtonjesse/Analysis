@@ -7,3 +7,4 @@ aGradient = fCalculateMovingSlope(aData,iNumberofPoints,iModelOrder);
 
 end
 
+

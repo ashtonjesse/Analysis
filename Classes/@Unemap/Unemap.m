@@ -8,9 +8,6 @@ classdef Unemap < BasePotential
     
 
     properties (SetAccess = public)
-        TimeSeries = [];
-        oExperiment;
-        Electrodes = [];       
         RMS = [];
     end
     
@@ -95,21 +92,6 @@ classdef Unemap < BasePotential
             end
         end
                 
-        function [oElectrode, iIndex] = GetElectrodeByName(oUnemap,sChannelName)
-            %Return the electrode that matches the input name
-            %This is a hacky way to do it but IDGF
-            oElectrode = [];
-            iIndex = 0;
-            for i = 1:length(oUnemap.Electrodes)
-                %Revisit this by trying aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID),
-                %aEvents);
-                if strcmp(oUnemap.Electrodes(i).Name,sChannelName)
-                    oElectrode = oUnemap.Electrodes(i);
-                    iIndex = i;
-                end
-            end
-        end
-        
         function [aFitData aElectrodeData] = GetInterBeatVariation(oUnemap,iOrder)
             %Makes a call to ProcessData to calculate the interbeat variation
             %in amplitude by fitting a polynomial to the isoelectric lines

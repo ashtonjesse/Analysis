@@ -4,6 +4,11 @@ classdef BasePotential < BaseSignal
     %   of the potential type. 
     
     properties
+        oExperiment;
+        Electrodes = [];
+        TimeSeries = [];
+        Beats = [];
+        Name;
     end
     
     methods
@@ -115,12 +120,19 @@ classdef BasePotential < BaseSignal
             end
         end
         
-        function FinishProcessing(oBasePotential,iChannel)
+        function FinishProcessing(oBasePotential,varargin)
             %A function to call after applying some processing steps
             %The channel is now processed
-            oBasePotential.Electrodes(iChannel).Status = 'Processed';
-            %Calculate slope and curvature
-            oBasePotential.GetSlope('Data',iChannel);
+            if nargin > 1
+                %channel specified
+                iChannel = varargin{1};
+                oBasePotential.Electrodes(iChannel).Status = 'Processed';
+                %Calculate slope and curvature
+                oBasePotential.GetSlope('Data',iChannel);
+            else
+                [oBasePotential.Electrodes(:).Status] = deal('Processed');
+                oBasePotential.GetSlope('Data');
+            end
         end
         
         function ClearProcessedData(oBasePotential, iChannel)
@@ -135,7 +147,7 @@ classdef BasePotential < BaseSignal
             else
                 %Perform on processed data
                 oBasePotential.Electrodes(iElectrodeNumber).Processed.Curvature = ...
-                    oBasePotential.CalculateCurvature(oBasePotential.Electrodes(iElectrodeNumber).Processed.Data,20,5);
+                    oBasePotential.CalculateCurvature(oBasePotential.Electrodes(iElectrodeNumber).Processed.Data,7,3);
             end
         end
         
@@ -151,7 +163,7 @@ classdef BasePotential < BaseSignal
                 oBasePotential.Electrodes(iElectrodeNumber).Processed.Slope = ...
                     oBasePotential.CalculateSlope(oBasePotential.Electrodes(iElectrodeNumber).Processed.(sDataType),7,3);
                 oBasePotential.Electrodes(iElectrodeNumber).Processed.Curvature = ...
-                    oBasePotential.CalculateCurvature(oBasePotential.Electrodes(iElectrodeNumber).Processed.(sDataType),20,5);
+                    oBasePotential.CalculateCurvature(oBasePotential.Electrodes(iElectrodeNumber).Processed.(sDataType),7,3);
             elseif nargin > 1
                 %A datatype has been specified
                 sDataType = char(varargin{1});
@@ -159,12 +171,16 @@ classdef BasePotential < BaseSignal
                     error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
                 end
                 %Perform on data of datatype
-                for i = 1:size(oBasePotential.Electrodes,2)
+                oWaitbar = waitbar(0,'Please wait ...');
+                iLength=length(oBasePotential.Electrodes);
+                for i = 1:iLength
                     oBasePotential.Electrodes(i).Processed.Slope = ...
                         oBasePotential.CalculateSlope(oBasePotential.Electrodes(i).Processed.(sDataType),7,3);
                     oBasePotential.Electrodes(i).Processed.Curvature = ...
-                        oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.(sDataType),20,5);
+                        oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.(sDataType),7,3);
+                    waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                 end
+                close(oWaitbar);
             else
                 %No electrode number has been specified so loop through
                 %all
@@ -177,7 +193,7 @@ classdef BasePotential < BaseSignal
                     oBasePotential.Electrodes(i).Processed.Slope = ...
                         oBasePotential.CalculateSlope(oBasePotential.Electrodes(i).Processed.Data,7,3);
                     oBasePotential.Electrodes(i).Processed.Curvature = ...
-                        oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.Data,20,5);
+                        oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.Data,7,3);
                     waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                 end
                 close(oWaitbar);
@@ -223,24 +239,32 @@ classdef BasePotential < BaseSignal
             end
         end
         
-        function [aRateData dOutPeaks] = CalculateSinusRate(oBasePotential, iElectrodeNumber)
-            %Get the peaks associated with the beat data from this
-            %electrode and make call to GetHeartRateData
-            dPeaks = zeros(size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
-            %Loop through the beats and find max slope
-            for i = 1:size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1);
-                aSlope = oBasePotential.Electrodes(iElectrodeNumber).Processed.Slope...
-                    (oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1):oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,2));
-                [val, loc] = max(aSlope);
+        function CalculateSinusRate(oBasePotential)
+            %Get the peaks associated with the beat data from all
+            % electrodes
+            
+            %initialise variables
+            dPeaks = zeros(size(oBasePotential.Beats.Indexes,1),length(oBasePotential.Electrodes));
+            aBeatRates = NaN(size(dPeaks,1),size(dPeaks,2));
+            aBeatRateIndexes = NaN(size(dPeaks,1),size(dPeaks,2));
+            
+            %get the electrode slope data
+            aSlope = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Slope');
+            %get max location for first beat
+            [val, loc] = max(aSlope(oBasePotential.Beats.Indexes(1,1):oBasePotential.Beats.Indexes(1,2),:),[],1);
+            dPeaks(1,:) = loc - 1 + oBasePotential.Beats.Indexes(1,1);
+            aBeatRateIndexes(1,:) = dPeaks(1,:);
+            %loop through beats
+            for i = 2:size(oBasePotential.Beats.Indexes,1)
+                [val, loc] = max(aSlope(oBasePotential.Beats.Indexes(i,1):oBasePotential.Beats.Indexes(i,2),:),[],1);
                 %Add the first index of this beat
-                dPeaks(i,1) = loc - 1 + oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(i,1);
+                dPeaks(i,:) = loc - 1 + oBasePotential.Beats.Indexes(i,1);
+                [aBeatRates(i,:), aBeatRateIndexes(i,:)] = oBasePotential.GetBeatRates(dPeaks(i-1,:),dPeaks(i,:));
             end
-            [aRateData, aRates, dOutPeaks] = oBasePotential.GetRateData(dPeaks);
-             %need to add a NaN to the start because otherwise this won't
-            %match the beatindexes array
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates = [NaN aRates];
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateData = aRateData;
-            oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateTimes = [NaN oBasePotential.TimeSeries(dOutPeaks(2,:))];
+
+            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRates', aBeatRates);
+            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,...
+                oBasePotential.Electrodes,'Processed','BeatRateIndexes', aBeatRateIndexes);
         end
         
         function  [aRateData, dPeaks] = GetHeartRateData(oBasePotential,dPeaks)
@@ -276,34 +300,33 @@ classdef BasePotential < BaseSignal
             oBasePotential.RMS.HeartRate.BeatRateTimes = oBasePotential.TimeSeries(dOutPeaks(2,:));
         end
         
-        function [aRateTrace, aRates, dPeaks] = GetRateData(oBasePotential,dPeaks)
+        function [aRates, aPeaks] = GetBeatRates(oBasePotential,aFirstPeak,aSecondPeak)
             %Take the peaks  supplied and create an array of
             %discrete rates
             
-            
-            %aTimes = aTimes';
-            
             %get the time values for these peaks
-            aTimes = oBasePotential.TimeSeries(dPeaks);
-            if size(aTimes,1) > size(aTimes,2)
-                aTimes = aTimes';
-            end
+            aFirstTimes = oBasePotential.TimeSeries(aFirstPeak);
+            aSecondTimes = oBasePotential.TimeSeries(aSecondPeak);
+            
+            %Get the times in sets of intervals
+            aIntervals = aSecondTimes - aFirstTimes;
+            %Put rates into bpm
+            aRates = 60 ./ aIntervals;
+            aPeaks = aSecondPeak;
+        end
+        
+        function aRateTrace = GetBeatRateData(oBasePotential,iElectrodeNumber)
+            aRateTrace = NaN(1,length(oBasePotential.TimeSeries));
+            %Loop through the beats and insert into aRateTrace
+            dPeaks = oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRateIndexes;
             %Put peaks in pairs
             if size(dPeaks,1) > size(dPeaks,2)
                 dPeaks = dPeaks';
             end
-            dPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
-            %Get the times in sets of intervals
-            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)];
-            aIntervals = aNewTimes(2,:) - aNewTimes(1,:);
-            %Put rates into bpm
-            aRates = 60 ./ aIntervals;
-            aRateTrace = NaN(1,length(oBasePotential.TimeSeries));
-            %Loop through the peaks and insert into aRateTrace
-            for i = 1:size(dPeaks,2)
-                aRateTrace(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
+            dNewPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
+            for i = 1:size(dNewPeaks,2)
+                aRateTrace(dNewPeaks(1,i):dNewPeaks(2,i)-2) = oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatRates(i+1);
             end
-            
         end
         
         function RefreshBeatData(oBasePotential, varargin)
@@ -410,6 +433,21 @@ classdef BasePotential < BaseSignal
             [C iElectrodeNumber] = min(aDistance);
         end
         
+        function [oElectrode, iIndex] = GetElectrodeByName(oBasePotential,sChannelName)
+            %Return the electrode that matches the input name
+            %This is a hacky way to do it but IDGF
+            oElectrode = [];
+            iIndex = 0;
+            for i = 1:length(oBasePotential.Electrodes)
+                %Revisit this by trying aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID),
+                %aEvents);
+                if strcmp(oBasePotential.Electrodes(i).Name,sChannelName)
+                    oElectrode = oBasePotential.Electrodes(i);
+                    iIndex = i;
+                end
+            end
+        end
+        
          function AcceptChannel(oBasePotential,iElectrodeNumber)
             oBasePotential.Electrodes(iElectrodeNumber).Accepted = 1;
         end
@@ -419,55 +457,34 @@ classdef BasePotential < BaseSignal
         end
         
         %% Event related functions
-         function CreateNewEvent(oBasePotential, aElectrodes, aBeats, varargin)
+         function sEventID = CreateNewEvent(oBasePotential, aElectrodes, aBeats, varargin)
              %Create a new event from the provided details
-             oWaitbar = waitbar(0,'Please wait...');
-             for i = 1:numel(aElectrodes)
-                 iElectrodeNumber = aElectrodes(i);
-                 if ~isfield(oBasePotential.Electrodes(iElectrodeNumber), 'SignalEvent')
-                     %Initialise the SignalEvent field
-                     oBasePotential.Electrodes(iElectrodeNumber).SignalEvent = [];
-                     iEvent = 1;
-                 elseif isfield(oBasePotential.Electrodes(iElectrodeNumber).SignalEvent,'ID')
-                     %Check the event ID
-                     aEventIDs = {oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(:).ID};
-                     sThisEvent = oBasePotential.MakeEventID(char(varargin{1}), char(varargin{2}), char(varargin{3}));
-                     bElements = ismember(aEventIDs, sThisEvent);
-                     iIndex = find(bElements);
-                     if isempty(iIndex)
-                         %This event is not present in the EventID array
-                         iEvent = length(oBasePotential.Electrodes(iElectrodeNumber).SignalEvent) + 1;
-                     else
-                         %This event has already been created for this
-                         %electrode
-                         iEvent = iIndex;
-                     end
+             sThisEvent = oBasePotential.MakeEventID(char(varargin{1}), char(varargin{2}), char(varargin{3}));
+             if ~isfield(oBasePotential.Electrodes(1), sThisEvent)
+                 %Initialise the SignalEvent field
+                 oEvent = struct('RangeStart',oBasePotential.Beats.Indexes(:,1),'RangeEnd',oBasePotential.Beats.Indexes(:,2),...
+                     'Index',ones(size(oBasePotential.Beats.Indexes,1),1),'Label',struct('Colour',char(varargin{1})),...
+                     'Type',char(varargin{2}),'Method',char(varargin{3}));
+                 %distribute to electrodes
+                 [oBasePotential.Electrodes(:).(sThisEvent)] = deal(oEvent);
+                 %add this id to the signal events array
+                 if ~isfield(oBasePotential.Electrodes(1),'SignalEvents')
+                     [oBasePotential.Electrodes(:).SignalEvents] = deal(cell(1,1));
+                     iIndex = 1;
                  else
-                     iEvent = 1;
+                     iIndex = length(oBasePotential.Electrodes(1).SignalEvents)+1;
                  end
-                 %Specify the processed beat indexes as the default range
-                 oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Range = oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes;
-                 oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Index = ones(size(oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes,1),1);
-                 oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Label.Colour = char(varargin{1});
-                 oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Type = char(varargin{2});
-                 oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Method = char(varargin{3});
-                 %initialise and build ID
-                 oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).ID = oBasePotential.MakeEventID(char(varargin{1}), ...
-                     oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Type(1),oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent,1).Method);
-                 
-                 oBasePotential.MarkEvent(iElectrodeNumber, iEvent);
-                 oBasePotential.MarkEvent(iElectrodeNumber, iEvent, aBeats(m));
-                 
-                 
-                 
-                 waitbar(i/numel(aElectrodes),oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+                 aSignalEvents = oBasePotential.Electrodes(1).SignalEvents;
+                 aSignalEvents{iIndex,1} = sThisEvent;
+                 [oBasePotential.Electrodes(:).SignalEvents] = deal(aSignalEvents);
              end
-             close(oWaitbar);
+             oBasePotential.MarkEvent(sThisEvent,aBeats);
+             sEventID = sThisEvent;
          end
         
          function sEventID = MakeEventID(oBasePotential, sColour, sEventType, sMethod)
             %Create an eventid from the inputs
-            sEventID = strcat(sColour(1),lower(sEventType(1)));
+            sEventID = strcat(lower(sEventType(1)),sColour(1));
             switch (sMethod)
                 case 'SteepestPositiveSlope'
                     sEventID = strcat(sEventID,'sps');
@@ -482,180 +499,132 @@ classdef BasePotential < BaseSignal
             end
         end
         
-        function DeleteEvent(oBasePotential, sEventID, aElectrodes)
+        function DeleteEvent(oBasePotential, sEventID)
             %Delete the specified event for the selected electrodes and all
             %beats
-            if isempty(aElectrodes)
-                %delete for all electrodes
-                aElectrodes = 1:length(oBasePotential.Electrodes);
-            end
-            for i = 1:length(aElectrodes)
-                aEvents = oBasePotential.Electrodes(aElectrodes(i)).SignalEvent;
-                if length(aEvents) > 1
-                    aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID), aEvents);
-                    oBasePotential.Electrodes(aElectrodes(i)).SignalEvent = oBasePotential.Electrodes(aElectrodes(i)).SignalEvent(~aIndices);
-                else
-                    if strcmpi(aEvents.ID, sEventID)
-                        oBasePotential.Electrodes(aElectrodes(i)).SignalEvent = [];
-                    end
-                end
-                
+            oElectrodes = rmfield(oBasePotential.Electrodes(:),sEventID);
+            oBasePotential.Electrodes = oElectrodes';
+            if length(oBasePotential.Electrodes(1).SignalEvents) > 1
+                %need to remove the right reference
+                aSignalEvents = oBasePotential.Electrodes(1).SignalEvents;
+                aIndices = ismember(aSignalEvents,sEventID);
+                aSignalEvents = aSignalEvents(~aIndices);
+                [oBasePotential.Electrodes(:).SignalEvents] = deal(aSignalEvents);
+            else
+                %remove the signalevents field as no more events to store
+                oElectrodes = rmfield(oBasePotential.Electrodes(:),SignalEvents);
+                oBasePotential.Electrodes = oElectrodes';
             end
         end
         
-        function iIndex = GetEventIndex(oBasePotential, iElectrodeNumber, sEventID)
-            aEvents = oBasePotential.Electrodes(iElectrodeNumber).SignalEvent;
-            aIndices = arrayfun(@(x) strcmpi(x.ID,sEventID), aEvents);
-            [iIndex, col] = find(aIndices);
-        end
-        
-        function UpdateEventRange(oBasePotential, iEventIndex, aBeats, aElectrodes, aRange)
+        function UpdateEventRange(oBasePotential, sEventID, aBeats, aElectrodes, aRange)
             %Change the range for the specified event and beat and selected
             %electrodes
             
-            %Update range for selected beats and electrodes
-            oWaitbar = waitbar(0,'Please wait...');
-            for i = 1:length(aElectrodes)
-                waitbar(i/length(aElectrodes),oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
-                %Set the new event range
-                oBasePotential.Electrodes(aElectrodes(i)).SignalEvent(iEventIndex).Range(aBeats,1) = aRange(1) + oBasePotential.Electrodes(aElectrodes(i)).Processed.BeatIndexes(aBeats,1);
-                oBasePotential.Electrodes(aElectrodes(i)).SignalEvent(iEventIndex).Range(aBeats,2) = aRange(2) + oBasePotential.Electrodes(aElectrodes(i)).Processed.BeatIndexes(aBeats,1);
-                oBasePotential.MarkEvent(aElectrodes(i),iEventIndex,aBeats);
-            end
-            close(oWaitbar);
+            %Update range for selected beats (assume applying to all
+            %electrodes)
+            aRangeStart = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeStart');
+            aRangeEnd = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeEnd');
+            %Calculate the new event range
+            aRangeStart(aBeats,aElectrodes) = aRange(1) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
+            aRangeEnd(aBeats,aElectrodes) = aRange(2) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
+            %apply to data
+            oBasePotential.Electrodes(aElectrodes) = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes(aElectrodes),sEventID,'RangeStart',aRangeStart);
+            oBasePotential.Electrodes(aElectrodes) = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes(aElectrodes),sEventID,'RangeEnd',aRangeEnd);
+            %mark event for these beats
+            oBasePotential.MarkEvent(sEventID,aBeats,aElectrodes);
         end
         
-        function MarkEvent(oBasePotential, iElectrode, iEvent, varargin)
-            %Mark activation for whole array based on the specified method 
-            if strcmp(oBasePotential.Electrodes(iElectrode).Status,'Potential')
-                error('Unemap.GetActivationTime.VerifyInput:NoProcessedData',...
-                    'You need to have processed data before calculating an activation time');
-            else
-                if isempty(varargin)
-                    %only an eventid has been specified so mark activation
-                    %times for all beats
-                    sMethod = oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Method;
-                    %Choose the method to apply
-                    switch (sMethod)
-                        case 'SteepestPositiveSlope'
-                            % Get slope data if this has not been done already
-                            if isnan(oBasePotential.Electrodes(iElectrode).Processed.Slope)
-                                oBasePotential.GetSlope('Data',iElectrode);
-                            end
-                            iIndex =  fSteepestSlope(oBasePotential.TimeSeries, ...
-                                oBasePotential.Electrodes(iElectrode).Processed.Slope, ...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range);
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index = iIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(:,1) - ...
-                                oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(:,1);
-                        case 'SteepestNegativeSlope'
-                            % Get slope data if this has not been done already
-                            if isnan(oBasePotential.Electrodes(iElectrode).Processed.Slope)
-                                oBasePotential.GetSlope('Data',iElectrode);
-                            end
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index =  fSteepestNegativeSlope(oBasePotential.TimeSeries, ...
-                                oBasePotential.Electrodes(iElectrode).Processed.Slope, ...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range);
-                        case 'CentralDifference'
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index = fSteepestSlope(oBasePotential.TimeSeries, ...
-                                abs(oBasePotential.Electrodes(iElectrode).Processed.CentralDifference), ...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range);
-                        case 'MaxSignalMagnitude'
-                            %Loop through beats
-                            for k = 1:size(oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes,1)
-                                [C, oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(k)] = ...
-                                    max(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1):...
-                                    oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,2)));
-                            end
-                        case 'HalfSignalMagnitude'
-                            for k = 1:size(oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes,1)
-                                dBaseLine = mean(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1)-15:...
-                                    oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1)));
-                                dPeak = max(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1):...
-                                    oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,2)));
-                                dMagnitude = (dPeak+sign(dBaseLine)*(-1)*abs(dBaseLine))/2;
-                                iHalfIndex = find(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1):...
-                                    oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,2))>(dBaseLine + abs(dMagnitude)),1,'first')-1;
-                                if isempty(iHalfIndex)
-                                    iHalfIndex = oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,2) - oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1) + 1;
-                                end
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(k) = iHalfIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1) - ...
-                                    oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(k,1);
-                            end
-                    end
-                elseif size(varargin,2) >= 1
-                    %Both a method and a beat number have been specified so
-                    %only mark activation times for this beat
-                    sMethod = oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Method;
-                    iBeat = varargin{1};
-                    %Choose the method to apply
-                    switch (sMethod)
-                        case 'SteepestPositiveSlope'
-                            % Get slope data if this has not been done already
-                            if isnan(oBasePotential.Electrodes(iElectrode).Processed.Slope)
-                                oBasePotential.GetSlope('Data',iElectrode);
-                            end
-                            iIndex =  fSteepestSlope(oBasePotential.TimeSeries, ...
-                                oBasePotential.Electrodes(iElectrode).Processed.Slope, ...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,:));
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(iBeat) = iIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) - ...
-                                oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(iBeat,1);
-                        case 'SteepestNegativeSlope'
-                            % Get slope data if this has not been done already
-                            if isnan(oBasePotential.Electrodes(iElectrode).Processed.Slope)
-                                oBasePotential.GetSlope('Data',iElectrode);
-                            end
-                            iIndex = fSteepestNegativeSlope(oBasePotential.TimeSeries, ...
-                                oBasePotential.Electrodes(iElectrode).Processed.Slope, ...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,:));
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(iBeat) = iIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) - ...
-                                oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(iBeat,1);
-                        case 'CentralDifference'
-                            iIndex = fSteepestSlope(oBasePotential.TimeSeries, ...
-                                abs(oBasePotential.Electrodes(iElectrode).Processed.CentralDifference), ...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,:));
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(iBeat) = iIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) - ...
-                                oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(iBeat,1);
-                        case 'MaxSignalMagnitude'
-                            [C, iIndex] = ...
-                                max(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1):...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,2)));
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(iBeat) = iIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) - ...
-                                oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(iBeat,1);
-                        case 'HalfSignalMagnitude'
-                            dBaseLine = mean(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1)-15:...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1)));
-                            dPeak = max(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1):...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,2)));
-                            dMagnitude = (dPeak+sign(dBaseLine)*(-1)*abs(dBaseLine))/2;
-                            iHalfIndex = find(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1):...
-                                oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,2))>(dBaseLine + abs(dMagnitude)),1,'first')-1;
-                            if isempty(iHalfIndex) || dPeak < 1.1*dBaseLine
-                                iHalfIndex = oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,2) - oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) + 1;
-                            end
-                            oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(iBeat) = iHalfIndex + oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(iBeat,1) - ...
-                                oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes(iBeat,1);
-                    end
-                end
+        function MarkEvent(oBasePotential, sEventID, varargin)
+            %Mark activation for whole array based on the specified method
+            
+            %get range data
+            aRangeStart = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeStart');
+            aRangeEnd = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeEnd');
+            %get beat information
+            if isempty(varargin)
+                %only an eventid has been specified so mark activation
+                %times for all beats
+                aBeats = 1:size(aRangeStart,1);
+                aElectrodes = 1:size(aRangeStart,2);
+            elseif nargin == 3
+                %Both a method and beats have been specified so
+                %only mark activation times for these beats
+                aBeats = varargin{1};
+                aElectrodes = 1:size(aRangeStart,2);
+            elseif nargin == 4
+                aBeats = varargin{1};
+                aElectrodes = varargin{2};
             end
+            %select the beats
+            aThisRangeStart = aRangeStart(aBeats,:);
+            aThisRangeEnd = aRangeEnd(aBeats,:);
+            %get the current index information
+            aAllIndexes = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'Index');
+            %Choose the method to apply
+            sMethod = sEventID(3:5);
+            switch (sMethod)
+                case 'sps'
+                    %get slope data
+                    aSlopeData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Slope');
+                    aTheseIndexes =  fSteepestSlope(oBasePotential.TimeSeries, aSlopeData(:,aElectrodes), aThisRangeStart(:,aElectrodes), aThisRangeEnd(:,aElectrodes));
+                    %insert into allindexes in the right place.
+                    
+                    %                     case 'sns'
+                    %                         oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index =  fSteepestNegativeSlope(oBasePotential.TimeSeries, ...
+                    %                             oBasePotential.Electrodes(iElectrode).Processed.Slope, ...
+                    %                             oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range);
+                    %                     case 'cd'
+                    %                         oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index = fSteepestSlope(oBasePotential.TimeSeries, ...
+                    %                             abs(oBasePotential.Electrodes(iElectrode).Processed.CentralDifference), ...
+                    %                             oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range);
+                    %                     case 'msm'
+                    %                         %Loop through beats
+                    %                         for k = 1:size(oBasePotential.Electrodes(iElectrode).Processed.BeatIndexes,1)
+                    %                             [C, oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Index(k)] = ...
+                    %                                 max(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1):...
+                    %                                 oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,2)));
+                    %                         end
+                case 'hsm'
+                    %get data
+                    aData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
+                    %assume ranges are the same for all electrodes for now
+                    aThisRangeStart = aThisRangeStart(:,aElectrodes);
+                    aThisRangeEnd = aThisRangeEnd(:,aElectrodes);
+                    aTheseIndexes = ones(size(aThisRangeStart,1),aElectrodes);
+                    for i = 1:size(aThisRangeStart,1)
+                        aBaseLine = mean(aData(aThisRangeStart(i)-15:aThisRangeStart(i),:),1);
+                        aBaseLine = aBaseLine(aElectrodes);
+                        aPeak = max(aData(aThisRangeStart(i):aThisRangeEnd(i),:),[],1);
+                        aPeak = aPeak(aElectrodes);
+                        aSignedBaseLine = sign(aBaseLine)*(-1).*abs(aBaseLine);
+                        aMagnitude = (aPeak+aSignedBaseLine)./2;
+                        aHalfData = aData(aThisRangeStart(i):aThisRangeEnd(i),aElectrodes) - repmat(aMagnitude+aBaseLine,size(aData(aThisRangeStart(i):aThisRangeEnd(i),aElectrodes),1),1);
+                        [val aTheseIndexes(i,aElectrodes)] = min(abs(aHalfData),[],1);
+                    end
+            end
+            aAllIndexes(aBeats,aElectrodes) = aTheseIndexes;
+            oBasePotential.Electrodes(aElectrodes) = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes(aElectrodes), ...
+                sEventID, 'Index', aAllIndexes + aRangeStart - repmat(oBasePotential.Beats.Indexes(:,1),1,size(aRangeStart,2)));
         end
         
         function iIndex = GetIndexFromTime(oBasePotential, iElectrodeNumber, iBeat, dTime)
             %Returns the index of the beat window corresponding to the
             %specified time
             iIndex = oBasePotential.oDAL.oHelper.ConvertTimeToSeriesIndex(oBasePotential.TimeSeries(...
-                oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,1):...
-                oBasePotential.Electrodes(iElectrodeNumber).Processed.BeatIndexes(iBeat,2)), dTime);
+                oBasePotential.Beats.Indexes(iBeat,1):...
+                oBasePotential.Beats.Indexes(iBeat,2)), dTime);
         end
         
-        function UpdateSignalEventMark(oBasePotential, iElectrodeNumber, iEvent, iBeat, dTime)
+        function UpdateSignalEventMark(oBasePotential, iElectrodeNumber, sEventID, iBeat, dTime)
             %Update the activation time index for the specified channel and
             %beat number
             
             %Convert the time into an index
             iIndex = oBasePotential.oDAL.oHelper.ConvertTimeToSeriesIndex(oBasePotential.TimeSeries(...
-                oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Range(iBeat,1):...
-                oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Range(iBeat,2)), dTime);
-            oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEvent).Index(iBeat) = iIndex; 
+                oBasePotential.Electrodes(iElectrodeNumber).(sEventID).RangeStart(iBeat):...
+                oBasePotential.Electrodes(iElectrodeNumber).(sEventID).RangeEnd(iBeat)), dTime);
+            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Index(iBeat) = iIndex; 
         end
         
         function MarkEventOrigin(oBasePotential, iElectrodeNumber, iEventIndex, iBeat)

@@ -17,6 +17,8 @@ oUnemap.RMS.HeartRate.BeatRates
 oUnemap.RMS.HeartRate.BeatRateData
 oUnemap.RMS.HeartRate.BeatTimes
 
+oBasePotential.Beats.Indexes
+
 Electrodes: (not wrapped by a class)
 Electrodes(i).Accepted
 Electrodes(i).Name
@@ -24,11 +26,11 @@ Electrodes(i).Status
 Electrodes(i).Potential.Data
 Electrodes(i).Coords
 Electrodes(i).Location
-Electrodes(i).SignalEvent(j).Index
-Electrodes(i).SignalEvent(j).Range
-Electrodes(i).SignalEvent(j).Method
-Electrodes(i).SignalEvent(j).Label.Colour
-Electrodes(i).SignalEvent(j).ID
+Electrodes(i).SignalEvents
+Electrodes(i).(SignalEvent).Index
+Electrodes(i).(SignalEvent).Range
+Electrodes(i).(SignalEvent).Method
+Electrodes(i).(SignalEvent).Label.Colour
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.Integral %%currently only used by oPhrenic.Electrodes
 Electrodes(i).Processed.EnvelopeSubtracted
@@ -37,10 +39,9 @@ Electrodes(i).Processed.CentralDifference
 Electrodes(i).Processed.Curvature
 Electrodes(i).Processed.Data
 Electrodes(i).Processed.Beats %%An array containing just the processed data between each of the two beat indexes and nans everywhere else
-Electrodes(i).Processed.BeatIndexes 
 Electrodes(i).Processed.BeatRates %An array containing the rate for each beat
 Electrodes(i).Processed.BeatRateData %An array containing the rate for each time point for the whole recording
-Electrodes(i).Processed.BeatRateTimes %An array containing the time points at which the beats occur
+Electrodes(i).Processed.BeatRateIndexes %An array containing the time points at which the beats occur
 Electrodes(i).Pacing.Index
 
 Experiment: (BaseEntity)

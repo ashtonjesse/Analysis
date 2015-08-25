@@ -4,10 +4,7 @@ classdef Optical < BasePotential
     %   OpticalPotential inherits all properties and methods from BaseSignal.
     
     properties
-        oExperiment;
-        Electrodes = [];
-        TimeSeries = [];
-        Name;
+        
     end
     
     methods
@@ -29,7 +26,11 @@ classdef Optical < BasePotential
                         end
                     end
                 end
+                if ~isfield(oOptical,'Beats')
+                    oOptical.Beats.Indexes = oOptical.Electrodes(1).Processed.BeatIndexes;
+                end
             end
+            
         end
         
         function oOptical = GetOpticalFromMATFile(oOptical, sFile)
@@ -43,6 +44,9 @@ classdef Optical < BasePotential
             oOptical.Electrodes = oData.oEntity.Electrodes;
             oOptical.TimeSeries = oData.oEntity.TimeSeries;
             oOptical.Name = oData.oEntity.Name;
+            if oData.oEntity.IsProp('Beats')
+                oOptical.Beats = oData.oEntity.Beats;
+            end
         end
         
         function oOptical = GetOpticalRecordingFromCSVFile(oOptical, sFileName, oExperiment)
@@ -89,18 +93,16 @@ classdef Optical < BasePotential
         function oOptical = GetArrayBeats(oOptical,aPeaks)
             %get the beat information and put it into the electrode struct
             aInData = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,oOptical.Electrodes(1).Status,'Data');
-            [aOutData dMaxPeaks] =  oOptical.GetSinusBeats(aInData, aPeaks);
             if ~isfield(oOptical.Electrodes(1),'Processed')
                 oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper,oOptical.Electrodes,'Processed','Data',aInData);
             end
+            [aOutData dMaxPeaks] =  oOptical.GetSinusBeats(aInData, aPeaks);
             %Split again into the Electrodes
             oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper,oOptical.Electrodes,'Processed','Beats',cell2mat(aOutData(1)));
-            oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper,oOptical.Electrodes,'Processed','BeatIndexes',cell2mat(aOutData(2)));
-            %loop through electrodes and calculate sinus rates
-            for i = 1:numel(oOptical.Electrodes)
-                oOptical.FinishProcessing(i);
-                oOptical.CalculateSinusRate(i);
-            end
+            oOptical.Beats.Indexes = cell2mat(aOutData(2));
+            %loop through beats and calculate sinus rates
+            oOptical.FinishProcessing();
+            oOptical.CalculateSinusRate();
         end
         
         function oMapData = PrepareActivationMap(oOptical, dInterpDim, sPlotType, iEventID, iSupportPoints, iBeatIndex, oActivationData)

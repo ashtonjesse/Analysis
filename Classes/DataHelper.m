@@ -229,6 +229,7 @@ classdef DataHelper
             %Find the abs difference of all times vs the dTime
             aDiff = abs(aTimeSeries - dTime);
             [dMin, iMinIndex] = min(aDiff);
+            iMinIndex = iMinIndex;
         end
         
         function out = StringIsNumeric(oDataHelper,oString)
