@@ -221,14 +221,14 @@ classdef BeatPlot < SubFigure
                      brushedData = get(hBrushLines, {'Xdata','Ydata'});
                      % The data that has not been selected is labelled as NaN so get
                      % rid of this
-                     brushedIdx = ~isnan([brushedData{1,1}]);
-                     [row, colIndices] = find(brushedIdx);
-                     if ~isempty(colIndices)
-                         aEventRange = [colIndices(1) colIndices(end)];
-                         %Update the event range
-                         oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(oFigure.SelectedEventID, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
-                     else
-                         error('AnalyseSignals.bUpdateBeat_Callback:NoSelectedData', 'You need to select data');
+                     if ~isempty(brushedData)
+                         brushedIdx = ~isnan([brushedData{1,1}]);
+                         [row, colIndices] = find(brushedIdx);
+                         if ~isempty(colIndices)
+                             aEventRange = [colIndices(1) colIndices(end)];
+                             %Update the event range
+                             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(oFigure.SelectedEventID, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
+                         end
                      end
                      % Turn brushing off
                      brush(oFigure.oGuiHandle.(oFigure.sFigureTag),'off');
@@ -316,12 +316,17 @@ classdef BeatPlot < SubFigure
                         %SignalEventLine
                         %Get the current event for this channel
                         sEventID = oFigure.oParentFigure.GetEventIDFromTag(oFigure.CurrentPlotLine);
-                        
-                        %Reset the range for this event to the beat indexes as the
-                        %user is manually changing the event time
-                        oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(sEventID, iBeat, iChannelNumber, ...
-                            [0 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2) - ...
-                            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1)]);
+                        %check if we need to reset the range for this event
+                        iRangeStart = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannelNumber).(sEventID).RangeStart(iBeat);
+                        iRangeEnd = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannelNumber).(sEventID).RangeEnd(iBeat);
+                        dLocation = dXdata(1) + oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1) - 1;
+                        if dLocation < iRangeStart || dLocation > iRangeEnd
+                            %Reset the range for this event to the beat indexes as the
+                            %user is manually changing the event time
+                            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(sEventID, iBeat, iChannelNumber, ...
+                                [1 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2) - ...
+                                oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1)]);
+                        end
                         %Update the signal event for this electrode and beat number
                         oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateSignalEventMark(iChannelNumber, sEventID, iBeat, dXdata(1));
                         notify(oFigure, 'SignalEventMarkChange',DataPassingEvent([],iChannelNumber));
@@ -471,6 +476,19 @@ classdef BeatPlot < SubFigure
                          set(oLine,'Tag',sLineTag,'color', oElectrode.(oElectrode.SignalEvents{j}).Label.Colour, 'parent',oSignalEventPlot, ...
                              'linewidth',2,'ButtonDownFcn',@(src,event) StartDrag(oFigure, src, event));
                          set(oFigure.oGuiHandle.(oFigure.sFigureTag),'WindowButtonUpFcn',@(src, event) StopDrag(oFigure, src, event));
+                         %and label the event range with little lines
+                         oLine = line([oBasePotential.TimeSeries(oElectrode.(oElectrode.SignalEvents{j}).RangeStart(iBeat)) ...
+                             oBasePotential.TimeSeries(oElectrode.(oElectrode.SignalEvents{j}).RangeStart(iBeat))], [...
+                             oElectrode.Processed.Data(oElectrode.(oElectrode.SignalEvents{j}).RangeStart(iBeat))+4, ...
+                             oElectrode.Processed.Data(oElectrode.(oElectrode.SignalEvents{j}).RangeStart(iBeat))-4]);
+                         set(oLine,'color', oElectrode.(oElectrode.SignalEvents{j}).Label.Colour, 'parent',oSignalEventPlot, ...
+                             'linewidth',4);
+                         oLine = line([oBasePotential.TimeSeries(oElectrode.(oElectrode.SignalEvents{j}).RangeEnd(iBeat)) ...
+                             oBasePotential.TimeSeries(oElectrode.(oElectrode.SignalEvents{j}).RangeEnd(iBeat))], [...
+                             oElectrode.Processed.Data(oElectrode.(oElectrode.SignalEvents{j}).RangeEnd(iBeat))+4, ...
+                             oElectrode.Processed.Data(oElectrode.(oElectrode.SignalEvents{j}).RangeEnd(iBeat))-4]);
+                         set(oLine,'color', oElectrode.(oElectrode.SignalEvents{j}).Label.Colour, 'parent',oSignalEventPlot, ...
+                             'linewidth',4);
                          %Label the line with the event time
                          if isfield(oElectrode,'Pacing')
                              %This is a sequence of paced beats so express

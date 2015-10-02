@@ -6,9 +6,7 @@ classdef Phrenic < BasePotential
     %    does not go through the DAL so be warned
     %    
     properties
-        oExperiment;
-        Electrodes = [];
-        TimeSeries;
+
     end
     
     methods

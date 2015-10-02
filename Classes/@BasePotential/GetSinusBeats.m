@@ -34,7 +34,7 @@ for j = 2:n;
     %If the next peak is greater than 150 more than the current
     %peak then the next group of peaks must be reached so save
     %the first and last peaks of the last group in aBeats.
-    if aPeaks(2,j) < (iCurrentPeak + 68)%55
+    if aPeaks(2,j) < (iCurrentPeak + 68)%55,68
         iLastPeak = aPeaks(2,j);
         iPeakCount = iPeakCount + 1;
     else
@@ -43,7 +43,10 @@ for j = 2:n;
             %Add some padding to the beginning and end 
             iLastPeak = iLastPeak + iBlank;
             iFirstPeak = iFirstPeak - iBlank/2;
-            iFirstPeak = max(1,iFirstPeak);
+            %limit the first point to at least 16 from the start -
+            %necessary because 15 is used as the baseline preceeding beats
+            %when marking signal events
+            iFirstPeak = max(16,iFirstPeak);
             aThisBeat = aInData(iFirstPeak:iLastPeak,:);
             %aThisGap = NaN(iFirstPeak - iOldLastPeak - 1,q);
             aBeats(iFirstPeak:iLastPeak,:) = aThisBeat;

@@ -337,5 +337,20 @@ classdef DataHelper
             aOutData.Body = aBodyData;
             fclose(fid);
         end
+        
+        function aFilePath = GetFiles()
+            [sDataFileName,sDataPathName]=uigetfile('*.*','Select file(s)','multiselect','on');
+            if ~iscell(sDataFileName)
+                sDataFileName = {sDataFileName};
+            end
+            if (~ischar(sDataFileName{1}) && ~ischar(sDataPathName))
+                aFilePath = [];
+                return;
+            end
+            aFilePath = cell(numel(sDataFileName),1);
+            for i = 1:numel(sDataFileName)
+                aFilePath{i}=strcat(sDataPathName,char(sDataFileName{i}));
+            end
+        end
     end
 end

@@ -171,16 +171,16 @@ classdef BasePotential < BaseSignal
                     error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
                 end
                 %Perform on data of datatype
-                oWaitbar = waitbar(0,'Please wait ...');
+                                oWaitbar = waitbar(0,'Please wait ...');
                 iLength=length(oBasePotential.Electrodes);
                 for i = 1:iLength
                     oBasePotential.Electrodes(i).Processed.Slope = ...
                         oBasePotential.CalculateSlope(oBasePotential.Electrodes(i).Processed.(sDataType),7,3);
                     oBasePotential.Electrodes(i).Processed.Curvature = ...
                         oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.(sDataType),7,3);
-                    waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+                                        waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                 end
-                close(oWaitbar);
+                                close(oWaitbar);
             else
                 %No electrode number has been specified so loop through
                 %all
@@ -188,15 +188,15 @@ classdef BasePotential < BaseSignal
                     error('Unemap.GetSlope.VerifyInput:NoProcessedData', 'You need to have processed data');
                 end
                 iLength = size(oBasePotential.Electrodes,2);
-                oWaitbar = waitbar(0,'Please wait...');
+                                oWaitbar = waitbar(0,'Please wait...');
                 for i = 1:iLength
                     oBasePotential.Electrodes(i).Processed.Slope = ...
                         oBasePotential.CalculateSlope(oBasePotential.Electrodes(i).Processed.Data,7,3);
                     oBasePotential.Electrodes(i).Processed.Curvature = ...
                         oBasePotential.CalculateCurvature(oBasePotential.Electrodes(i).Processed.Data,7,3);
-                    waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+                                        waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
                 end
-                close(oWaitbar);
+                                close(oWaitbar);
             end
         end
         
@@ -206,22 +206,51 @@ classdef BasePotential < BaseSignal
             if max(strcmp(sFields,'Electrodes'))
                 %Loop through the electrodes and delete the beat number
                 %iBeat
-                for i = 1:length(oBasePotential.Electrodes)
-                    oBasePotential.Electrodes(i).Processed.Beats(oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat,1): ...
-                        oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat,2)) = NaN;
-                    oBasePotential.Electrodes(i).Processed.BeatIndexes = vertcat(oBasePotential.Electrodes(i).Processed.BeatIndexes(1:iBeat-1,:), ...
-                        oBasePotential.Electrodes(i).Processed.BeatIndexes(iBeat+1:end,:));
+                oWaitbar = waitbar(0,'Please wait ...');
+                iLength=length(oBasePotential.Electrodes);
+                aBeats = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Beats');
+                BeatRates = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRates');
+                BeatRateIndexes = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRateIndexes');
+                aBeats(oBasePotential.Beats.Indexes(iBeat,1):oBasePotential.Beats.Indexes(iBeat,2),:) = NaN;
+                NewBeatRates = vertcat(BeatRates(1:iBeat-1,:), BeatRates(iBeat+1:end,:));
+                NewBeatRates(1,:) = NaN;
+                NewBeatRateIndexes = vertcat(BeatRateIndexes(1:iBeat-1,:), BeatRateIndexes(iBeat+1:end,:));
+                
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Beats',aBeats);
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRates',NewBeatRates);
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRateIndexes',NewBeatRateIndexes);
+                if isfield(oBasePotential.Electrodes(1),'SignalEvents')
+                    for j = 1:numel(oBasePotential.Electrodes(1).SignalEvents)
+                        sSignalEvent = oBasePotential.Electrodes(1).SignalEvents{j};
+                        RangeStart = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'RangeStart');
+                        RangeEnd = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'RangeEnd');
+                        Index = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'Index');
+                        if isfield(oBasePotential.Electrodes(1).(sSignalEvent),'Origin')
+                            Origin = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'Origin');
+                            NewOrigin = vertcat(Origin(1:iBeat-1,:), Origin(iBeat+1:end,:));
+                            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'Origin',NewOrigin);
+                        end
+                        if isfield(oBasePotential.Electrodes(1).(sSignalEvent),'Exit')
+                            Exit = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'Exit');
+                            NewExit = vertcat(Exit(1:iBeat-1,:), Exit(iBeat+1:end,:));
+                            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'Exit',NewExit);
+                        end
+                        NewRangeStart =  vertcat(RangeStart(1:iBeat-1,:), RangeStart(iBeat+1:end,:));
+                        NewRangeEnd =  vertcat(RangeEnd(1:iBeat-1,:), RangeEnd(iBeat+1:end,:));
+                        NewIndex =  vertcat(Index(1:iBeat-1,:), Index(iBeat+1:end,:));
+                        
+                        oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'RangeStart',NewRangeStart);
+                        oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'RangeEnd',NewRangeEnd);
+                        oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sSignalEvent,'Index',NewIndex);
+                        
+                    end
+                    
                 end
-            else
-                %Just delete the beat and beatindexes
-                oBasePotential.Processed.Beats(oBasePotential.Processed.BeatIndexes(iBeat,1): ...
-                    oBasePotential.Processed.BeatIndexes(iBeat,2)) = NaN;
-                if iBeat > 1
-                    oBasePotential.Processed.BeatIndexes = vertcat(oBasePotential.Processed.BeatIndexes(1:iBeat-1,:), ...
-                        oBasePotential.Processed.BeatIndexes(iBeat+1:end,:));
-                else
-                    oBasePotential.Processed.BeatIndexes = oBasePotential.Processed.BeatIndexes(2:end,:);
-                end
+                waitbar(i/iLength,oWaitbar,sprintf('Please wait... Processing Electrode %d',i));
+                
+                oBasePotential.Beats.Indexes = vertcat(oBasePotential.Beats.Indexes(1:iBeat-1,:), ...
+                    oBasePotential.Beats.Indexes(iBeat+1:end,:));
+                close(oWaitbar);
             end
             
         end
@@ -526,11 +555,11 @@ classdef BasePotential < BaseSignal
             aRangeStart = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeStart');
             aRangeEnd = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeEnd');
             %Calculate the new event range
-            aRangeStart(aBeats,aElectrodes) = aRange(1) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
-            aRangeEnd(aBeats,aElectrodes) = aRange(2) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
+            aRangeStart(aBeats,aElectrodes) = aRange(1) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes)) - 1;
+            aRangeEnd(aBeats,aElectrodes) = aRange(2) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes)) - 1;
             %apply to data
-            oBasePotential.Electrodes(aElectrodes) = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes(aElectrodes),sEventID,'RangeStart',aRangeStart);
-            oBasePotential.Electrodes(aElectrodes) = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes(aElectrodes),sEventID,'RangeEnd',aRangeEnd);
+            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes,sEventID,'RangeStart',aRangeStart);
+            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes,sEventID,'RangeEnd',aRangeEnd);
             %mark event for these beats
             oBasePotential.MarkEvent(sEventID,aBeats,aElectrodes);
         end
@@ -591,7 +620,7 @@ classdef BasePotential < BaseSignal
                     %assume ranges are the same for all electrodes for now
                     aThisRangeStart = aThisRangeStart(:,aElectrodes);
                     aThisRangeEnd = aThisRangeEnd(:,aElectrodes);
-                    aTheseIndexes = ones(size(aThisRangeStart,1),aElectrodes);
+                    aTheseIndexes = ones(size(aThisRangeStart,1),length(aElectrodes));
                     for i = 1:size(aThisRangeStart,1)
                         aBaseLine = mean(aData(aThisRangeStart(i)-15:aThisRangeStart(i),:),1);
                         aBaseLine = aBaseLine(aElectrodes);
@@ -600,12 +629,12 @@ classdef BasePotential < BaseSignal
                         aSignedBaseLine = sign(aBaseLine)*(-1).*abs(aBaseLine);
                         aMagnitude = (aPeak+aSignedBaseLine)./2;
                         aHalfData = aData(aThisRangeStart(i):aThisRangeEnd(i),aElectrodes) - repmat(aMagnitude+aBaseLine,size(aData(aThisRangeStart(i):aThisRangeEnd(i),aElectrodes),1),1);
-                        [val aTheseIndexes(i,aElectrodes)] = min(abs(aHalfData),[],1);
+                        [val aTheseIndexes(i,:)] = min(abs(aHalfData),[],1);
                     end
             end
-            aAllIndexes(aBeats,aElectrodes) = aTheseIndexes;
-            oBasePotential.Electrodes(aElectrodes) = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes(aElectrodes), ...
-                sEventID, 'Index', aAllIndexes + aRangeStart - repmat(oBasePotential.Beats.Indexes(:,1),1,size(aRangeStart,2)));
+            aAllIndexes(aBeats,aElectrodes) = aTheseIndexes + aRangeStart(aBeats,aElectrodes) - repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
+            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                sEventID, 'Index', aAllIndexes);
         end
         
         function iIndex = GetIndexFromTime(oBasePotential, iElectrodeNumber, iBeat, dTime)
@@ -627,32 +656,30 @@ classdef BasePotential < BaseSignal
             oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Index(iBeat) = iIndex; 
         end
         
-        function MarkEventOrigin(oBasePotential, iElectrodeNumber, iEventIndex, iBeat)
-            if ~isfield(oBasePotential.Electrodes(1).SignalEvent(iEventIndex),'Origin')
+        function MarkEventOrigin(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            if ~isfield(oBasePotential.Electrodes(1).(sEventID),'Origin')
                 %create the origin array
-                for i = 1: numel(oBasePotential.Electrodes)
-                    oBasePotential.Electrodes(i).SignalEvent(iEventIndex).Origin = false(size(oBasePotential.Electrodes(i).Processed.BeatIndexes,1),1);
-                end
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    sEventID, 'Origin', false(size(oBasePotential.Beats.Indexes,1),1));
             end
-            oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEventIndex).Origin(iBeat) = true;
+            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Origin(iBeat) = true;
         end
         
-        function ClearEventOrigin(oBasePotential, iElectrodeNumber, iEventIndex, iBeat)
-            oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEventIndex).Origin(iBeat) = false;
+        function ClearEventOrigin(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Origin(iBeat) = false;
         end
         
-        function MarkEventExit(oBasePotential, iElectrodeNumber, iEventIndex, iBeat)
-            if ~isfield(oBasePotential.Electrodes(1).SignalEvent(iEventIndex),'Exit')
+        function MarkEventExit(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            if ~isfield(oBasePotential.Electrodes(1).(sEventID),'Exit')
                 %create the origin array
-                for i = 1: numel(oBasePotential.Electrodes)
-                    oBasePotential.Electrodes(i).SignalEvent(iEventIndex).Exit = false(size(oBasePotential.Electrodes(i).Processed.BeatIndexes,1),1);
-                end
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    sEventID, 'Exit', false(size(oBasePotential.Beats.Indexes,1),1));
             end
-            oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEventIndex).Exit(iBeat) = true;
+            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Exit(iBeat) = true;
         end
         
-        function ClearEventExit(oBasePotential, iElectrodeNumber, iEventIndex, iBeat)
-            oBasePotential.Electrodes(iElectrodeNumber).SignalEvent(iEventIndex).Exit(iBeat) = false;
+        function ClearEventExit(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Exit(iBeat) = false;
         end
     end
     

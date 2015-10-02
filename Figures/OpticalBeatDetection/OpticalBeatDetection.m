@@ -48,6 +48,7 @@ classdef OpticalBeatDetection < BaseFigure
             set(oFigure.oGuiHandle.oRejectAllMenu, 'callback', @(src, event) oRejectAllMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oAcceptAllMenu, 'callback', @(src, event) oAcceptAllMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDeleteMenu, 'callback', @(src, event) oDeleteMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oLoadRefPointsMenu, 'callback', @(src, event) oLoadRefPointsMenu_Callback(oFigure, src, event));
             
             %set up axes
             oFigure.oGuiHandle.oPanel = panel(oFigure.oGuiHandle.uipanel);
@@ -111,7 +112,7 @@ classdef OpticalBeatDetection < BaseFigure
         
         function oDeleteMenu_Callback(oFigure, src, event)
              %Delete the currently selected beat
-             oFigure.oGuiHandle.oOptical.DeleteBeat(oFigure.SelectedBeat);
+             oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).DeleteBeat(oFigure.SelectedBeat);
              oFigure.SelectedBeat = 1;
              oFigure.Replot(oFigure.SelectedChannel);
              notify(oFigure,'BeatIndexChange');
@@ -256,13 +257,17 @@ classdef OpticalBeatDetection < BaseFigure
             end
             oFigure.Replot(oFigure.SelectedChannel);
         end
+        
+        function oLoadRefPointsMenu_Callback(oFigure, src, event)
+        
+        end
     end
     
     methods (Access = private)
         %% event listeners
         function ThresholdCurvature(oFigure, src, event)
             for i = 1:numel(oFigure.oGuiHandle.oOptical)
-                oFigure.oGuiHandle.oOptical(i).GetArrayBeats(event.ArrayData);
+                oFigure.oGuiHandle.oOptical(i).GetArrayBeats(event.ArrayData,event.Value);
             end
             oFigure.SelectedBeat = 1;
             oFigure.OpenBeatSlider();
@@ -351,7 +356,7 @@ classdef OpticalBeatDetection < BaseFigure
              end
          end
          
-          function ChannelSelectionChange(oFigure,src,event)
+         function ChannelSelectionChange(oFigure,src,event)
              %An event listener callback
              %Is called when the user selects a new set of channels and hits
              %the update selection menu option in MapElectrodes.fig

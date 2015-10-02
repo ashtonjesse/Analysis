@@ -23,8 +23,8 @@ for j = 1:numel(aFiles)
     aPressureProcessedData = oPressure.Processed.Data;
     aPressureTime = oPressure.TimeSeries.Original;
     %get pressure slope values
-    aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
-    aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
+    aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,50,3);
+    aPressureCurvature = fCalculateMovingSlope(aPressureSlope,50,3);
     
     %get rate data
     if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes) || ~isfield(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed,'BeatRates')
@@ -32,11 +32,11 @@ for j = 1:numel(aFiles)
         aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
     else
         aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
-        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
     end
     
     %get rate slope values
-    [aRateCurvature xbar] = EstimateDerivative(aRates',aTimes,2,500,5);
+    [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,2,500,5);
     
     % plotting
     oFigure = figure();
@@ -47,12 +47,15 @@ for j = 1:numel(aFiles)
     [RateAxes H1 H2] = plotyy(aTimes,aRates,xbar,aRateCurvature);
     oAxes{2} = aSubplotPanel(2,1).select();
     [PressureAxes H1 H2] = plotyy(aPressureTime,aPressureProcessedData,aPressureTime,aPressureCurvature);
+    %     plot(oAxes{2},aPressureTime,aPressureProcessedData);
+    
     
     %set appropriate range for curvature axes
-    set(PressureAxes(2),'ylim',[-1*10^-6,1*10^-6]);
+%     set(PressureAxes(2),'ylim',[-1*10^-6,1*10^-6]);
     %set appropriate x axis ranges
     set(PressureAxes(1),'xlim',get(RateAxes(1),'xlim'));
     set(PressureAxes(2),'xlim',get(RateAxes(1),'xlim'));
+    %     set(oAxes{2},'xlim',get(RateAxes(1),'xlim'));
     %set up figure
     %make sure data cursor displays the index aswell
     dcm_obj = datacursormode(oFigure);

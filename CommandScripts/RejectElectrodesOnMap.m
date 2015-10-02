@@ -22,8 +22,8 @@
 %specified by a different unemap file
 fprintf('Running... \n');
 %Load the specified file
-sTemplateFile = 'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro003\Optical.mat';
-sFiletoChange = 'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro004\Optical.mat';
+sTemplateFile = 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003\Optical_g10.mat';
+sFiletoChange = 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003\Optical_g10_LP100Hz.mat';
 oOpticalTemplate = GetOpticalFromMATFile(Optical,sTemplateFile);
 oOpticalToChange = GetOpticalFromMATFile(Optical,sFiletoChange);
 

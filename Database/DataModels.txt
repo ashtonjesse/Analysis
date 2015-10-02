@@ -126,9 +126,7 @@ oPressure.HeartRate.Decrease.BeatTimes
 oPressure.HeartRate.Decrease.BeatPressures
 
 Optical: (BasePotential)
-oOptical.oExperiment
-oOptical.TimeSeries
-oOptical.Electrodes
+oOptical.ReferencePoints
 
 Phrenic: (BasePotential)
 oPhrenic.oExperiment
