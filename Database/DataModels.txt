@@ -27,10 +27,13 @@ Electrodes(i).Potential.Data
 Electrodes(i).Coords
 Electrodes(i).Location
 Electrodes(i).SignalEvents
+Electrodes(i).AxisPoint
 Electrodes(i).(SignalEvent).Index
 Electrodes(i).(SignalEvent).Range
 Electrodes(i).(SignalEvent).Method
 Electrodes(i).(SignalEvent).Label.Colour
+Electrodes(i).(SignalEvent).Origin
+Electrodes(i).(SignalEvent).Exit
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.Integral %%currently only used by oPhrenic.Electrodes
 Electrodes(i).Processed.EnvelopeSubtracted
@@ -104,6 +107,7 @@ oPressure.RefSignal.Status
 oPressure.oPhrenic %Phrenic class
 oPressure.oRecording %BasePotential class
 oPressure.RecordingType
+oPressure.Threshold
 oPressure.Increase.Range
 oPressure.Increase.BeatRates
 oPressure.Increase.BeatTimes

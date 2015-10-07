@@ -1,4 +1,4 @@
-function HRBaroFunction_GetPressureThreshold(aFiles,aPressureData,aRecordingIndex)
+function HRBaroFunction_GetPressureThreshold_constrained(aFiles,aPressureData,aRecordingIndex)
 %this function plots a bunch of pressure vs HR plots and allows the user to
 %check that the appropriate threshold has been chosen
 
@@ -22,7 +22,7 @@ for j = 1:numel(aFiles)
     %     start of the increase section of the challenge to the start of
     %     the heart rate plateau section
     aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-        aTimes < oPressure.TimeSeries.Original(oPressure.Plateau.Range(1));
+        aTimes < oPressure.TimeSeries.Original(oPressure.Increase.Range(2))-0.5;
     aBeatRates = aRates(aTimePoints);
     if size(aTimePoints,1) > size(aTimePoints,2)
         aTimePoints = [false aTimePoints'];
@@ -45,11 +45,26 @@ for j = 1:numel(aFiles)
         [MinVal MinIndex] = min(abs(oPressure.TimeSeries.Original - aBeatTimes(i)));
         aPressures(i) = aPressureProcessedData(MinIndex);
     end
-    
     %fit cubic polynomial to data
     xx = linspace(aPressures(1), aPressures(end), 200);
-    p = polyfit(aPressures,aBeatRates',3);
-    yy = polyval(p,xx);
+    aPressures = aPressures';
+    n = 4; % Degree of polynomial to fit
+    V = ones(length(aPressures),n+1);
+    for m = n:-1:1
+        V(:,m) = aPressures.*V(:,m+1);
+    end
+    C = V;
+    d = aBeatRates;
+    A = [];
+    b = [];
+    Aeq = ones(2,n+1);
+    Aeq(1,:) = aPressures(1).^(n:-1:0);
+    Aeq(2,:) = aPressures(end).^(n:-1:0);
+    beq = [aBeatRates(1) ; aBeatRates(end)];
+    options=optimset('largescale','off','display','off');
+    [plsq, resnorm, residual] = lsqlin( C, d, A, b, Aeq, beq,[],[],[],options );
+%     p = polyfit(plsq,aBeatRates,3);
+    yy = polyval(plsq,xx);
     %     yy = spline(aPressures,aBeatRates,xx);
     
     %compute curvature
@@ -67,12 +82,13 @@ for j = 1:numel(aFiles)
     oAxes = cell(1,2);
     oAxes{1} = aSubplotPanel(1,1).select();
     [oFirstAxes H1 H2] = plotyy(aPressures,aBeatRates,xx,yy);
+    set(oFirstAxes(2),'ylim',get(oFirstAxes(1),'ylim'));
     oAxes{2} = aSubplotPanel(2,1).select();
     [oSecondAxes H1 H2] = plotyy(xx,yy,xbar,aDerivative);
     if ~isempty(indx_down)
         hold(oSecondAxes(2),'on');
         plot(oSecondAxes(2),xbar(indx_down),aDerivative(indx_down),'r+');
-        fprintf('%1.0f,%4.0f\n',j,xbar(indx_down));
+        fprintf('%1.0f,%4.2f,%4.0f\n',j,resnorm,xbar(indx_down));
         hold(oSecondAxes(2),'off');
     end
     %set up figure
@@ -83,7 +99,6 @@ for j = 1:numel(aFiles)
     oButton = uicontrol(oFigure,'style','pushbutton','string','Save Range','callback',@(src, event) ButtonCallback(src, event));
     set(oFigure,'toolbar','figure')
 end
-
     function ButtonCallback(src, event)
         oFigure = get(src,'parent');
         hBrushLine = findall(oFigure,'tag','Brushing');
@@ -93,8 +108,14 @@ end
         % rid of this
         % There are two axes on the plot so choose the second of these as
         % this corresponds to the pressure data
-        brushedIdx = ~isnan(brushedData{2});
-        brush(oFigure,'off');
-        fprintf('%d,%d,%d\n',oFigure,find(brushedIdx,1,'first'),find(brushedIdx,1,'last'));
+        aGradienty = brushedData{1,2};
+        aGradientx = brushedData{1,1};
+        aPoints = diff(sign(aGradienty));
+        indx_down = find(aPoints<0,1,'last');
+        if isempty(indx_down)
+            [C indx_down] = max(aGradienty);
+        end
+        fprintf('%1.0f,%4.0f\n',get(src,'parent'),aGradientx(indx_down));
     end
+    
 end

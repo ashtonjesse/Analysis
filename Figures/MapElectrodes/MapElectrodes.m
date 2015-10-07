@@ -61,6 +61,8 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oClearOriginMenu, 'callback', @(src, event) oClearOriginMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oMarkExitMenu, 'callback', @(src, event) oMarkExitMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oClearExitMenu, 'callback', @(src, event) oClearExitMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oMarkAxisMenu, 'callback', @(src, event) oMarkAxisMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oClearAxisMenu, 'callback', @(src, event) oClearAxisMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSavePlotLimitsMenu, 'callback', @(src, event) oSavePlotLimitsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewSchematicMenu, 'callback', @(src, event) oViewSchematicMenu_Callback(oFigure, src, event));
             %Sets the figure close function. This lets the class know that

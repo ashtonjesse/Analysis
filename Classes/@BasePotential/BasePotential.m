@@ -358,6 +358,35 @@ classdef BasePotential < BaseSignal
             end
         end
         
+        function [aRateTrace, aRates, dPeaks] = GetRateData(oBasePotential,dPeaks)
+            %Take the peaks  supplied and create an array of
+            %discrete rates
+                        
+            %aTimes = aTimes';
+            
+            %get the time values for these peaks
+            aTimes = oBasePotential.TimeSeries(dPeaks);
+            if size(aTimes,1) > size(aTimes,2)
+                aTimes = aTimes';
+            end
+            %Put peaks in pairs
+            if size(dPeaks,1) > size(dPeaks,2)
+                dPeaks = dPeaks';
+            end
+            dPeaks = [dPeaks(1:end-1) ; dPeaks(2:end)];
+            %Get the times in sets of intervals
+            aNewTimes = [aTimes(1:end-1) ; aTimes(2:end)];
+            aIntervals = aNewTimes(2,:) - aNewTimes(1,:);
+            %Put rates into bpm
+            aRates = 60 ./ aIntervals;
+            aRateTrace = NaN(1,length(oBasePotential.TimeSeries));
+            %Loop through the peaks and insert into aRateTrace
+            for i = 1:size(dPeaks,2)
+                aRateTrace(dPeaks(1,i):dPeaks(2,i)-2) = aRates(i);
+            end
+            
+        end
+        
         function RefreshBeatData(oBasePotential, varargin)
             %loop through electrodes and refresh data for beat indexes
             if nargin > 0 && ~isempty(varargin)
@@ -680,6 +709,19 @@ classdef BasePotential < BaseSignal
         
         function ClearEventExit(oBasePotential, iElectrodeNumber, sEventID, iBeat)
             oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Exit(iBeat) = false;
+        end
+        
+        function MarkAxisPoint(oBasePotential, iElectrodeNumber)
+             if ~isfield(oBasePotential.Electrodes(1),'AxisPoint')
+                %create the axispoint array
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    'AxisPoint', false);
+            end
+            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = true;
+        end
+        
+        function ClearAxisPoint(oBasePotential, iElectrodeNumber)
+            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = false;
         end
     end
     
