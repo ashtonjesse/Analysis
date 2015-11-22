@@ -10,7 +10,7 @@ sCSVFileName = [sSubDir,'baro003_3x3_1ms_7x_g10_LP100Hz-waveEach.csv'];
 [path name ext ver] = fileparts(sCSVFileName);
 if strcmpi(ext,'.csv')
     aThisOAP = ReadOpticalTimeDataCSVFile(sCSVFileName,6);
-    save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
+%     save(fullfile(path,strcat(name,'.mat')),'aThisOAP');
 elseif strcmpi(ext,'.mat')
     load(sCSVFileName);
 end

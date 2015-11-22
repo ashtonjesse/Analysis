@@ -699,6 +699,16 @@ classdef MapElectrodes < SubFigure
                 oFigure.oParentFigure.SelectedEventID,oFigure.oParentFigure.SelectedBeat);
             oFigure.PlotData(0);
         end
+        
+        function oMarkAxisMenu_Callback(oFigure, src, event)
+            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).MarkAxisPoint(oFigure.oParentFigure.SelectedChannel);
+            oFigure.PlotData(0);
+        end
+        
+        function oClearAxisMenu_Callback(oFigure, src, event)
+            oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).ClearAxisPoint(oFigure.oParentFigure.SelectedChannel);
+            oFigure.PlotData(0);
+        end
      end
      
      methods (Access = private)
@@ -769,7 +779,7 @@ classdef MapElectrodes < SubFigure
                      oFigure.PlotLimits = oFigure.oRootFigure.oGuiHandle.oOptical.oExperiment.Optical.AxisOffsets;
                  end
              end
-%                           oFigure.PlotLimits = [-0.68,9.02;-1.08,8.62];
+%                           oFigure.PlotLimits =  [0.25,9.95;-0.39,9.31];
              %Call the appropriate plotting function
              switch (oFigure.PlotType)
                  case 'JustElectrodes'
@@ -896,6 +906,18 @@ classdef MapElectrodes < SubFigure
                  'sizedata', 196);%1.5 for posters
              scatter(oMapAxes, aAcceptedCoords(1,:), aAcceptedCoords(2,:),'k.', ...
                  'sizedata', 196);%1.5 for posters
+             if isfield(oElectrodes(1),'AxisPoint')
+                 aAxisData = cell2mat({oElectrodes(:).AxisPoint});
+                 oAxesElectrodes = oElectrodes(aAxisData);
+                 if ~isempty(oAxesElectrodes)
+                     aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
+                     scatter(oMapAxes,aAxesCoords(1,:),aAxesCoords(2,:), ...
+                         'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');
+                     if numel(oAxesElectrodes) == 2
+                         aAxesLine = line(aAxesCoords(1,:),aAxesCoords(2,:),'linewidth',2,'color','k');
+                     end
+                 end
+             end
              %Label the point with the channel name
              for i = 1:4:numel(oElectrodes)
                  oLabel = text(aCoords(1,i), aCoords(2,i) + 0.07, oElectrodes(i).Name);
@@ -907,9 +929,8 @@ classdef MapElectrodes < SubFigure
                      %rejected
                      set(oLabel,'color','r');
                  end
+                 
              end
-              
-             
              hold(oMapAxes,'off');
          end
          
@@ -930,7 +951,7 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
              aContourRange = oFigure.ColourBarLevels;
-             aContourRange = 0:1:24;
+             aContourRange = 0:1.2:24;
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContourRange);
@@ -993,6 +1014,25 @@ classdef MapElectrodes < SubFigure
                  if ~isempty(aCoords)
                      scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
                          'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
+                 end
+             end
+             if isfield(oElectrodes(1),'AxisPoint')
+                 aAxisData = cell2mat({oElectrodes(:).AxisPoint});
+                 oAxesElectrodes = oElectrodes(aAxisData);
+                 if ~isempty(oAxesElectrodes)
+                     aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
+                     scatter(oMapAxes,aAxesCoords(1,:),aAxesCoords(2,:), ...
+                         'sizedata',122,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+                     if numel(oAxesElectrodes) == 2
+                         aAxesLine = line(aAxesCoords(1,:),aAxesCoords(2,:),'linewidth',2,'color','k');
+                         z = [1 2 3 4 5 6];
+                         slabels = {'1','2','3','4','5','6'};
+                         scatter(oMapAxes,((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2),...
+                             ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2),'Marker','+',...
+                             'sizedata',144,'MarkerEdgeColor','w');
+                         text(((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2)+0.1,...
+                             ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2)+0.1,slabels,'fontweight','bold','color','w');
+                     end
                  end
              end
              hold(oMapAxes,'off');
@@ -1234,15 +1274,15 @@ classdef MapElectrodes < SubFigure
                                  'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
                          end
                      end
-                     for i = 1:length(oElectrodes)
-                         if (oElectrodes(i).Accepted) && (oElectrodes(i).(oFigure.oParentFigure.SelectedEventID).Index(iBeat) <= iTimeIndex)
-                             plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
-                                 'MarkerSize',18,'color','k');
-                         elseif ~oElectrodes(i).Accepted
-                             plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
-                                 'MarkerSize',18,'color','r');
-                         end
-                     end
+%                      for i = 1:length(oElectrodes)
+%                          if (oElectrodes(i).Accepted) && (oElectrodes(i).(oFigure.oParentFigure.SelectedEventID).Index(iBeat) <= iTimeIndex)
+%                              plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
+%                                  'MarkerSize',18,'color','k');
+%                          elseif ~oElectrodes(i).Accepted
+%                              plot(oMapAxes, oElectrodes(i).Coords(1), oElectrodes(i).Coords(2), '.', ...
+%                                  'MarkerSize',18,'color','r');
+%                          end
+%                      end
                      
                      hold(oMapAxes,'off');
              end

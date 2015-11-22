@@ -80,7 +80,7 @@ classdef Phrenic < BasePotential
             aFirstIndices = aFirstIndices(1:end-1);
             aSecondIndices = aIndices(aEdges);
             aSecondIndices = aSecondIndices(2:end);
-            aBurstIndices = (aSecondIndices - aFirstIndices) > 1000;
+            aBurstIndices = (aSecondIndices - aFirstIndices) > 2000;
             oPhrenic.Electrodes.Processed.BurstIndexes = [aFirstIndices(aBurstIndices), aSecondIndices(aBurstIndices)];
             dLocs = oPhrenic.Electrodes.Processed.BurstIndexes(:,2) - oPhrenic.Electrodes.Processed.BurstIndexes(:,1);
             dLocs = floor(dLocs / 2) + oPhrenic.Electrodes.Processed.BurstIndexes(:,1);

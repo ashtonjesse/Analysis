@@ -156,12 +156,16 @@ classdef BaseSignal < BaseEntity
             dIntegrand = 0;
             iBinCount = 1;
             aInData = detrend(aInData);
-            for i = 1:length(OutData)
+            iLength = numel(OutData);
+            for i = 1:iLength
                 if (iBinCount * iBinSize) == i
                     %compute the integrand for the next bin
                     iStart = (iBinSize * (iBinCount-1) + 1);
                     iEnd = iStart + iBinSize;
                     %rectification through taking absolute value
+                    if iEnd > iLength
+                        iEnd = iLength;
+                    end
                     dSum = sum(abs(aInData(iStart:iEnd)));
                     dIntegrand = dSum;
                     iBinCount = iBinCount + 1;

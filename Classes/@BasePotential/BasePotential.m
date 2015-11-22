@@ -714,8 +714,7 @@ classdef BasePotential < BaseSignal
         function MarkAxisPoint(oBasePotential, iElectrodeNumber)
              if ~isfield(oBasePotential.Electrodes(1),'AxisPoint')
                 %create the axispoint array
-                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
-                    'AxisPoint', false);
+                [oBasePotential.Electrodes(:).AxisPoint] = deal(false);
             end
             oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = true;
         end

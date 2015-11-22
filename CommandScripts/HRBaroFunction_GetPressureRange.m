@@ -13,26 +13,32 @@ for j = 1:numel(aFiles)
     % get pressure time
     
     %     %get pressure data and filter
-    %     if numel(oPressure.TimeSeries.Original) == numel(oPressure.Original.Data)
-    %         aPressureTime = oPressure.TimeSeries.Original;
-    %         aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
-    %     else
-    %         aPressureTime = oPressure.TimeSeries.Original;
-    %         aPressureProcessedData = oPressure.Processed.Data;
-    %     end
-    aPressureProcessedData = oPressure.Processed.Data;
-    aPressureTime = oPressure.TimeSeries.Original;
+    if numel(oPressure.TimeSeries.Original) == numel(oPressure.Original.Data)
+        aPressureTime = oPressure.TimeSeries.Original;
+        aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
+    else
+        aPressureTime = oPressure.TimeSeries.Original;
+        aPressureProcessedData = oPressure.Processed.Data;
+    end
+    %     aPressureProcessedData = oPressure.Processed.Data;
+    %     aPressureTime = oPressure.TimeSeries.Processed;
     %get pressure slope values
     aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,50,3);
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,50,3);
     
     %get rate data
     if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes) || ~isfield(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed,'BeatRates')
-        aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates;
-        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
-    else
+        oPressure.oRecording(aRecordingIndex(j)).Beats.Indexes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatIndexes;
+        oPressure.oRecording(aRecordingIndex(j)).CalculateSinusRate();
         aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
+        %         aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates;
+        %         aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+    else
+        
+        aRates = [NaN,oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates]';
+        %         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes;
     end
     
     %get rate slope values
@@ -51,7 +57,7 @@ for j = 1:numel(aFiles)
     
     
     %set appropriate range for curvature axes
-%     set(PressureAxes(2),'ylim',[-1*10^-6,1*10^-6]);
+    set(PressureAxes(2),'ylim',[-1*10^-6,1*10^-6]);
     %set appropriate x axis ranges
     set(PressureAxes(1),'xlim',get(RateAxes(1),'xlim'));
     set(PressureAxes(2),'xlim',get(RateAxes(1),'xlim'));

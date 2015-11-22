@@ -263,6 +263,8 @@ classdef PressureAnalysis < SubFigure
                 switch (oFigure.SignalToUseForBeatDetection)
                     case {'Optical Signal','VRMS'}
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).DeleteBeat(oFigure.SelectedBeat);
+                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.BeatIndexes = ...
+                            oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Beats.Indexes;
                     case 'Phrenic'
                         oFigure.oParentFigure.oGuiHandle.oPressure.oPhrenic.DeleteBeat(oFigure.SelectedBeat);
                 end
@@ -435,14 +437,17 @@ classdef PressureAnalysis < SubFigure
             %oPressure.oRecording (there will always be one of these)
             switch (oFigure.SignalToUseForBeatDetection)
                 case {'VRMS','Optical Signal'}
-                    [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).GetSinusBeats(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.(...
-                        oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data, ...
-                        event.ArrayData);
-                    
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.Beats = cell2mat(aOutData(1));
-                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.BeatIndexes = cell2mat(aOutData(2));
-                    
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).GetArrayBeats(event.ArrayData,event.Value);
+                    %
+                    %                     [aOutData dMaxPeaks] = oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).GetSinusBeats(...
+                    %                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.(...
+                    %                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Status).Data, ...
+                    %                         event.ArrayData);
+                    %
+                    %make back compatible
+                    oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Electrodes.Processed.BeatIndexes = ...
+                        deal(oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(oFigure.SelectedRecordings(1)).Beats.Indexes);
+                    %
                     %get the plot id associated with Optical Reference
                     %                     bIndex = strcmp('Optical Signal', {oFigure.Plots(:).Name});
                     %                     if max(bIndex) > 0
@@ -583,7 +588,7 @@ classdef PressureAnalysis < SubFigure
                 set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
                 set(oFigureTitle, 'position', [0 -0.18]); %-0.25
             end
-            oFigure.PrintFigureToFile(sLongDataFileName);
+            oFigure.PrintFigureToFile([sLongDataFileName,'.bmp']);
 % %             Trim the white space
             sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.bmp', sLongDataFileName)}, ...
                 {' -gravity South -chop 0x'},{sprintf('%d', dPixelsToChopSouth)},{' -gravity East -chop '},{sprintf('%d', dPixelsToChopEast)},{'x0'},{sprintf(' %s.bmp', sLongDataFileName)});
@@ -703,7 +708,7 @@ classdef PressureAnalysis < SubFigure
                         for i = 1:length(sDataFileName)
                             sLongDataFileName=strcat(sDataPathName,char(sDataFileName{i}));
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = [oFigure.oParentFigure.oGuiHandle.oPressure.oRecording, ...
-                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6)];%10
+                                GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment)];%10
                             sResult = regexp(char(sDataFileName{i}),'_');
                             sFileName = char(sDataFileName{i});
                             oFigure.oParentFigure.oGuiHandle.oPressure.oRecording(i).Name = sFileName(1:sResult(1)-1);
@@ -718,7 +723,7 @@ classdef PressureAnalysis < SubFigure
                         %get the optical data
                         sLongDataFileName=strcat(sDataPathName,char(sDataFileName));
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording = ...
-                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment,6);%6
+                            GetOpticalRecordingFromCSVFile(Optical, sLongDataFileName, oFigure.oParentFigure.oGuiHandle.oPressure.oExperiment);%6
                         sResult = regexp(char(sDataFileName),'_');
                         sFileName = char(sDataFileName);
                         oFigure.oParentFigure.oGuiHandle.oPressure.oRecording.Name = sFileName(1:sResult(1)-1);
@@ -1198,8 +1203,10 @@ classdef PressureAnalysis < SubFigure
                     oLabel = ylabel(oAxesHandle, ['Electrogram', 10, '(V)']);
                 case 'Optical Signal'
                     oLabel = ylabel(oAxesHandle, 'Optical Signal');
-                    if isfield(oElectrode.Processed,'Beats')
-                        set(oAxesHandle, 'buttondownfcn', @(src, event)  oSelectedOpticalBeat_Callback(oFigure, src, event));
+                    if isfield(oElectrode,'Processed')
+                        if isfield(oElectrode.Processed,'BeatIndexes')
+                            set(oAxesHandle, 'buttondownfcn', @(src, event)  oSelectedOpticalBeat_Callback(oFigure, src, event));
+                        end
                     end
                 case 'Phrenic'
                     oLabel = ylabel(oAxesHandle, 'Phrenic (V)');
@@ -1278,7 +1285,8 @@ classdef PressureAnalysis < SubFigure
             elseif strcmp(oFigure.RecordingType,'Optical')
                 switch (oFigure.SignalToUseForBeatDetection)
                     case 'Optical Signal'
-                        [aRateData dPeaks] = oRecording.CalculateSinusRate(1);
+                        oRecording.CalculateSinusRate();
+                        aRateData = oRecording.GetBeatRateData(1);
                         hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
                     case 'Phrenic'
                         [aRateData dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
@@ -1309,10 +1317,11 @@ classdef PressureAnalysis < SubFigure
                     set(oBeatLabel,'parent',oAxesHandle);
                 end
             elseif strcmp(oFigure.RecordingType,'Optical')
-                for k = 4:4:length(dPeaks)
-                    if ((oRecording.TimeSeries(dPeaks(1,k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
-                            (oRecording.TimeSeries(dPeaks(1,k)-50) < oFigure.CurrentZoomLimits(1,2)))
-                        oBeatLabel = text(oRecording.TimeSeries(dPeaks(1,k)-50),aRateData(dPeaks(1,k-1))+2, num2str(k));%+300,+5
+                for k = 4:4:numel(oRecording.Electrodes.Processed.BeatRateIndexes)
+                    if ((oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
+                            (oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50) < oFigure.CurrentZoomLimits(1,2)))
+                        oBeatLabel = text(oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50),...
+                            aRateData(oRecording.Electrodes.Processed.BeatRateIndexes(k-1))+2, num2str(k));%+300,+5
                         set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
                         set(oBeatLabel,'FontSize',8);
                         set(oBeatLabel,'parent',oAxesHandle);

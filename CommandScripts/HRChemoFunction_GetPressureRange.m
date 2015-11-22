@@ -18,21 +18,24 @@ for j = 1:numel(aFiles)
     else
         aPressureTime = oPressure.TimeSeries.Original;
     end
-    aPressureProcessedData = oPressure.Processed.Data;
+    aPressureProcessedData = oPressure.FilterData(oPressure.Processed.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
+    %     aPressureProcessedData = oPressure.Processed.Data;
     
     %get pressure slope values
     aPressureSlope = fCalculateMovingSlope(aPressureProcessedData,15,3);
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %get rate data
-    if isempty(oPressure.oRecording.Electrodes)
+    if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes)
         %use phrenic data
         aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
         aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
     else
         %use optical data
-        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates';
-        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+        %         aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(...
+            oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
     end
     
     oFilter = bartlett(5);

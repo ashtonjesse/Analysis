@@ -4,7 +4,7 @@ classdef Optical < BasePotential
     %   OpticalPotential inherits all properties and methods from BaseSignal.
     
     properties
-        ReferencePoints=[];
+        ReferencePoints;
     end
     
     methods

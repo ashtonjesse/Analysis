@@ -158,7 +158,7 @@ ax = oAxes;
 set(ax,'units','normalized')
 % set(ax,'fontsize',18);
 % set(ax,'fontweight','bold');
-set(ax,'linewidth',1.5);
+set(ax,'linewidth',1);%1.5
 set(ax,'box','on');
 
 % find start and end indices of L:
@@ -171,9 +171,13 @@ addBot = 0;
 if L(end) <= Mv, addUp  = 1; end
 if L(1)   >= mv, addBot = 1; end
 if strcmp(sType,'AT')
-    addUp  = 0;
+%     addUp  = 0;
+    addBot = 0;
+elseif strcmp(sType,'Distance')
+%     addUp  = 0;
     addBot = 0;
 end
+
 % draw the rectangles:
 Nrec=1;
 a=max(1,i1);
@@ -206,8 +210,8 @@ if addUp
     fill([0 1 .5],[L(end) L(end) L(end)+diff(yl)/15],cor,'clipping','off');
     set(ax,'position',[ap(1:3) ap(4)-ap(4)/15])
   else
-    fill([L(end) L(end) L(end)+diff(yl)/15],[0 1 .5],cor,'clipping','off');
-    set(ax,'position',[ap(1:2) ap(3)-ap(3)/15 ap(4)])
+    fill([L(end) L(end) L(end)+(L(end)-L(end-1)) L(end)+(L(end)-L(end-1))],[0 1 1 0],cor,'parent',ax);
+%     set(ax,'position',[ap(1:2) ap(3)-ap(3)/15 ap(4)])
     Nrec=Nrec+1;
   end
 end
@@ -249,7 +253,7 @@ if isVertical
 else
   xt=get(ax,'xtick');
   if length(L(a:b+1)) <=10
-    xt=L(a:b+1);
+      %     xt=L(a:b+1);
   else
     xt=intersect(single(xt),single(L(a:b+1)));
     xt = double(xt);
@@ -262,17 +266,29 @@ else
     xtl=L(a:b+1);
   end
   set(ax,'ytick',[],'xaxislocation','bottom','xtick',xt,'xticklabel',[]);
-  set(ax,'xlim',yl);
+  if strcmp(sType,'AT')
+      set(ax,'xlim',[L(1) L(end)+step]);
+      xt = [xt,xt(end)+step];
+  end
   %create labels
-  dSpace = (L(end) - L(1))/(2*numel(L));
+  %   dSpace = (L(end) - L(1))/(2*numel(L));
   for i = 1:numel(xt)
       switch (sType)
           case 'AT'
-              oLabel = text(xt(i),-0.8,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+              if i == 1
+                  oLabel = text(xt(i),-0.8,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','horizontalalignment','center');
+              else
+                  oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','horizontalalignment','center');
+              end
+              set(oLabel,'fontsize',6);
           case 'CV'
               oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+              set(oLabel,'fontsize',12);
+          case 'Distance'
+              oLabel = text(xt(i),-0.9,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
+              set(oLabel,'fontsize',10);
       end
-      set(oLabel,'fontsize',12);
+      
   end
 end
 hfill=get(ax,'Children');
@@ -281,7 +297,7 @@ hfill=get(ax,'Children');
 function cor = caxcolor(val,cax,cmap)
 % calc color based on the colormap, caxis and value:
 n=size(cmap,1);
-i= (val-cax(1))/diff(cax) * (n-1) +1;
+i= (val-cax(1))/diff(cax) * (n-1)+1;
 a=i-floor(i);
 i=floor(i);
 i=max(min(i,n),1);
