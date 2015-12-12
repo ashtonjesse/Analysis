@@ -26,17 +26,17 @@ for j = 1:numel(aFiles)
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %get rate data
-    if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes)
+%     if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes)
         %use phrenic data
         aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
-        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
-    else
-        %use optical data
-        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
-        %         aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
-        aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(...
-            oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
-    end
+        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes;
+%     else
+%         %use optical data
+%         aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+%         %         aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes(2:end);
+%         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(...
+%             oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
+%     end
     
     oFilter = bartlett(5);
     aRates = filter(oFilter,sum(oFilter),aRates);

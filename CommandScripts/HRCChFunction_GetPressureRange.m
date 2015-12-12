@@ -26,8 +26,8 @@ for j = 1:numel(aFiles)
     
     %get rate data
     aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
-    %     oFilter = bartlett(5);
-    %     aRates = filter(oFilter,sum(oFilter),aRates);
+    oFilter = bartlett(5);
+    aRates = filter(oFilter,sum(oFilter),aRates);
     aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
     
     %get rate slope values

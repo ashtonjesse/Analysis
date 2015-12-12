@@ -27,6 +27,7 @@ classdef MapElectrodes < SubFigure
         ElectrodeSelected;
         SaveButtonPressed;
         BeatChange;
+        FigureDeleted;
     end
     
     methods
@@ -63,6 +64,8 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oClearExitMenu, 'callback', @(src, event) oClearExitMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oMarkAxisMenu, 'callback', @(src, event) oMarkAxisMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oClearAxisMenu, 'callback', @(src, event) oClearAxisMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oMapChannelsMenu, 'callback', @(src, event) oMapChannelsMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oHideChannelsMenu, 'callback', @(src, event) oHideChannelsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSavePlotLimitsMenu, 'callback', @(src, event) oSavePlotLimitsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewSchematicMenu, 'callback', @(src, event) oViewSchematicMenu_Callback(oFigure, src, event));
             %Sets the figure close function. This lets the class know that
@@ -129,6 +132,7 @@ classdef MapElectrodes < SubFigure
      methods (Access = protected)
          %% Protected methods inherited from superclass
         function deleteme(oFigure)
+            notify(oFigure,'FigureDeleted');
             deleteme@BaseFigure(oFigure);
         end
         
@@ -709,9 +713,32 @@ classdef MapElectrodes < SubFigure
             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).ClearAxisPoint(oFigure.oParentFigure.SelectedChannel);
             oFigure.PlotData(0);
         end
+        
+        function oMapChannelsMenu_Callback(oFigure, src, event)
+            %open edit box to select beat range
+            oEditControl = EditControl(oFigure,'Enter range of beats to apply to:',2);
+            addlistener(oEditControl,'ValuesEntered',@(src,event) oFigure.MapChannels(src, event));
+        end
+        
+        function oHideChannelsMenu_Callback(oFigure, src, event)
+            oEditControl = EditControl(oFigure,'Enter range of beats to apply to:',2);
+            addlistener(oEditControl,'ValuesEntered',@(src,event) oFigure.HideChannels(src, event));
+        end
      end
      
      methods (Access = private)
+         function MapChannels(oFigure,src,event)
+             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).MapChannel(oFigure.oParentFigure.SelectedChannels,...
+                 oFigure.oParentFigure.SelectedEventID,event.Values(1):event.Values(2));
+             oFigure.PlotData(0);
+         end
+         
+         function HideChannels(oFigure,src,event)
+             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).HideChannel(oFigure.oParentFigure.SelectedChannels,...
+                 oFigure.oParentFigure.SelectedEventID,event.Values(1):event.Values(2));
+             oFigure.PlotData(0);
+         end
+         
          function RearrangePlots(oFigure,aPlotNames)
              aChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
              aSubPlots = aChildren;
@@ -779,7 +806,7 @@ classdef MapElectrodes < SubFigure
                      oFigure.PlotLimits = oFigure.oRootFigure.oGuiHandle.oOptical.oExperiment.Optical.AxisOffsets;
                  end
              end
-%                           oFigure.PlotLimits =  [0.25,9.95;-0.39,9.31];
+%                           oFigure.PlotLimits =  [-1.24,8.46;-0.23,9.47];
              %Call the appropriate plotting function
              switch (oFigure.PlotType)
                  case 'JustElectrodes'

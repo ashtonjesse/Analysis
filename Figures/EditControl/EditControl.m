@@ -74,6 +74,7 @@ classdef EditControl < SubFigure
             end
             %Notify listeners and pass the selected value
             notify(oFigure,'ValuesEntered',EditValuesEnteredEvent(aValues));
+            deleteme(oFigure);
         end
         
         function ParentFigureDeleted(oFigure,src, event)

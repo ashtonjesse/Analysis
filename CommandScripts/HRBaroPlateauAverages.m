@@ -85,23 +85,9 @@ clear all;
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro009\Pressure.mat'...
 %     };
 
-aControlFiles = {{'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro002\Pressure.mat', ...
-        'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro003\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro004\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro005\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro006\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro007\Pressure.mat'}, ...
-    {'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro002\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro003\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro004\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro005\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro006\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro007\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro008\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro009\Pressure.mat'}, ...
+aControlFiles = {...
     {'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro006\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro007\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro008\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro009\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro010\Pressure.mat', ...
@@ -113,18 +99,10 @@ aControlFiles = {{'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro0
     'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro004\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro005\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro006\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro008\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro009\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro010\Pressure.mat'}, ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro008\Pressure.mat'}, ...
     {'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro002\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro003\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro004\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro005\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro006\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro007\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro008\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro009\Pressure.mat'}, ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro003\Pressure.mat'}, ...
     {'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro002\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro003\Pressure.mat', ...
@@ -132,11 +110,8 @@ aControlFiles = {{'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro0
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro005\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro006\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro007\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro008\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro009\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro010\Pressure.mat'}, ...
-    {'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro001\Pressure.mat', ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro002\Pressure.mat', ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro008\Pressure.mat'}, ...
+    {'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro002\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro004\Pressure.mat', ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro005\Pressure.mat', ...
@@ -229,7 +204,7 @@ aControlFiles = {{'G:\PhD\Experiments\Auckland\InSituPrep\20140612\20140612baro0
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro006\Pressure.mat'} ...
 %     };
 
-% % % % %get the data from these files
+% % % %get the data from these files
 % aControlPressureData = cell(numel(aControlFiles),1);
 % for i = 1:numel(aControlPressureData)
 %     aControlPressureData{i} = GetPressureFromMATFile(Pressure,char(aControlFiles{i}),'Optical');
@@ -286,51 +261,86 @@ for i = 1:numel(aControlPressureData)
 end
 
 
-% % %repeat for IVB files
-aMeanIVBPressure = zeros(numel(aIVBFiles),1);
-aMeanIVBRate = zeros(numel(aIVBFiles),1);
-aMeanIVBBaselineRate = zeros(numel(aIVBFiles),1);
-for j = 1:numel(aIVBFiles)
-    oPressure = aIVBPressureData{j};
-    aMeanIVBPressure(j) = mean(oPressure.HeartRate.Plateau.BeatPressures);
-    aMeanIVBRate(j) = mean(oPressure.HeartRate.Plateau.BeatRates);
-    %     aMeanIVBRate(j) = (-1 + mean(oPressure.HeartRate.Plateau.BeatRates)/mean(oPressure.Baseline.BeatRates))*100;
-    aMeanIVBBaselineRate(j) = mean(oPressure.Baseline.BeatRates);
-end
+% % % %repeat for IVB files
+% aMeanIVBPressure = zeros(numel(aIVBFiles),1);
+% aMeanIVBRate = zeros(numel(aIVBFiles),1);
+% aMeanIVBBaselineRate = zeros(numel(aIVBFiles),1);
+% for j = 1:numel(aIVBFiles)
+%     oPressure = aIVBPressureData{j};
+%     aMeanIVBPressure(j) = mean(oPressure.HeartRate.Plateau.BeatPressures);
+%     aMeanIVBRate(j) = mean(oPressure.HeartRate.Plateau.BeatRates);
+%     %     aMeanIVBRate(j) = (-1 + mean(oPressure.HeartRate.Plateau.BeatRates)/mean(oPressure.Baseline.BeatRates))*100;
+%     aMeanIVBBaselineRate(j) = mean(oPressure.Baseline.BeatRates);
+% end
 
 % % %plot results on scatter
-figure();
-oMeanRatesAxes = axes();
+dWidth = 12;
+dHeight = 9;
+oFigure = figure();
+set(oFigure,'color','white')
+set(oFigure,'inverthardcopy','off')
+set(oFigure,'PaperUnits','centimeters');
+set(oFigure,'PaperPositionMode','manual');
+set(oFigure,'Units','centimeters');
+set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
+set(oFigure,'Resize','off');
 
-% oColors = distinguishable_colors(numel(aControlPressureData));
-% for m = 1:numel(aControlPressureData)
-%     oScatter = scatter(oMeanRatesAxes,aMeanControlPressure{m},aMeanControlRate{m},'o','sizedata',50,'markeredgecolor',oColors(m,:),'markerfacecolor',oColors(m,:));
-%     %     if m == numel(aControlPressureData) - 1
-%     %         set(oScatter,'displayname','Pre-IVB');
-%     %     elseif m == numel(aControlPressureData)
-%     %         set(oScatter,'displayname','Post-IVB');
-%     %     else
-%     %         [~, ~, ~, ~, ~, ~, splitStr] = regexp(aControlFiles{m}{1}, '\');
-%     %         set(oScatter,'displayname',char(splitStr(end-2)));
-%     %     end
-%     [~, ~, ~, ~, ~, ~, splitStr] = regexp(aControlFiles{m}{1}, '\');
-%     set(oScatter,'displayname',char(splitStr(end-2)));
-%     hold(oMeanRatesAxes,'on');
-% end
+oSubplotPanel = panel(oFigure);
+oSubplotPanel.pack(1);
+oMeanRatesAxes = oSubplotPanel(1).select();
+oSubplotPanel.de.fontsize = 12;
+oSubplotPanel.de.fontweight = 'bold';
+
+oColors = distinguishable_colors(numel(aControlPressureData),'k');
+for m = 1:numel(aControlPressureData)
+    aMeanCycleLength = 60000./aMeanControlRate{m};
+    oScatter = scatter(oMeanRatesAxes,aMeanControlPressure{m},aMeanCycleLength,'o','sizedata',50,'markeredgecolor',oColors(m,:),'markerfacecolor',oColors(m,:));
+    %     if m == numel(aControlPressureData) - 1
+    %         set(oScatter,'displayname','Pre-IVB');
+    %     elseif m == numel(aControlPressureData)
+    %         set(oScatter,'displayname','Post-IVB');
+    %     else
+    %         [~, ~, ~, ~, ~, ~, splitStr] = regexp(aControlFiles{m}{1}, '\');
+    %         set(oScatter,'displayname',char(splitStr(end-2)));
+    %     end
+    [~, ~, ~, ~, ~, ~, splitStr] = regexp(aControlFiles{m}{1}, '\');
+    set(oScatter,'displayname',char(splitStr(end-2)));
+    hold(oMeanRatesAxes,'on');
+    X = [ones(length(aMeanControlPressure{m}),1) aMeanControlPressure{m}];
+    b = X\aMeanCycleLength;
+    yCalc = X*b;
+    Rsq = 1 - sum((aMeanCycleLength - yCalc).^2)/sum((aMeanCycleLength - mean(aMeanCycleLength)).^2);
+    oLine = plot(oMeanRatesAxes,aMeanControlPressure{m},yCalc,'-','color',oColors(m,:));
+    set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+    text(max(aMeanControlPressure{m}),max(yCalc),sprintf('%4.2f',Rsq),'color',oColors(m,:),'fontweight','bold','fontsize',12);
+end
+x = vertcat(aMeanControlPressure{:});
+y = vertcat(aMeanControlRate{:});
+y = 60000./y;
+X = [ones(length(x),1) x];
+b = X\y;
+yCalc = X*b;
+Rsq = 1 - sum((y - yCalc).^2)/sum((y - mean(y)).^2);
+oLine = plot(oMeanRatesAxes,x,yCalc,'-','color','k','displayname','All');
+text(max(x),max(yCalc),sprintf('%4.2f',Rsq),'color','k','fontweight','bold','fontsize',12);
+hold(oMeanRatesAxes,'off');
+oLegend = legend(oMeanRatesAxes,'show');
+set(oLegend,'fontsize',10,'fontweight','normal','location','northeastoutside','box','off','color','none');
+set(oMeanRatesAxes,'fontsize',14,'fontweight','bold');
+set(get(oMeanRatesAxes,'xlabel'),'string','Mean pressure (mmHg)','fontsize',14,'fontweight','bold');
+set(get(oMeanRatesAxes,'ylabel'),'string','Cycle length (ms)','fontsize',14,'fontweight','bold');
+
+% oScatter = scatter(oMeanRatesAxes,aMeanControlPressure,aMeanControlRate,'o','sizedata',50,'markeredgecolor','k','markerfacecolor','k');
+% set(oScatter,'displayname','Pre-IVB');
+% hold(oMeanRatesAxes,'on');
+% % oScatter = scatter(oMeanRatesAxes,aMeanIVBPressure,aMeanIVBRate,'o','sizedata',50,'markeredgecolor','r','markerfacecolor','r');
+% % set(oScatter,'displayname','Post-IVB');
 % hold(oMeanRatesAxes,'off');
 % legend(oMeanRatesAxes,'show');
-
-oScatter = scatter(oMeanRatesAxes,aMeanControlPressure,aMeanControlRate,'o','sizedata',50,'markeredgecolor','k','markerfacecolor','k');
-set(oScatter,'displayname','Pre-IVB');
-hold(oMeanRatesAxes,'on');
-oScatter = scatter(oMeanRatesAxes,aMeanIVBPressure,aMeanIVBRate,'o','sizedata',50,'markeredgecolor','r','markerfacecolor','r');
-set(oScatter,'displayname','Post-IVB');
-hold(oMeanRatesAxes,'off');
-legend(oMeanRatesAxes,'show');
-% % % set up labels
-set(get(oMeanRatesAxes,'xlabel'),'string','Mean pressure (mmHg)');
-set(get(oMeanRatesAxes,'ylabel'),'string','Mean atrial rate (bpm)');
-% set(oMeanRatesAxes,'ylim',[-70 0]);
+% % % % set up labels
+% set(get(oMeanRatesAxes,'xlabel'),'string','Mean pressure (mmHg)');
+% set(get(oMeanRatesAxes,'ylabel'),'string','Mean atrial rate (bpm)');
+% % set(oMeanRatesAxes,'ylim',[-70 0]);
 % figure();
 % oStdAxes = axes();
 % scatter(oStdAxes,aMeanControlPressure,aControlStd,'o','sizedata',50,'markeredgecolor','k','markerfacecolor','k');

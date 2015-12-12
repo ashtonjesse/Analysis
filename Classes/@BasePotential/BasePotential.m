@@ -514,6 +514,22 @@ classdef BasePotential < BaseSignal
             oBasePotential.Electrodes(iElectrodeNumber).Accepted = 0;
         end
         
+        function MarkAxisPoint(oBasePotential, iElectrodeNumber)
+             if ~isfield(oBasePotential.Electrodes(1),'AxisPoint')
+                %create the axispoint array
+                [oBasePotential.Electrodes(:).AxisPoint] = deal(false);
+            end
+            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = true;
+        end
+        
+        function ClearAxisPoint(oBasePotential, iElectrodeNumber)
+            if ~isfield(oBasePotential.Electrodes(1),'AxisPoint')
+                %create the axispoint array
+                [oBasePotential.Electrodes(:).AxisPoint] = deal(false);
+            end
+            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = false;
+        end
+        
         %% Event related functions
          function sEventID = CreateNewEvent(oBasePotential, aElectrodes, aBeats, varargin)
              %Create a new event from the provided details
@@ -695,6 +711,11 @@ classdef BasePotential < BaseSignal
         end
         
         function ClearEventOrigin(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            if ~isfield(oBasePotential.Electrodes(1).(sEventID),'Origin')
+                %create the Origin array
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    sEventID, 'Origin', false(size(oBasePotential.Beats.Indexes,1),1));
+            end
             oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Origin(iBeat) = false;
         end
         
@@ -708,19 +729,36 @@ classdef BasePotential < BaseSignal
         end
         
         function ClearEventExit(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            if ~isfield(oBasePotential.Electrodes(1).(sEventID),'Exit')
+                %create the Exit array
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    sEventID, 'Exit', false(size(oBasePotential.Beats.Indexes,1),1));
+            end
             oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Exit(iBeat) = false;
         end
-        
-        function MarkAxisPoint(oBasePotential, iElectrodeNumber)
-             if ~isfield(oBasePotential.Electrodes(1),'AxisPoint')
-                %create the axispoint array
-                [oBasePotential.Electrodes(:).AxisPoint] = deal(false);
+          
+        function MapChannel(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            %Add this electrode to the event map for this beat
+            if ~isfield(oBasePotential.Electrodes(1).(sEventID),'Map')
+                %create the map array
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    sEventID, 'Map', true(size(oBasePotential.Beats.Indexes,1),1));
             end
-            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = true;
+            for i = 1:length(iElectrodeNumber)
+                oBasePotential.Electrodes(iElectrodeNumber(i)).(sEventID).Map(iBeat) = true;
+            end
         end
         
-        function ClearAxisPoint(oBasePotential, iElectrodeNumber)
-            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = false;
+        function HideChannel(oBasePotential, iElectrodeNumber, sEventID, iBeat)
+            %Hide this electrode to the event map for this beat
+            if ~isfield(oBasePotential.Electrodes(1).(sEventID),'Map')
+                %create the map array
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
+                    sEventID, 'Map', true(size(oBasePotential.Beats.Indexes,1),1));
+            end
+            for i = 1:length(iElectrodeNumber)
+                oBasePotential.Electrodes(iElectrodeNumber(i)).(sEventID).Map(iBeat) = false;
+            end
         end
     end
     

@@ -26,7 +26,6 @@ aControlFiles = {{...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro002\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro003\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro008\Pressure.mat' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001\Pressure.mat' ...
@@ -36,69 +35,63 @@ aControlFiles = {{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro005\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro006\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro007\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro008\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro009\Pressure.mat' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro002\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro004\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro005\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro006\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro007\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro008\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro009\Pressure.mat'...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro004\Pressure.mat'...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro005\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro006\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro007\Pressure.mat' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro002\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro003\Pressure.mat'...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro004\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro005\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro006\Pressure.mat' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro002\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro003\Pressure.mat'...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro004\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro005\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro006\Pressure.mat' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro002\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro003\Pressure.mat'...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro004\Pressure.mat'...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro002\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro003\Pressure.mat'...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro004\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro005\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro006\Pressure.mat'...
     }};%,{
-%     'G:\PhD\Experiments\Bordeaux\Data\20131129\20131129baro003\Pressure.mat'...
-%     }};
 
-aLengthening = cell(numel(aControlFiles),1);
-aShortening = cell(numel(aControlFiles),1);
+dWidth = 16;
+dHeight = 18;
+oFigure = figure();
 
-aIVBLengthening = cell(numel(aControlFiles),1);
-aIVBShortening = cell(numel(aControlFiles),1);
+%set up figure
+set(oFigure,'color','white')
+set(oFigure,'inverthardcopy','off')
+set(oFigure,'PaperUnits','centimeters');
+set(oFigure,'PaperPositionMode','auto');
+set(oFigure,'Units','centimeters');
+set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
+set(oFigure,'Resize','off');
+% set(oFigure, 'WindowStyle', 'Docked');
+aSubplotPanel = panel(oFigure);
+aSubplotPanel.pack(4,3);
+aSubplotPanel.margin = [20 10 10 10];
+aSubplotPanel.de.margin = [15 20 15 15];
+oSubplotPanel.de.fontsize = 6;
 
+movegui(oFigure,'center');
+
+m = 1;
+n = 1;
+aData = cell(1,numel(aControlFiles));
+aAllData = cell(1,numel(aControlFiles));
 for i = 1:numel(aControlFiles)
     aFiles = aControlFiles{i};
+    aData{i} = cell(numel(j),1);
     [pathstr, name, ext, versn] = fileparts(char(aFiles{1}));
     load([pathstr(1:end-16),'\BaroLocationData.mat']);
-    aLengthening{i} = cell(1,numel(aFiles));
-    aShortening{i} = cell(1,numel(aFiles));
-    aIVBLengthening{i} = cell(1,numel(aFiles),1);
-    aIVBShortening{i} = cell(1,numel(aFiles),1);
-
     for j = 1:numel(aFiles)
         oPressure = GetPressureFromMATFile(Pressure,char(aFiles{j}),'Optical');
         fprintf('Got file %s\n',char(aFiles{j}));
@@ -123,23 +116,14 @@ for i = 1:numel(aControlFiles)
                 aCouplingIntervals = 60000 ./ oPressure.oRecording(1).Electrodes.Processed.BeatRates';
                 aTimes = [oPressure.oRecording(1).TimeSeries(...
                     oPressure.oRecording(1).Electrodes.Processed.BeatRateIndexes(1:end-1)) NaN];
-            case 11                
+            case 11
                 aCouplingIntervals = 60000 ./ oPressure.oRecording(1).Electrodes.Processed.BeatRates';
                 aTimes = oPressure.oRecording.TimeSeries(oPressure.oRecording(1).Electrodes.Processed.BeatRateIndexes);
             otherwise
                 aCouplingIntervals  = 60000 ./ [NaN oPressure.oRecording(1).Electrodes.Processed.BeatRates];
                 aTimes = oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes;
         end
-%         aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-%                 aTimes < oPressure.TimeSeries.Original(oPressure.Plateau.Range(2));
-        if oPressure.HeartRate.Plateau.Range > 0
-            aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-                aTimes < oPressure.TimeSeries.Original(oPressure.HeartRate.Plateau.Range(2));
-        else
-            aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-                aTimes < oPressure.TimeSeries.Original(oPressure.Plateau.Range(2));
-
-        end
+        aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1));        
         aLocs =  aDistance{j}(:,1);
         if size(aLocs,1) ~= numel(aCouplingIntervals);
             if i == 4
@@ -153,54 +137,43 @@ for i = 1:numel(aControlFiles)
                     case 7
                         aLocs = vertcat(aLocs(1:18),aLocs(18),aLocs(19:end));
                 end
-            else 
+            else
                 break; disp('broken');
             end
         end
-        delT = [NaN diff(aCouplingIntervals)];
-        delX = vertcat(NaN, -diff(aLocs));
-        if i == 2
-            x=1;
-        end
-        delT = delT(aTimePoints);
-        delX = delX(aTimePoints);
-        %get data where shift is inferior
-        aCIforShifts = delT(delX < -1.9);
-        aCIforShifts = aCIforShifts(~isnan(aCIforShifts));
-        switch (i)
-            case 6
-                switch (j)
-                    case {1,2}
-                        aLengthening{i}{j} = aCIforShifts;
-                        %                         scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-                    case {3,4,5}
-                        %                         scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-                        %                         aIVBLengthening{i}{j} = aCIforShifts(0 < aCIforShifts);
-                        %                         aIVBShortening{i}{j} = aCIforShifts(aCIforShifts < 0);
-                end
-            case {7,8,9,10}
-                switch (j)
-                    case {1,2,3}
-                        aLengthening{i}{j} = aCIforShifts(0 < aCIforShifts);
-                        aShortening{i}{j} = aCIforShifts(aCIforShifts < 0);
-                        %                         scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-                    case {4,5,6}
-                        %                         scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-                        %                         aIVBLengthening{i}{j} = aCIforShifts(0 < aCIforShifts);
-                        %                         aIVBShortening{i}{j} = aCIforShifts(aCIforShifts < 0);
-                end
-            otherwise
-                aLengthening{i}{j} = aCIforShifts;
-                %                 scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');
-                %                 aLengthening{i}{j} = aCIforShifts(0 < aCIforShifts);
-                %                 aShortening{i}{j} =  aCIforShifts(aCIforShifts < 0);
-        end
+
+        aTheseLocs = aLocs(aTimePoints);
+        aData{i}{j} = aTheseLocs(aTheseLocs>1);
     end
-    aLengthening{i} = cell2mat(horzcat(aLengthening{i,:}));
+    if i ==5
+        x=1;
+    end
+    oAxes = aSubplotPanel(m,n).select();
+    aAllData{i} = vertcat(aData{i}{:});
+    hist(oAxes,aAllData{i},0:0.5:7);
+    %     ylim(oAxes,[0 120]);
+    %     xlim(oAxes,[0 7]);
+    axis(oAxes,'tight');
+    set(get(oAxes,'title'),'string',pathstr(end-14:end-7));
+    set(get(oAxes,'title'),'fontweight','bold');
+    if m == 1 && n == 1
+        xlabel(oAxes,'Location (mm)');
+        ylabel(oAxes,'Frequency');
+    end
+    n = n + 1;
+    if n > 3
+        n = 1;
+        m = m + 1;
+    end
 end
-figure()
-oAxes = axes();
-hist(oAxes,horzcat(aLengthening{:}),-100:25:300);
+oAxes = aSubplotPanel(m,n).select();
+hist(oAxes,vertcat(aAllData{:}),0:0.5:7);
+axis(oAxes,'tight');
+set(get(oAxes,'title'),'string','All');
+set(get(oAxes,'title'),'fontweight','bold');
+% figure()
+% oAxes = axes();
+% hist(oAxes,horzcat(aLengthening{:}),-100:25:300);
 % hold(oAxes,'on');
 % bplot(horzcat(aIVBShortening{:},aIVBLengthening{:}),oAxes,2,'nolegend','tukey','linewidth',1);
 % aIVBShortening = aIVBSmallShortening(aIVBLengthening>0);

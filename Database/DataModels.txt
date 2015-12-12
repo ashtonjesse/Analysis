@@ -34,6 +34,7 @@ Electrodes(i).(SignalEvent).Method
 Electrodes(i).(SignalEvent).Label.Colour
 Electrodes(i).(SignalEvent).Origin
 Electrodes(i).(SignalEvent).Exit
+Electrodes(i).(SignalEvent).Map %%boolean array of beats used to indicate whether this electrode is used to construct map for a given beat
 Electrodes(i).Processed.Slope
 Electrodes(i).Processed.Integral %%currently only used by oPhrenic.Electrodes
 Electrodes(i).Processed.EnvelopeSubtracted

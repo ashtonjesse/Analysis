@@ -1,14 +1,14 @@
 % % % %create and process files 
 clear all;
 % % %read in average waveform file
-oAvOptical = GetOpticalFromMATFile(Optical,'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh004\CCh004a_g10_LP100Hz-wave.mat');
+oAvOptical = GetOpticalFromMATFile(Optical,'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh006\CCh006a_g10_LP100Hz-wave.mat');
 
 % % % %read in all waveforms 
-oEachOptical = GetOpticalFromMATFile(Optical,'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh004\CCh004a_g10_LP100Hz-waveEach.mat');
+oEachOptical = GetOpticalFromMATFile(Optical,'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh006\CCh006a_g10_LP100Hz-waveEach.mat');
 
 % % % % %name the folders files we want
 aFolders = {...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh004' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh006' ...
    };
 % 
 aInOptions = struct('Procedure','','Inputs',cell(1,1));
@@ -23,10 +23,17 @@ for i = 1:numel(aFolders)
     sRoot = sFolder(end-2:end);
     sType = 'CCh';
     
-    sAvFileName = {[aFolders{i},'\',sType,sRoot,'c_g10_LP100Hz-wave.csv'],...
-        [aFolders{i},'\',sType,sRoot,'d_g10_LP100Hz-wave.csv']};
-    sEachFileName = {[aFolders{i},'\',sType,sRoot,'c_g10_LP100Hz-waveEach.csv'],...
-        [aFolders{i},'\',sType,sRoot,'d_g10_LP100Hz-waveEach.csv']};
+        sAvFileName = {...
+            [aFolders{i},'\',sType,sRoot,'b_g10_LP100Hz-wave.csv'],...
+            [aFolders{i},'\',sType,sRoot,'c_g10_LP100Hz-wave.csv'],...
+            [aFolders{i},'\',sType,sRoot,'d_g10_LP100Hz-wave.csv'],...
+            };
+        sEachFileName = {...
+            [aFolders{i},'\',sType,sRoot,'b_g10_LP100Hz-waveEach.csv'],...
+            [aFolders{i},'\',sType,sRoot,'c_g10_LP100Hz-waveEach.csv'],...
+            [aFolders{i},'\',sType,sRoot,'d_g10_LP100Hz-waveEach.csv'],...
+            };
+    
     
     for j = 1:numel(sEachFileName)
         oThisAvOptical = GetOpticalRecordingFromCSVFile(Optical, sAvFileName{j}, oAvOptical.oExperiment);
@@ -41,6 +48,7 @@ for i = 1:numel(aFolders)
         oThisAvOptical.GetArrayBeats(Peaks,oAvOptical.Beats.Threshold);
         oThisEachOptical.GetArrayBeats(Peaks,oAvOptical.Beats.Threshold);
         fprintf('Got Beats for %s\n', aFolders{i});
+        oThisEachOptical.oExperiment.Optical.AxisOffsets = oEachOptical.oExperiment.Optical.AxisOffsets;
         
         %create the events
         oThisEachOptical.CreateNewEvent(1:1:length(oThisEachOptical.Electrodes), 1:1:size(oThisEachOptical.Beats.Indexes,1), ...

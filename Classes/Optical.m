@@ -124,7 +124,12 @@ classdef Optical < BasePotential
                     close(oWaitbar);
                 case 'Contour'
                     %get the accepted channels
-                    aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'Accepted');
+                    if isfield(oOptical.Electrodes(1).(sEventID),'Map')
+                        aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,sEventID,'Map');
+                        aAcceptedChannels = aAcceptedChannels(iBeatIndex,:);
+                    else
+                        aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'Accepted');
+                    end
                     aElectrodes = oOptical.Electrodes(logical(aAcceptedChannels));
                     if isempty(oActivationData)
                         aFullCoords = cell2mat({oOptical.Electrodes(:).Coords});
@@ -164,7 +169,7 @@ classdef Optical < BasePotential
                     %track the number of accepted electrodes
                     m = 0;
                     for p = 1:numel(oOptical.Electrodes)
-                        if oOptical.Electrodes(p).Accepted
+                        if aAcceptedChannels(p)
                             m = m + 1;
                             if aElectrodes(m).(sEventID).Index(iBeatIndex) > 1
                             else
