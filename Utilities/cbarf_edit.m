@@ -190,7 +190,7 @@ for i=a:b
     if isLinear
       fill([0 1 1 0],[L(i) L(i) L(i+1) L(i+1)],cor,'linewidth',1.5,'parent',ax);
     else
-      fill([0 1 1 0],L(a)+[(Nrec-1)*step (Nrec-1)*step Nrec*step Nrec*step],cor,'linewidth',1.5,'parent',ax);
+      fill([0 1 1 0],L(a)+[(Nrec-1)*step (Nrec-1)*step Nrec*step Nrec*step],cor,'linewidth',1,'parent',ax);
     end
   else
     if isLinear
@@ -207,7 +207,7 @@ if addUp
   cor=caxcolor(Mv,clim,cmap);
   ap=get(ax,'position');
   if isVertical
-    fill([0 1 .5],[L(end) L(end) L(end)+diff(yl)/15],cor,'clipping','off');
+    fill([0 1 1 0],[L(end) L(end) L(end)+(L(end)-L(end-1)) L(end)+(L(end)-L(end-1))],cor,'parent',ax);
     set(ax,'position',[ap(1:3) ap(4)-ap(4)/15])
   else
     fill([L(end) L(end) L(end)+(L(end)-L(end-1)) L(end)+(L(end)-L(end-1))],[0 1 1 0],cor,'parent',ax);
@@ -236,7 +236,7 @@ hold(ax,'off');
 if isVertical
   yt=get(ax,'ytick');
   if length(L(a:b+1)) <=10
-    yt=L(a:b+1);
+%     yt=L(a:b+1);
   else
     yt=intersect(single(yt),single(L(a:b+1)));
     yt = double(yt);
@@ -248,10 +248,32 @@ if isVertical
     yt=linspace(yl(1),yl(2),Ntick);
     ytl=L(a:b+1);
   end
-  set(ax,'xtick',[],'yaxislocation','right','ytick',yt,'yticklabel',ytl);
-  set(ax,'ylim',yl);
+  set(ax,'xtick',[],'yaxislocation','left','ytick',yt,'yticklabel',[]);
+  if strcmp(sType,'AT')
+      set(ax,'ylim',[L(1) L(end)+step]);
+      yt = [yt,yt(end)+step];
+  end
+  %create labels
+  for i = 1:2:numel(yt)
+      switch (sType)
+          case 'AT'
+              if i == 1
+                  oLabel = text(-0.2, yt(i),sprintf('%1.0f',yt(i)),'parent',ax,'fontunits','points','horizontalalignment','right');
+              else
+                  oLabel = text(-0.2, yt(i),sprintf('%1.1f',yt(i)),'parent',ax,'fontunits','points','horizontalalignment','right');
+              end
+              set(oLabel,'fontsize',8);
+          case 'CV'
+              oLabel = text(-1.5, yt(i), sprintf('%1.1f',yt(i)),'parent',ax,'fontunits','points','fontweight','bold');
+              set(oLabel,'fontsize',12);
+          case 'Distance'
+              oLabel = text(-1.5, yt(i), sprintf('%1.0f',yt(i)),'parent',ax,'fontunits','points','fontweight','bold');
+              set(oLabel,'fontsize',10);
+      end
+  end
+  
 else
-  xt=get(ax,'xtick');
+    xt=get(ax,'xtick');
   if length(L(a:b+1)) <=10
       %     xt=L(a:b+1);
   else
@@ -266,13 +288,13 @@ else
     xtl=L(a:b+1);
   end
   set(ax,'ytick',[],'xaxislocation','bottom','xtick',xt,'xticklabel',[]);
-  if strcmp(sType,'AT')
+  if strcmp(sType,'AT') || strcmp(sType,'Distance')
       set(ax,'xlim',[L(1) L(end)+step]);
       xt = [xt,xt(end)+step];
   end
   %create labels
   %   dSpace = (L(end) - L(1))/(2*numel(L));
-  for i = 1:numel(xt)
+  for i = 1:numel(xtl)
       switch (sType)
           case 'AT'
               if i == 1
@@ -280,15 +302,14 @@ else
               else
                   oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','horizontalalignment','center');
               end
-              set(oLabel,'fontsize',6);
+              set(oLabel,'fontsize',8);
           case 'CV'
               oLabel = text(xt(i),-0.8,sprintf('%1.1f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
               set(oLabel,'fontsize',12);
           case 'Distance'
-              oLabel = text(xt(i),-0.9,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','fontweight','bold','horizontalalignment','center');
-              set(oLabel,'fontsize',10);
+              oLabel = text(xt(i),-0.9,sprintf('%1.0f',xt(i)),'parent',ax,'fontunits','points','horizontalalignment','center');
+              set(oLabel,'fontsize',8);
       end
-      
   end
 end
 hfill=get(ax,'Children');

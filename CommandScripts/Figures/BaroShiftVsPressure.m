@@ -85,7 +85,7 @@ aControlFiles = {{...
 %     }};
 
 dWidth = 18;
-dHeight = 9;
+dHeight = 7;
 oFigure = figure();
 oColors = distinguishable_colors(numel(aControlFiles),'k');
 set(oFigure,'color','white')
@@ -96,9 +96,14 @@ set(oFigure,'Units','centimeters');
 set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
 set(oFigure,'Resize','off');
 oSubplotPanel = panel(oFigure);
-oSubplotPanel.pack('h',{0.5 0.5});
-oSubplotPanel.de.fontsize = 12;
+oSubplotPanel.pack('h',3);
+oSubplotPanel.de.fontsize = 10;
 oSubplotPanel.de.fontweight = 'bold';
+oSubplotPanel.margin = [10,15,5,8];
+oSubplotPanel(1).margin = [10 0 15 0];
+oSubplotPanel(2).margin = [15 0 15 0];
+oSubplotPanel(3).margin = [20 0 0 0];
+aCombinedShifts = cell(numel(aControlFiles),1);
 for i = 1:numel(aControlFiles)
     aFiles = aControlFiles{i};
     [pathstr, name, ext, versn] = fileparts(char(aFiles{1}));
@@ -111,7 +116,7 @@ for i = 1:numel(aControlFiles)
         case 3
             aIndices = [1,2,3];
         case 4
-            aIndices = [1,2,3,4,5,6,7];
+            aIndices = [1,2,3,4,5,6,7,8];
         case 5
             aIndices = [2,3,4,5,6,7,8,9];
     end
@@ -175,7 +180,8 @@ for i = 1:numel(aControlFiles)
                         aLocs = vertcat(aLocs(1:18),aLocs(18),aLocs(19:end));
                 end
             else 
-                break; disp('broken');
+                disp('broken');
+                break; 
             end
         end
         aShifts = aLocs(aTimePoints);
@@ -187,7 +193,8 @@ for i = 1:numel(aControlFiles)
     oFirstAxes = oSubplotPanel(1).select();
     StackedPressures = vertcat(AllPressures{:});
     StackedShifts = vertcat(AllShifts{:});
-    scatter(oFirstAxes,StackedPressures,StackedShifts,25,oColors(i,:),'filled','displayname',pathstr(end-23:end-16));
+    aCombinedShifts{i} = StackedShifts;
+    scatter(oFirstAxes,StackedPressures,StackedShifts,16,oColors(i,:),'filled','displayname',pathstr(end-23:end-16));
     hold(oFirstAxes,'on');
     X = [ones(length(StackedPressures),1) StackedPressures];
     b = X\StackedShifts;
@@ -200,7 +207,7 @@ for i = 1:numel(aControlFiles)
     oSecondAxes = oSubplotPanel(2).select();
     StackedPressures = vertcat(MeanPressures{:});
     StackedShifts = vertcat(MaxShifts{:});
-    scatter(oSecondAxes,StackedPressures,StackedShifts,25,oColors(i,:),'filled','displayname',pathstr(end-23:end-16));
+    scatter(oSecondAxes,StackedPressures,StackedShifts,16,oColors(i,:),'filled','displayname',pathstr(end-23:end-16));
     hold(oSecondAxes,'on');
     X = [ones(length(StackedPressures),1) StackedPressures];
     b = X\StackedShifts;
@@ -216,16 +223,35 @@ hold(oSecondAxes,'off');
 set(oFirstAxes,'ydir','reverse');
 % legend(oFirstAxes,'show');
 set(get(oFirstAxes,'xlabel'),'string','Perfusion pressure (mmHg)');
-set(get(oFirstAxes,'ylabel'),'string','Inferior          Shift (mm)           Superior');
+set(get(oFirstAxes,'ylabel'),'string','Shift (mm)');
 set(oSecondAxes,'ydir','reverse');
 oLegend = legend(oSecondAxes,'show');
-set(oLegend,'fontsize',10,'fontweight','normal','location','northeast','box','off','color','none');
+set(oLegend,'fontsize',8,'fontweight','normal','position',[0.511 0.644 0.115 0.258],'box','off','color','none');
 set(get(oSecondAxes,'xlabel'),'string','Mean perfusion pressure (mmHg)');
-set(get(oSecondAxes,'ylabel'),'string','Inferior      Max Shift (mm)       Superior');
-ylim = get(oFirstAxes,'ylim');
-xlim = get(oFirstAxes,'xlim');
-text(xlim(1)+5,ylim(1),'A','parent',oFirstAxes,'fontweight','bold','fontsize',16);
+set(get(oSecondAxes,'ylabel'),'string','Max Shift (mm)');
+ylim = [0 7];
+xlim = [85 155];
+set(oFirstAxes,'xlim',xlim);
+set(oFirstAxes,'ylim',ylim);
+[figx figy] = dsxy2figxy(oFirstAxes, [xlim(1)+5 xlim(1)+5], [ylim(2) ylim(2)]);
+annotation('textbox',[figx(1) figy(1) 0.1 0.1],'string','A',...
+    'edgecolor','none','fontsize',16,'fontweight','bold','margin',0);
 
-ylim = get(oSecondAxes,'ylim');
-xlim = get(oSecondAxes,'xlim');
-text(xlim(1)+5,ylim(1),'B','parent',oSecondAxes,'fontweight','bold','fontsize',16);
+set(oSecondAxes,'xlim',xlim);
+set(oSecondAxes,'ylim',ylim);
+[figx figy] = dsxy2figxy(oSecondAxes, [xlim(1)+5 xlim(1)+5], [ylim(2) ylim(2)]);
+annotation('textbox',[figx(1) figy(1) 0.1 0.1],'string','B',...
+    'edgecolor','none','fontsize',16,'fontweight','bold','margin',0);
+
+%plot histogram
+oSubplotPanel(3).pack('v',{0.25 0.75});
+oThirdAxes = oSubplotPanel(3,2).select();
+StackedShifts = vertcat(aCombinedShifts{:});
+hist(oThirdAxes,StackedShifts,0:0.5:7);
+axis(oThirdAxes,'tight');
+set(get(oThirdAxes,'title'),'string','Distribution of shift locations');
+set(get(oThirdAxes,'title'),'fontweight','bold');
+set(get(oThirdAxes,'xlabel'),'string','Shift location (mm)');
+set(get(oThirdAxes,'ylabel'),'string','Frequency');
+annotation('textbox',[figx(1)+0.3 figy(1) 0.1 0.1],'string','C',...
+    'edgecolor','none','fontsize',16,'fontweight','bold','margin',0);

@@ -1,7 +1,7 @@
 %loop through pressure files to get coupling intervals and load distance
 %data for each 
 %plot on axes and hold on
-% close all;
+close all;
 clear all;
 aControlFiles = {{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\Pressure.mat' ...
@@ -80,58 +80,37 @@ aControlFiles = {{...
     }};
 % },{
 %     'G:\PhD\Experiments\Bordeaux\Data\20131129\20131129baro003\Pressure.mat'...
-sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\';
+% sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\';
 %set up figure
-dWidth = 12;
-dHeight = 12;
+dWidth = 16;
+dHeight = 5;
+oFigure = figure();
 
-oMainFigure = figure();
+set(oFigure,'color','white')
+set(oFigure,'inverthardcopy','off')
+set(oFigure,'PaperUnits','centimeters');
+set(oFigure,'PaperPositionMode','auto');
+set(oFigure,'Units','centimeters');
+set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
+set(oFigure,'Resize','off');
 
-set(oMainFigure,'color','white')
-set(oMainFigure,'inverthardcopy','off')
-set(oMainFigure,'PaperUnits','centimeters');
-set(oMainFigure,'PaperPositionMode','auto');
-set(oMainFigure,'Units','centimeters');
-set(oMainFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
-set(oMainFigure,'Resize','off');
-
-aSubplotPanel = panel(oMainFigure,'no-manage-font');
-aSubplotPanel.pack(1,1);
-oMainAxes = aSubplotPanel(1,1).select();
-
+aSubplotPanel = panel(oFigure);
+aSubplotPanel.pack('h',3);
+aSubplotPanel.margin = [10 10 5 5];
+aSubplotPanel.de.margin = [10 0 0 0];
+aSubplotPanel.fontsize = 6;
+oAxes = aSubplotPanel(1).select();
 iScatterSize = 16;
-ylim = [0 900];
-xlim = [0 7];
+aylim = [0 8];
+axlim = [200 900];
 
-% oPatch = patch([-1 1 1 -1], [ylim(1) ylim(1) ylim(2) ylim(2)],[0 0 0],'parent',oMainAxes);
-% set(oPatch, 'LineStyle', 'none')
-% hh1 = hatchfill(oPatch, 'single', -45, 10,[0.9 0.9 0.9]);
-hold(oMainAxes, 'on');
-% plot(oMainAxes,[xlim(1) xlim(2)],[0 0],'--','color','k');
-% plot(oMainAxes,[0 0],[ylim(1) ylim(2)],'--','color','k');
+hold(oAxes, 'on');
 aBaselinePressures = cell(numel(aControlFiles),1);
 aPlateauPressures = cell(numel(aControlFiles),1);
+sSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\BaroCLVsLocation_return_postIVB.gif';
+aPreLocGroups = cell(1,14);
+aPostLocGroups = cell(1,14);
 for i = 1:numel(aControlFiles)
-    oFigure = figure();
-    
-    set(oFigure,'color','white')
-    set(oFigure,'inverthardcopy','off')
-    set(oFigure,'PaperUnits','centimeters');
-    set(oFigure,'PaperPositionMode','auto');
-    set(oFigure,'Units','centimeters');
-    set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
-    set(oFigure,'Resize','off');
-    
-    aSubplotPanel = panel(oFigure,'no-manage-font');
-    aSubplotPanel.pack(1,1);
-    oAxes = aSubplotPanel(1,1).select();
-%     
-%     oPatch = patch([-1 1 1 -1], [ylim(1) ylim(1) ylim(2) ylim(2)],[0 0 0],'parent',oAxes);
-%     set(oPatch, 'LineStyle', 'none')
-%     hh1 = hatchfill(oPatch, 'single', -45, 10,[0.9 0.9 0.9]);
-    hold(oAxes, 'on');
-%     plot(oAxes,[xlim(1) xlim(2)],[0 0],'--','color','k');
-%     plot(oAxes,[0 0],[ylim(1) ylim(2)],'--','color','k');
     aFiles = aControlFiles{i};
     [pathstr, name, ext, versn] = fileparts(char(aFiles{1}));
     load([pathstr(1:end-16),'\BaroLocationData.mat']);
@@ -171,16 +150,10 @@ for i = 1:numel(aControlFiles)
                 aCouplingIntervals  = 60000 ./ [NaN oPressure.oRecording(1).Electrodes.Processed.BeatRates];
                 aTimes = oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes;
         end
-        %                 aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-        %                     aTimes < oPressure.TimeSeries.Original(oPressure.Plateau.Range(2));
         if oPressure.HeartRate.Plateau.Range > 0
-            %             aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.HeartRate.Plateau.Range(2));
-            aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-                aTimes < oPressure.TimeSeries.Original(oPressure.HeartRate.Plateau.Range(2));
+            aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.HeartRate.Plateau.Range(2));
         else
-            %             aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Plateau.Range(2));
-            aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Increase.Range(1)) & ...
-                aTimes < oPressure.TimeSeries.Original(oPressure.Plateau.Range(2));
+            aTimePoints = aTimes > oPressure.TimeSeries.Original(oPressure.Plateau.Range(2));
         end
         aLocs =  aDistance{j}(:,1);
         if size(aLocs,1) ~= numel(aCouplingIntervals);
@@ -195,8 +168,14 @@ for i = 1:numel(aControlFiles)
                     case 7
                         aLocs = vertcat(aLocs(1:18),aLocs(18),aLocs(19:end));
                 end
-            else 
-                break; disp('broken');
+            elseif i == 9
+                switch (j)
+                    case {1,3,4}
+                        aLocs = aLocs(1:end-1);
+                end
+            else
+                disp('broken');
+                break;
             end
         end
         if i == 9
@@ -204,51 +183,110 @@ for i = 1:numel(aControlFiles)
         else
             dBaseline = mean(oPressure.Baseline.BeatRates);
         end
-%         delT = [NaN diff(aCouplingIntervals)] ./ (60000/dBaseline)*100;
-%         delX = vertcat(NaN, -diff(aLocs));
-        delT = aCouplingIntervals;
-        delX = aLocs;
+        delT = aCouplingIntervals(aTimePoints);
+        delX = aLocs(aTimePoints);
+        delT = delT(~isnan(delX));
+        delX = delX(~isnan(delX));
+        
+        %         delT = [NaN diff(aCouplingIntervals)] ./ (60000/dBaseline)*100;
+        %         delX = vertcat(NaN, -diff(aLocs));
+        Pre = false;
+        Post = false;
         switch (i)
             case 6
                 switch (j)
                     case {1,2}
-                        scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-                        scatter(oMainAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-%                     case {3,4,5}
-%                         scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-%                         scatter(oMainAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
+                        scatter(oAxes, delT, delX,iScatterSize,'k','filled');
+                        Pre = true;
+                    case {3,4,5}
+                        scatter(oAxes, delT, delX,iScatterSize,'r','filled');
+                        Post = true;
                 end
-            case {7,8,9,10}
+            case {7,8,10}
                 switch (j)
                     case {1,2,3}
-                        scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-                        scatter(oMainAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-%                     case {4,5,6}
-%                         scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-%                         scatter(oMainAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
+                        scatter(oAxes, delT, delX,iScatterSize,'k','filled');
+                        Pre = true;
+                    case {4,5,6}
+                        scatter(oAxes, delT, delX,iScatterSize,'r','filled');
+                        Post = true;
+                end
+            case 9
+                switch (j)
+                    case {1,2,3}
+                        scatter(oAxes, delT, delX,iScatterSize,'k','filled');
+                        Pre = true;
+                    case 4
+                        scatter(oAxes, delT, delX,iScatterSize,'r','filled');
+                        Post = true;
                 end
             otherwise
-                scatter(oAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');
-                scatter(oMainAxes, delX(aTimePoints), delT(aTimePoints),iScatterSize,'k','filled');
+                scatter(oAxes, delT, delX,iScatterSize,'k','filled');
+                Pre = true;
+        end
+        if Pre
+            iStart = 200;
+            for m = 1:numel(aPreLocGroups)
+                aPoints = delT >= iStart & ...
+                    delT < (iStart+50);
+                aPreLocGroups{m} = vertcat(aPreLocGroups{m},delX(aPoints));
+                iStart = iStart + 50;
+            end
+        elseif Post
+            iStart = 200;
+            for m = 1:numel(aPostLocGroups)
+                aPoints = delT >= iStart & ...
+                    delT < (iStart+50);
+                aPostLocGroups{m} = vertcat(aPostLocGroups{m},delX(aPoints));
+                iStart = iStart + 50;
+            end
         end
     end
-    hold(oAxes, 'off');
-    set(oAxes,'xlim',xlim);
-    set(oAxes,'ylim',ylim);
-    movegui(oFigure,'center');
-    set(oFigure,'resizefcn',[]);
-    set(get(oAxes,'xlabel'),'string','Inferior            Shift (mm)     Superior');
-    set(get(oAxes,'ylabel'),'string','% \Delta Cycle Length');
-%     print(oFigure,'-dpsc','-r600',sThisSavePath)
+    
 end
-sThisSavePath = [sSavePath,'BaroCIVsShift_initial_all.eps'];
-hold(oMainAxes, 'off');
-set(oMainAxes,'xlim',xlim);
-set(oMainAxes,'ylim',ylim);
-movegui(oMainFigure,'center');
-set(oMainFigure,'resizefcn',[]);
-set(get(oMainAxes,'xlabel'),'string','Inferior            Shift (mm)     Superior');
-set(get(oMainAxes,'ylabel'),'string','% \Delta Cycle Length');
-% print(oMainFigure,'-dpsc','-r600',sThisSavePath)
+hold(oAxes, 'off'); 
+set(oAxes,'xlim',axlim);
+set(oAxes,'ylim',aylim);
+set(get(oAxes,'xlabel'),'string','Cycle Length (ms)');
+set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
+
+oAxes = aSubplotPanel(3).select();
+aPreVals = zeros(numel(aPreLocGroups),3);
+aPreErrors = zeros(numel(aPreLocGroups),3);
+aPostVals = zeros(numel(aPostLocGroups),3);
+aPostErrors = zeros(numel(aPostLocGroups),3);
+for m = 1:numel(aPreLocGroups)
+    aPreVals(m,1) = mean(aPreLocGroups{m});
+    aPostVals(m,1) = mean(aPostLocGroups{m});
+    aPreErrors(m,1) = std(aPreLocGroups{m})/sqrt(numel(aPreLocGroups{m}));
+    aPostErrors(m,1) = std(aPostLocGroups{m})/sqrt(numel(aPostLocGroups{m}));
+    if numel(aPreLocGroups{m}) > 1
+        bplot(aPreLocGroups{m},oAxes,m,'nolegend','nooutliers','tukey','linewidth',1);
+    end
+    hold(oAxes,'on');
+end
+set(oAxes,'xlim',[0.5 14.5]);
+set(oAxes,'xtick',[1 2 3 4 5 6 7 8 9 10 11 12 13 14]);
+set(oAxes,'xticklabel',[]);
+set(oAxes,'ylim',aylim);
+set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
+xtl = {'200-250','250-300','300-350','350-400','400-450','450-500','500-550',...
+    '550-600','600-650','650-700','700-750','750-800','800-850','850-900'};
+text([1 2 3 4 5 6 7 8 9 10 11 12 13 14],ones(1,14)*-2,xtl,'parent',oAxes,'rotation',90,'fontsize',6); 
+hold(oAxes,'off');
+
+oAxes = aSubplotPanel(2).select();
+errorbar(oAxes,[225,275,325,375,425,475,525,575,625,675,725,775,825,875], aPreVals(:,1),aPreErrors(:,1),'k-');
+hold(oAxes,'on');
+errorbar(oAxes,[225,275,325,375,425,475,525,575,625,675,725,775,825,875], aPostVals(:,1),aPostErrors(:,1),'r-');
+set(oAxes,'xlim',axlim);
+set(oAxes,'ylim',aylim);
+set(get(oAxes,'xlabel'),'string','Cycle Length (ms)');
+set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
+set(oAxes,'box','off');
 
 
+movegui(oFigure,'center');
+set(oFigure,'resizefcn',[]);
+% print(oFigure,'-dpsc','-r300',sSavePath)
+printgif(oFigure,'-r300',sSavePath);

@@ -227,7 +227,7 @@ classdef BeatPlot < SubFigure
                          if ~isempty(colIndices)
                              aEventRange = [colIndices(1) colIndices(end)];
                              %Update the event range
-                             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(oFigure.SelectedEventID, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange);
+                             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(oFigure.SelectedEventID, oFigure.BeatsForAction, oFigure.ElectrodesForAction, aEventRange,oFigure.oParentFigure.SelectedChannel);
                          end
                      end
                      % Turn brushing off
@@ -319,13 +319,14 @@ classdef BeatPlot < SubFigure
                         %check if we need to reset the range for this event
                         iRangeStart = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannelNumber).(sEventID).RangeStart(iBeat);
                         iRangeEnd = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannelNumber).(sEventID).RangeEnd(iBeat);
-                        dLocation = dXdata(1) + oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1) - 1;
+                        iTimeIndex = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetIndexFromTime(iChannelNumber, iBeat, dXdata(1));
+                        dLocation = iTimeIndex + oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1) - 1;
                         if dLocation < iRangeStart || dLocation > iRangeEnd
                             %Reset the range for this event to the beat indexes as the
                             %user is manually changing the event time
                             oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateEventRange(sEventID, iBeat, iChannelNumber, ...
                                 [1 oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2) - ...
-                                oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1)]);
+                                oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1)],[]);
                         end
                         %Update the signal event for this electrode and beat number
                         oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).UpdateSignalEventMark(iChannelNumber, sEventID, iBeat, dXdata(1));

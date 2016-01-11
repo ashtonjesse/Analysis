@@ -868,6 +868,8 @@ classdef PressureAnalysis < SubFigure
                 oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Original;
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).oPhrenic.Electrodes.Processed.Data = ...
                 oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).oPhrenic.Electrodes.Potential.Data;
+            oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).oPhrenic.TimeSeries = ...
+                oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.Original;
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.Processed = ...
                 oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).TimeSeries.Original;
             oFigure.oParentFigure.oGuiHandle.oPressure(oFigure.SelectedExperiments(1)).RefSignal.Status = 'Processed';
@@ -1045,7 +1047,7 @@ classdef PressureAnalysis < SubFigure
             ymin = 9999999;
             for i = 1:length(oFigure.oParentFigure.oGuiHandle.oPressure)
                 aData = oFigure.oParentFigure.oGuiHandle.oPressure(i).oPhrenic.Electrodes.(oFigure.oParentFigure.oGuiHandle.oPressure(i).oPhrenic.Electrodes.Status).Data ./ ...
-                     (oFigure.oParentFigure.oGuiHandle.oPressure(i).oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
+                    (oFigure.oParentFigure.oGuiHandle.oPressure(i).oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
                 plot(oAxesHandle,oFigure.oParentFigure.oGuiHandle.oPressure(i).oPhrenic.TimeSeries, aData, oFigure.Colours(i));
                 ymax = max(ymax, max(aData));
                 ymin = min(ymin, min(aData));

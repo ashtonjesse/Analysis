@@ -1,8 +1,8 @@
 %loop through pressure files to get coupling intervals and load distance
 %data for each 
 %plot on axes and hold on
-% close all;
-clear all;
+close all;
+% clear all;
 aControlFiles = {{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813chemo002\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813chemo003\Pressure.mat'...
@@ -48,24 +48,21 @@ set(oFigure,'Units','centimeters');
 set(oFigure,'PaperSize',[dWidth dHeight],'PaperPosition',[0,0,dWidth,dHeight],'Position',[1,10,dWidth,dHeight]);
 set(oFigure,'Resize','off');
 
-aSubplotPanel = panel(oFigure,'no-manage-font');
+aSubplotPanel = panel(oFigure);
 aSubplotPanel.pack('h',3);
-oAxes = aSubplotPanel(1,1).select();
-aPosition = get(oAxes,'position');
+aSubplotPanel.margin = [10 10 5 5];
+aSubplotPanel.de.margin = [10 0 0 0];
+aSubplotPanel.fontsize = 6;
+oAxes = aSubplotPanel(1).select();
 iScatterSize = 16;
-ylim = [0 7];
-xlim = [200 900];
+aylim = [0 8];
+axlim = [200 900];
 
-% oPatch = patch([-1 1 1 -1], [ylim(1) ylim(1) ylim(2) ylim(2)],[0 0 0],'parent',oAxes);
-% set(oPatch, 'LineStyle', 'none')
-% hh1 = hatchfill(oPatch, 'single', -45, 10,[0.9 0.9 0.9]);
 hold(oAxes, 'on'); 
-% plot(oAxes,[xlim(1) xlim(2)],[0 0],'--','color','k');
-% plot(oAxes,[0 0],[ylim(1) ylim(2)],'--','color','k');
-
 % sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\chemoCIVsShift_return_all_postIVB.eps';
-sSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ChemoCIVsShift_initial_all_postIVB.eps';
-aLocGroups = cell(1,14);
+sSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\ChemoCLVsLocation_return_postIVB.gif';
+aPreLocGroups = cell(1,14);
+aPostLocGroups = cell(1,14);
 for i = 1:numel(aControlFiles)
     aFiles = aControlFiles{i};
     [pathstr, name, ext, versn] = fileparts(char(aFiles{1}));
@@ -117,55 +114,105 @@ for i = 1:numel(aControlFiles)
         end
         %         delT = [NaN diff(aCouplingIntervals)];
         %         delX = vertcat(NaN, -diff(aLocs));
+        aCouplingIntervals = aCouplingIntervals(aTimePoints);
+        aLocs = aLocs(aTimePoints);
         aCouplingIntervals = aCouplingIntervals(~isnan(aLocs));
         aLocs = aLocs(~isnan(aLocs));
         delT = aCouplingIntervals;
         delX = aLocs;
-        %         switch (i)
-        %             case 1
-        %                 switch (j)
-        %                     case 1
-        %                         scatter(oAxes,delT(aTimePoints),delX(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-        % %                     case 2
-        % %                         scatter(oAxes, delT(aTimePoints), delX(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-        %                 end
-        %             case 2
-        %                 switch (j)
-        %                     case {1,2}
-        %                         scatter(oAxes, delT(aTimePoints), delX(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-        % %                     case {3,4,5}
-        % %                         scatter(oAxes, delT(aTimePoints), delX(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-        %                 end
-        %             otherwise
-        %                 switch (j)
-        %                     case {1,2,3}
-        %                         scatter(oAxes, delT(aTimePoints), delX(aTimePoints),iScatterSize,'k','filled');%oColors(p,:)
-        % %                     case {4,5,6}
-        % %                         scatter(oAxes, delT(aTimePoints), delX(aTimePoints),iScatterSize,'r','filled');%oColors(p,:)
-        %                 end
-        %         end
-        iStart = 200;
-        for m = 1:numel(aLocGroups)
-            aPoints = aCouplingIntervals >= iStart & ...
-                aCouplingIntervals < (iStart+50);
-            aLocGroups{m} = vertcat(aLocGroups{m},aLocs(aPoints));
-            iStart = iStart + 50;
+        Pre = false;
+        Post = false;
+        switch (i)
+            case 1
+                switch (j)
+                    case 1
+                        scatter(oAxes,delT,delX,iScatterSize,'k','filled');
+                        Pre = true;
+                    case 2
+                        scatter(oAxes,delT,delX,iScatterSize,'r','filled');
+                        Post = true;
+                end
+            case 2
+                switch (j)
+                    case {1,2}
+                        scatter(oAxes, delT, delX,iScatterSize,'k','filled');
+                        Pre = true;
+                    case {3,4,5}
+                        scatter(oAxes, delT, delX,iScatterSize,'r','filled');
+                        Post = true;
+                end
+            otherwise
+                switch (j)
+                    case {1,2,3}
+                        scatter(oAxes, delT, delX,iScatterSize,'k','filled');
+                        Pre = true;
+                    case {4,5,6}
+                        scatter(oAxes, delT, delX,iScatterSize,'r','filled');
+                        Post = true;
+                end
+        end
+        if Pre
+            iStart = 200;
+            for m = 1:numel(aPreLocGroups)
+                aPoints = delT >= iStart & ...
+                    delT < (iStart+50);
+                aPreLocGroups{m} = vertcat(aPreLocGroups{m},delX(aPoints));
+                iStart = iStart + 50;
+            end
+        elseif Post
+            iStart = 200;
+            for m = 1:numel(aPostLocGroups)
+                aPoints = delT >= iStart & ...
+                    delT < (iStart+50);
+                aPostLocGroups{m} = vertcat(aPostLocGroups{m},delX(aPoints));
+                iStart = iStart + 50;
+            end
         end
     end
+    
 end
-aVals = zeros(numel(aLocGroups),1);
-aErrors = zeros(numel(aLocGroups),1);
-for m = 1:numel(aLocGroups)
-    aVals(m) = mean(aLocGroups{m});
-    aErrors(m) = std(aLocGroups{m})/sqrt(numel(aLocGroups));
-    bplot(aLocGroups{m},oAxes,m,'nolegend','nooutliers','tukey','linewidth',1);
-end
-% errorbar(oAxes,[225,275,325,375,425,475,525,575,625,675,725,775,825,875], aVals,aErrors);
 hold(oAxes, 'off'); 
-% set(oAxes,'xlim',xlim);
-% set(oAxes,'ylim',ylim);
+set(oAxes,'xlim',axlim);
+set(oAxes,'ylim',aylim);
+set(get(oAxes,'xlabel'),'string','Cycle Length (ms)');
+set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
+
+oAxes = aSubplotPanel(3).select();
+for m = 1:numel(aPreLocGroups)
+    aPreVals(m,2) = mean(aPreLocGroups{m});
+    aPostVals(m,2) = mean(aPostLocGroups{m});
+    aPreErrors(m,2) = std(aPreLocGroups{m})/sqrt(numel(aPreLocGroups{m}));
+    aPostErrors(m,2) = std(aPostLocGroups{m})/sqrt(numel(aPostLocGroups{m}));
+    if numel(aPreLocGroups{m}) > 1
+        bplot(aPreLocGroups{m},oAxes,m,'nolegend','nooutliers','tukey','linewidth',1);
+    end
+    hold(oAxes,'on');
+    if numel(aPostLocGroups{m}) > 1
+        bplot(aPostLocGroups{m},oAxes,m,'nolegend','nooutliers','tukey','linewidth',1);
+    end
+end
+set(oAxes,'xlim',[0.5 14.5]);
+set(oAxes,'xtick',[1 2 3 4 5 6 7 8 9 10 11 12 13 14]);
+set(oAxes,'xticklabel',[]);
+set(oAxes,'ylim',aylim);
+set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
+xtl = {'200-250','250-300','300-350','350-400','400-450','450-500','500-550',...
+    '550-600','600-650','650-700','700-750','750-800','800-850','850-900'};
+text([1 2 3 4 5 6 7 8 9 10 11 12 13 14],ones(1,14)*-2,xtl,'parent',oAxes,'rotation',90,'fontsize',6); 
+hold(oAxes,'off');
+
+oAxes = aSubplotPanel(2).select();
+errorbar(oAxes,[225,275,325,375,425,475,525,575,625,675,725,775,825,875], aPreVals(:,2),aPreErrors(:,2),'k-');
+hold(oAxes,'on');
+errorbar(oAxes,[225,275,325,375,425,475,525,575,625,675,725,775,825,875], aPostVals(:,2),aPostErrors(:,2),'r-');
+set(oAxes,'xlim',axlim);
+set(oAxes,'ylim',aylim);
+set(get(oAxes,'xlabel'),'string','Cycle Length (ms)');
+set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
+set(oAxes,'box','off');
+
+
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-% set(get(oAxes,'xlabel'),'string','Cycle Length (ms)');
-% set(get(oAxes,'ylabel'),'string','Location along SVC-IVC axis (mm)');
-% print(oFigure,'-dpsc','-r600',sSavePath)
+% print(oFigure,'-dpsc','-r300',sSavePath)
+printgif(oFigure,'-r300',sSavePath);

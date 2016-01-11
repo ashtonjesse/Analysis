@@ -25,10 +25,13 @@ for j = 1:numel(aFiles)
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,15,3);
     
     %get rate data
-    aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
+        aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
     oFilter = bartlett(5);
     aRates = filter(oFilter,sum(oFilter),aRates);
     aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+    if numel(aRates) ~= numel(aTimes)
+        aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes;
+    end
     
     %get rate slope values
     [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,2,500,5);

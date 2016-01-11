@@ -11,6 +11,7 @@ classdef OpticalBeatDetection < BaseFigure
         SelectedFile;
         SelectedEventID;
         SelectedTimePoint = 25;
+        CurrentZoomLimits = [];
     end
     
     events
@@ -81,6 +82,7 @@ classdef OpticalBeatDetection < BaseFigure
     
     methods (Access = private)
         %% Private UI control callbacks
+        
         function oFigure = Close_fcn(oFigure, src, event)
             deleteme(oFigure);
         end   
@@ -370,6 +372,8 @@ classdef OpticalBeatDetection < BaseFigure
     
     methods (Access = public);
         %% Public functions
+
+        
         function Replot(oFigure,iChannel)
             if ~isempty(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile))
                 %plot data
@@ -443,6 +447,7 @@ classdef OpticalBeatDetection < BaseFigure
                 end
             end
             oFigure.CheckRejectToggleButton();
+           
         end
         
         function OpenBeatSlider(oFigure)

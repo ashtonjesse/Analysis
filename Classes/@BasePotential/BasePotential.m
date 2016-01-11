@@ -591,7 +591,7 @@ classdef BasePotential < BaseSignal
             end
         end
         
-        function UpdateEventRange(oBasePotential, sEventID, aBeats, aElectrodes, aRange)
+        function UpdateEventRange(oBasePotential, sEventID, aBeats, aElectrodes, aRange, iCurrentElectrode)
             %Change the range for the specified event and beat and selected
             %electrodes
             
@@ -600,11 +600,24 @@ classdef BasePotential < BaseSignal
             aRangeStart = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeStart');
             aRangeEnd = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'RangeEnd');
             %Calculate the new event range
-            aRangeStart(aBeats,aElectrodes) = aRange(1) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes)) - 1;
-            aRangeEnd(aBeats,aElectrodes) = aRange(2) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes)) - 1;
+            %compute euclidean distance
+            %get coords
+            if ~isempty(iCurrentElectrode)
+                oElectrodes = oBasePotential.Electrodes;
+                aCoords = cell2mat({oElectrodes(:).Coords});
+                aCurrentCoords = oBasePotential.Electrodes(iCurrentElectrode).Coords;
+                aDistance = sqrt((aCurrentCoords(1) - aCoords(1,:)).^2 + ...
+                    (aCurrentCoords(2) - aCoords(2,:)).^2);
+                aDistance = aDistance(aElectrodes);
+            else
+                aDistance = zeros(1,numel(aElectrodes));
+            end
+            aRangeStart(aBeats,aElectrodes) = aRange(1) + repmat(floor(aDistance),numel(aBeats),1) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes)) - 1;
+            aRangeEnd(aBeats,aElectrodes) = aRange(2) + repmat(floor(aDistance),numel(aBeats),1) + repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes)) - 1;
             %apply to data
             oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes,sEventID,'RangeStart',aRangeStart);
             oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes,sEventID,'RangeEnd',aRangeEnd);
+            
             %mark event for these beats
             oBasePotential.MarkEvent(sEventID,aBeats,aElectrodes);
         end
@@ -631,8 +644,8 @@ classdef BasePotential < BaseSignal
                 aElectrodes = varargin{2};
             end
             %select the beats
-            aThisRangeStart = aRangeStart(aBeats,:);
-            aThisRangeEnd = aRangeEnd(aBeats,:);
+            aTheseRangeStart = aRangeStart(aBeats,:);
+            aTheseRangeEnd = aRangeEnd(aBeats,:);
             %get the current index information
             aAllIndexes = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'Index');
             %Choose the method to apply
@@ -641,7 +654,7 @@ classdef BasePotential < BaseSignal
                 case 'sps'
                     %get slope data
                     aSlopeData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Slope');
-                    aTheseIndexes =  fSteepestSlope(oBasePotential.TimeSeries, aSlopeData(:,aElectrodes), aThisRangeStart(:,aElectrodes), aThisRangeEnd(:,aElectrodes));
+                    aTheseIndexes =  fSteepestSlope(oBasePotential.TimeSeries, aSlopeData(:,aElectrodes), aTheseRangeStart(:,aElectrodes), aTheseRangeEnd(:,aElectrodes));
                     %insert into allindexes in the right place.
                     
                     %                     case 'sns'
@@ -659,25 +672,32 @@ classdef BasePotential < BaseSignal
                     %                                 max(oBasePotential.Electrodes(iElectrode).Processed.Data(oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,1):...
                     %                                 oBasePotential.Electrodes(iElectrode).SignalEvent(iEvent).Range(k,2)));
                     %                         end
+                    aAllIndexes(aBeats,aElectrodes) = aTheseIndexes + aRangeStart(aBeats,aElectrodes) - repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
                 case 'hsm'
                     %get data
                     aData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
                     %assume ranges are the same for all electrodes for now
-                    aThisRangeStart = aThisRangeStart(:,aElectrodes);
-                    aThisRangeEnd = aThisRangeEnd(:,aElectrodes);
-                    aTheseIndexes = ones(size(aThisRangeStart,1),length(aElectrodes));
-                    for i = 1:size(aThisRangeStart,1)
-                        aBaseLine = mean(aData(aThisRangeStart(i)-15:aThisRangeStart(i),:),1);
+                    for i = 1:size(aBeats,2)
+                        aThisRangeStart = aTheseRangeStart(i,aElectrodes);
+                        aThisRangeEnd = aTheseRangeEnd(i,aElectrodes);
+                        iBase = 15;
+                        aLocs = vertcat(aThisRangeStart-iBase,aThisRangeStart)';
+                        BaselineIndexes = (bsxfun(@le,aLocs(:,1),1:size(aData,1)) & bsxfun(@ge,aLocs(:,2),1:size(aData,1))).';
+                        aLocs = vertcat(aThisRangeStart,aThisRangeEnd)';
+                        PeakIndexes = (bsxfun(@le,aLocs(:,1),1:size(aData,1)) & bsxfun(@ge,aLocs(:,2),1:size(aData,1))).';
+                        aBaseLineData = reshape(aData(BaselineIndexes),[iBase+1,size(BaselineIndexes,2)]);
+                        aBaseLine = mean(aBaseLineData,1);
                         aBaseLine = aBaseLine(aElectrodes);
-                        aPeak = max(aData(aThisRangeStart(i):aThisRangeEnd(i),:),[],1);
+                        aPeakData = reshape(aData(PeakIndexes),[aThisRangeEnd(1)-aThisRangeStart(1)+1,size(PeakIndexes,2)]);
+                        aPeak = max(aPeakData,[],1);
                         aPeak = aPeak(aElectrodes);
                         aSignedBaseLine = sign(aBaseLine)*(-1).*abs(aBaseLine);
                         aMagnitude = (aPeak+aSignedBaseLine)./2;
-                        aHalfData = aData(aThisRangeStart(i):aThisRangeEnd(i),aElectrodes) - repmat(aMagnitude+aBaseLine,size(aData(aThisRangeStart(i):aThisRangeEnd(i),aElectrodes),1),1);
-                        [val aTheseIndexes(i,:)] = min(abs(aHalfData),[],1);
+                        aHalfData = aPeakData(:,aElectrodes) - repmat(aMagnitude+aBaseLine,size(aPeakData(:,aElectrodes),1),1);
+                        [val aTheseIndexes] = min(abs(aHalfData),[],1);
+                        aAllIndexes(aBeats(i),aElectrodes) = aTheseIndexes + aRangeStart(aBeats(i),aElectrodes) - repmat(oBasePotential.Beats.Indexes(aBeats(i),1),1,length(aElectrodes));
                     end
             end
-            aAllIndexes(aBeats,aElectrodes) = aTheseIndexes + aRangeStart(aBeats,aElectrodes) - repmat(oBasePotential.Beats.Indexes(aBeats,1),1,length(aElectrodes));
             oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper, oBasePotential.Electrodes, ...
                 sEventID, 'Index', aAllIndexes);
         end
@@ -698,7 +718,8 @@ classdef BasePotential < BaseSignal
             iIndex = oBasePotential.oDAL.oHelper.ConvertTimeToSeriesIndex(oBasePotential.TimeSeries(...
                 oBasePotential.Electrodes(iElectrodeNumber).(sEventID).RangeStart(iBeat):...
                 oBasePotential.Electrodes(iElectrodeNumber).(sEventID).RangeEnd(iBeat)), dTime);
-            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Index(iBeat) = iIndex; 
+            oBasePotential.Electrodes(iElectrodeNumber).(sEventID).Index(iBeat) = iIndex + ...
+                oBasePotential.Electrodes(iElectrodeNumber).(sEventID).RangeStart(iBeat) - oBasePotential.Beats.Indexes(iBeat,1); 
         end
         
         function MarkEventOrigin(oBasePotential, iElectrodeNumber, sEventID, iBeat)

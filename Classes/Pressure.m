@@ -18,6 +18,7 @@ classdef Pressure < BaseSignal
         Baseline = [];
         HeartRate = [];
         Threshold = [];
+        Decrease = [];
     end
     
     methods
@@ -154,6 +155,12 @@ classdef Pressure < BaseSignal
                 oPressure.Threshold = oData.oEntity.Threshold;
             else
                 oPressure.Threshold = [];
+            end
+            
+            if oData.oEntity.IsProp('Decrease')
+                oPressure.Decrease = oData.oEntity.Decrease;
+            else
+                oPressure.Decrease = [];
             end
         end
         

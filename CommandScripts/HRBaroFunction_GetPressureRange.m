@@ -27,19 +27,21 @@ for j = 1:numel(aFiles)
     aPressureCurvature = fCalculateMovingSlope(aPressureSlope,50,3);
     
     %get rate data
-    if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes) || ~isfield(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed,'BeatRates')
-        oPressure.oRecording(aRecordingIndex(j)).Beats.Indexes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatIndexes;
-        oPressure.oRecording(aRecordingIndex(j)).CalculateSinusRate();
-        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
-        aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
-        %         aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates;
-        %         aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
-    else
-        
+% %     if isempty(oPressure.oRecording(aRecordingIndex(j)).Electrodes) || ~isfield(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed,'BeatRates')
+% %         oPressure.oRecording(aRecordingIndex(j)).Beats.Indexes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatIndexes;
+% %         oPressure.oRecording(aRecordingIndex(j)).CalculateSinusRate();
+%         aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+%         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
+% %         %         aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates;
+% %         %         aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+%     else
+         
         aRates = [NaN,oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates]';
-        %         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
         aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes;
-    end
+%         aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+%         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
+        
+%     end
     
     %get rate slope values
     [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,2,500,5);

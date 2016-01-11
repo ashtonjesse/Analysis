@@ -28,8 +28,8 @@ Electrodes(i).Coords
 Electrodes(i).Location
 Electrodes(i).SignalEvents
 Electrodes(i).AxisPoint
-Electrodes(i).(SignalEvent).Index
-Electrodes(i).(SignalEvent).Range
+Electrodes(i).(SignalEvent).Index %%indexed relative to RangeStart
+Electrodes(i).(SignalEvent).Range %%indexed relative to start of recording
 Electrodes(i).(SignalEvent).Method
 Electrodes(i).(SignalEvent).Label.Colour
 Electrodes(i).(SignalEvent).Origin
@@ -113,6 +113,10 @@ oPressure.Increase.Range
 oPressure.Increase.BeatRates
 oPressure.Increase.BeatTimes
 oPressure.Increase.BeatPressures
+oPressure.Decrease.Range
+oPressure.Decrease.BeatRates
+oPressure.Decrease.BeatTimes
+oPressure.Decrease.BeatPressures
 oPressure.Plateau.Range
 oPressure.Plateau.BeatRates
 oPressure.Plateau.BeatTimes
