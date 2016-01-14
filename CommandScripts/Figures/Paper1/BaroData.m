@@ -21,7 +21,7 @@ close all;
 
 %set variables
 dWidth = 16;
-dHeight = 18;
+dHeight = 16;
 sFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\BaroData_#';
 
 %Create plot panel that has 3 rows at top to contain pressure, phrenic and
@@ -41,7 +41,7 @@ set(oFigure,'Resize','off');
 xrange = 6;
 yrange = 1;
 oSubplotPanel = panel(oFigure);
-oSubplotPanel.pack('v',{0.5 0.5});
+oSubplotPanel.pack('v',{0.6 0.4});
 oSubplotPanel(1).pack('v',{0.6,0.4});
 oSubplotPanel(1,1).pack('h',{0.1,0.9});
 oSubplotPanel(1,1,2).pack(3);
@@ -85,14 +85,16 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % oXLim = get(oAxes,'xlim');
 % 
 % %set labels
-% oYlabel = ylabel(oAxes,['\intPND', 10, '(mV)']);
+% oYlabel = ylabel(oAxes,'\intPND');
 % set(oYlabel,'fontsize',8);
 % set(oYlabel,'rotation',0);
 % oPosition = get(oYlabel,'position');
 % oPosition(1) = oXLim(1) - dlabeloffset;
 % oYLim = get(oAxes,'ylim');
-% oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 6;
+% oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 2;
 % set(oYlabel,'position',oPosition);
+% oNewYLabel = text(oPosition(1),oPosition(2),'\intPND','parent',oAxes,'fontsize',8,'horizontalalignment','center');
+% axis(oAxes,'off');
 % 
 % %plot time scale
 % hold(oAxes,'on');
@@ -256,12 +258,10 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % 
 % %create text labels
 % oLabel = annotation('textbox','position',[0 0.9 0.1 0.1],'string','A','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.8 0.1 0.1],'string','B','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.69 0.1 0.1],'string','C','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.59 0.1 0.1],'string','D','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.4 0.1 0.1],'string','E','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0.55 0.4 0.1 0.1],'string','F','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0.55 0.2 0.1 0.1],'string','G','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.78 0.1 0.1],'string','B','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.64 0.1 0.1],'string','C','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.52 0.1 0.1],'string','D','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.32 0.1 0.1],'string','E','linestyle','none','fontsize',12,'fontweight','bold');
 % export_fig(strrep(sFileSavePath, '#', '1'),'-png','-r300','-nocrop')
 
 %% create second panel
@@ -293,17 +293,17 @@ load([pathstr,'\BaroLocationData.mat']);
 % oSubplotPanel(2,1,1).pack(numel(SortIdx));
 % oSubplotPanel(2,1).de.margin = [0 0 0 0];
 
-oSubplotPanel(2).pack('v',{0.8,0.08,0.02});
+oSubplotPanel(2).pack('v',{0.7,0.15,0.03});
 oSubplotPanel(2,1).pack(numel(SortIdx));
 oSubplotPanel(2,1).de.margin = [0 0 0 0];
 
 
 oColors = jet(5);
 iScatterSize = 16;
-aYlim = [150 700];
+aYlim = [150 660];
 aXlim = [-8.5 19];
 aCRange = [0 7];
-
+aIndices = [3 1];
 for p = 1:numel(SortIdx)
     %get index
     j = SortIdx(p);
@@ -327,23 +327,23 @@ for p = 1:numel(SortIdx)
     aAdjustedTimes = aTimes - aTimes(Idx);
     
     % % %     %get locations
-    aLocs =  aDistance{j}(:,1);
-    a2ndLocs = aDistance{j}(:,2);
+    aLocs =  aDistance{aIndices(p)}(:,1);
+    a2ndLocs = aDistance{aIndices(p)}(:,2);
     if size(aLocs,1) ~= numel(aCouplingIntervals);
         x = 1;
     end
-    a1stLocIndex = isnan(aDistance{j}(:,2));
-    a2ndLocIndex = ~isnan(aDistance{j}(:,2));
+    a1stLocIndex = isnan(aDistance{aIndices(p)}(:,2));
+    a2ndLocIndex = ~isnan(aDistance{aIndices(p)}(:,2));
 
     %set up axes
-    oSubplotPanel(2,1,1,numel(SortIdx)-p+1).pack('v',{0.75,0.25});
-    oAxes = oSubplotPanel(2,1,1,numel(SortIdx)-p+1,1).select();
+    oSubplotPanel(2,1,numel(SortIdx)-p+1).pack('v',{0.75,0.25});
+    oAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,1).select();
     axis(oAxes);
     if p == 1
         oBaseAxes = oAxes;
     end
     %     oPressureAxes = aSubplotPanel(1,numel(SortIdx)-p+1,2).select();
-    oPhrenicAxes = oSubplotPanel(2,1,1,numel(SortIdx)-p+1,2).select();
+    oPhrenicAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,2).select();
     
     [dBaseline iMinIdx] = min(aCouplingIntervals);
     [dTopline iMaxIdx] = max(aCouplingIntervals);
@@ -364,7 +364,7 @@ for p = 1:numel(SortIdx)
     %put y axis on and label ends
     oLine = plot(oAxes,[aXlim(1)+0.5; aXlim(1)+0.5], [min(aCouplingIntervals); min(aCouplingIntervals)+200], '-k','LineWidth', 2);
     if p == 1
-        olabel = text(aXlim(1)-2,min(aCouplingIntervals)+100, '200 ms', 'HorizontalAlignment','center','parent',oAxes,'color','k','fontunits','points');
+        olabel = text(aXlim(1)+0.25,min(aCouplingIntervals)+100, '200 ms', 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points');
         set(olabel,'fontsize',10);
     end
     olabel = text(aAdjustedTimes(1),min(aCouplingIntervals)+60, sprintf('%4.0f ms',min(aCouplingIntervals)), 'HorizontalAlignment','left','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
@@ -385,22 +385,16 @@ for p = 1:numel(SortIdx)
         [(60000/oPressure.Plateau.BeatRates(end))-20 ; (60000/oPressure.Plateau.BeatRates(end))-100]);
     annotation('arrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4);
     
-    %double beat
-    if p == 2
-        [figx figy] = dsxy2figxy(oAxes, [aAdjustedTimes(a2ndLocIndex)+1; aAdjustedTimes(a2ndLocIndex)+0.2], ...
-            [aCouplingIntervals(a2ndLocIndex)+120 ; aCouplingIntervals(a2ndLocIndex)+20]);
-        annotation('textarrow',figx,figy,'string','Two pacemaker sites','headstyle','plain','headwidth',4,'headlength',4,'fontsize',8);
-    end
     
     hold(oAxes, 'off');
     set(oAxes,'color','none','box','off');
     axis(oAxes,'off');
     %label the pressure
     if p == 1
-        olabel = text(aXlim(2)+1,aYlim(1)+250, ['\Delta',sprintf('P=%2.0f mmHg',aMagnitude(j))], 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
+        olabel = text(aXlim(2),aYlim(1)+250, ['\Delta',sprintf('P=%2.0f mmHg',aMagnitude(j))], 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
         set(olabel,'fontsize',10);
     else
-        olabel = text(aXlim(2)+1,aYlim(1)+250, sprintf('%4.0f mmHg',aMagnitude(j)), 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
+        olabel = text(aXlim(2),aYlim(1)+250, sprintf('%4.0f mmHg',aMagnitude(j)), 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
         set(olabel,'fontsize',10);
     end
     
@@ -409,27 +403,27 @@ for p = 1:numel(SortIdx)
     %     set(oPressureAxes,'xlim',xlim);
     %     set(oPressureAxes,'color','none','box','off');
     %     axis(oPressureAxes,'off');
-    % %     %plot phrenic data
-    %     aBurstData = ComputeDWTFilteredSignalsKeepingScales(oPressure.oPhrenic, ...
-    %         oPressure.oPhrenic.Electrodes.Processed.Data./ ...
-    %         (oPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6,3);
-    %     oPressure.oPhrenic.ComputeIntegral(50,aBurstData);
-    %
-    aData = oPressure.oPhrenic.Electrodes.Processed.Data ./ ...
+    
+    %     aData = oPressure.oPhrenic.Electrodes.Processed.Data ./ ...
+    %         (oPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
+    aData = oPressure.oPhrenic.Electrodes.Processed.Data./ ...
         (oPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
+    aBurstData = ComputeDWTFilteredSignalsKeepingScales(oPressure.oPhrenic, aData,2);
+    oPressure.oPhrenic.ComputeIntegral(200,aBurstData);
+    aData = oPressure.oPhrenic.Electrodes.Processed.Integral/1000;
     aTimeToPlot = oPressure.oPhrenic.TimeSeries - aTimes(Idx);
     aPointsToPlot = aTimeToPlot > aXlim(1)+1;
     
     plot(oPhrenicAxes,aTimeToPlot(aPointsToPlot),aData(aPointsToPlot),'-','linewidth',1,'color','k');
     set(oPhrenicAxes,'xlim',aXlim);
-    set(oPhrenicAxes,'ylim',[-70 70]);
+    set(oPhrenicAxes,'ylim',[0 2.5]);
     set(oPhrenicAxes,'color','none','box','off');
     axis(oPhrenicAxes,'off');
     hold(oPhrenicAxes,'on');
     %put y axis on and label ends
-    oLine = plot(oPhrenicAxes,[aXlim(1)+0.5; aXlim(1)+0.5], [-70; -70+100], 'LineWidth', 2,'color','k');
+    %     oLine = plot(oPhrenicAxes,[aXlim(1)+0.5; aXlim(1)+0.5], [0; 1], 'LineWidth', 2,'color','k');
     if p == 1
-        olabel = text(aXlim(1)-2,-70+50, '100 \muV', 'HorizontalAlignment','center',...
+        olabel = text(aXlim(1)+0.25,0.5, '\intPND', 'HorizontalAlignment','right',...
             'parent',oPhrenicAxes,'color','k','fontunits','points');
         set(olabel,'fontsize',10);
     end
@@ -439,7 +433,7 @@ end
 oScaleAxes = axes('parent',oFigure);
 plot(oScaleAxes,[aXlim(1)+1; aXlim(1)+6], [aYlim(1); aYlim(1)], '-k','LineWidth', 4)
 aPosition = get(oBaseAxes,'position');
-set(oScaleAxes,'position',[aPosition(1) aPosition(2)-0.04 aPosition(3) aPosition(4)]);
+set(oScaleAxes,'position',[aPosition(1) aPosition(2)-0.06 aPosition(3) aPosition(4)]);
 aXlim = get(oBaseAxes,'xlim');
 aYlim = get(oBaseAxes,'ylim');
 set(oScaleAxes,'xlim',aXlim);
@@ -464,11 +458,11 @@ set(dcm_obj,'UpdateFcn',@ScatterCursorCallback);
 
 
 set(oFigure,'resizefcn',[]);
-set(oFigure,'color','none');
+% set(oFigure,'color','none');
 % print(oFigure,'-dpsc','-r600',sFileSavePath)
 % printgif(oFigure,'-r600',strrep(sFileSavePath, '#', '2'));
 
-% export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent');%
+% export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent','-painters');%
 % % % %crop the images
 % sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.png',strrep(sFileSavePath, '#', '1'))}, ...
 %     {sprintf(' %s.png',strrep(sFileSavePath, '#', '2'))}, {' -gravity center -composite'},{sprintf(' %s.png', strrep(sFileSavePath, '_#', ''))});

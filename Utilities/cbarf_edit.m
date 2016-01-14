@@ -273,9 +273,9 @@ if isVertical
   end
   
 else
-    xt=get(ax,'xtick');
+  xt=get(ax,'xtick');
   if length(L(a:b+1)) <=10
-      %     xt=L(a:b+1);
+      xt=L(a:b+1);
   else
     xt=intersect(single(xt),single(L(a:b+1)));
     xt = double(xt);
@@ -291,10 +291,11 @@ else
   if strcmp(sType,'AT') || strcmp(sType,'Distance')
       set(ax,'xlim',[L(1) L(end)+step]);
       xt = [xt,xt(end)+step];
+      xt = [0 2 4 6];
   end
   %create labels
   %   dSpace = (L(end) - L(1))/(2*numel(L));
-  for i = 1:numel(xtl)
+  for i = 1:numel(xt)
       switch (sType)
           case 'AT'
               if i == 1
