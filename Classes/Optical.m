@@ -254,8 +254,8 @@ classdef Optical < BasePotential
                 %get the baseline and peak values
                 dBaseLine = mean(aSingleBeatPotentials(1:15,i));
                 aNormalisedData(:,i) = (aSingleBeatPotentials(:,i)+sign(dBaseLine)*(-1)*abs(dBaseLine));
-                %                 dPeak = max(aNormalisedData(:,i));
-                %                 aNormalisedData(:,i) = aNormalisedData(:,i)./dPeak;
+                                dPeak = max(aNormalisedData(:,i));
+                                aNormalisedData(:,i) = aNormalisedData(:,i)./dPeak;
             end
             
             %initialise the struct to hold all the interpolated fields

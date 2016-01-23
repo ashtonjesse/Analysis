@@ -6,18 +6,18 @@
 %save to file as gif
 
 close all;
-clear all;
-% % % %Read in the file containing all the optical data
-sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140826\';
-sSubDir = [sBaseDir,'20140826chemo001\'];
-
-%% read in the optical entities
-sAvOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-wave.mat'];
-oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
-sOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-waveEach-forpaper.mat'];
-oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
-% % read in the pressure entity
-oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
+% clear all;
+% % % % %Read in the file containing all the optical data
+% sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140826\';
+% sSubDir = [sBaseDir,'20140826chemo001\'];
+% 
+% %% read in the optical entities
+% sAvOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-wave.mat'];
+% oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
+% sOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-waveEach-forpaper.mat'];
+% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % % read in the pressure entity
+% oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
 
 %set variables
 dWidth = 16;
@@ -63,35 +63,48 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % dlabeloffset = 3;
 % 
 % %plot phrenic
-% oAxes = oSubplotPanel(1,1,2,2).select();
-% aData = oThisPressure.oPhrenic.Electrodes.Processed.Data ./ ...
+% oAxes = oSubplotPanel(1,1,2,3).select();
+% aData = oThisPressure.oPhrenic.Electrodes.Processed.Data./ ...
 %     (oThisPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
-% aTime = oThisPressure.oPhrenic.TimeSeries;
+% aBurstData = ComputeDWTFilteredSignalsKeepingScales(oThisPressure.oPhrenic, ...
+%     aData,2);
+% oThisPressure.oPhrenic.ComputeIntegral(200,aBurstData);
+% % aData = oThisPressure.oPhrenic.Electrodes.Processed.Data ./ ...
+% %     (oThisPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
+% aData = oThisPressure.oPhrenic.Electrodes.Processed.Integral(200:end-5000)/1000;
+% aTime = oThisPressure.oPhrenic.TimeSeries(200:end-5000);
 % hline = plot(oAxes,aTime,aData,'k');
 % set(hline,'linewidth',0.5);
-% %set axes colour
-% set(oAxes,'xcolor',[1 1 1]);
-% set(oAxes,'xtick',[]);
-% set(oAxes,'xticklabel',[]);
-% set(oAxes,'yminortick','on');
 % %set limits
 % axis(oAxes,'tight');
-% ylim(oAxes,[-75 75]);
+% oYLim = get(oAxes,'ylim');
 % oXLim = [0 35];
 % xlim(oAxes,oXLim);
+% axis(oAxes,'off');
+% %plot time scale
+% oScaleAxes = axes('position',get(oAxes,'position')-[0 0.02 0 0]);
+% plot(oScaleAxes,[oXLim(2)-5; oXLim(2)], [oYLim(1)+0.1; oYLim(1)+0.1], '-k','LineWidth', 2)
+% xlim(oScaleAxes,oXLim);
+% ylim(oScaleAxes,oYLim);
+% axis(oScaleAxes,'off');
+% oLabel = text(oXLim(2)-2.5,oYLim(1)-0.05, '5 s', 'parent',oScaleAxes, ...
+%         'FontUnits','points','horizontalalignment','center');
+% set(oLabel,'FontSize',10);
 % 
-% %set labels
-% oYlabel = ylabel(oAxes,['Phrenic &', 10,'ECG',10,'(\muV)']);
+% % %set labels
+% oYlabel = ylabel(oAxes,'\intPND');
 % set(oYlabel,'fontsize',8);
 % set(oYlabel,'rotation',0);
 % oPosition = get(oYlabel,'position');
 % oPosition(1) = oXLim(1) - dlabeloffset;
 % oYLim = get(oAxes,'ylim');
-% oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 6;
+% oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 4;
 % set(oYlabel,'position',oPosition);
+% oNewYLabel = text(oPosition(1),oPosition(2),'\intPND','parent',oAxes,'fontsize',8,'horizontalalignment','center');
+% axis(oAxes,'off');
 % 
 % %plot HR
-% oAxes = oSubplotPanel(1,1,2,3).select();
+% oAxes = oSubplotPanel(1,1,2,2).select();
 % %convert rates into coupling intervals
 % aCouplingIntervals = 60000 ./ oThisPressure.oRecording(1).Electrodes.Processed.BeatRates;
 % aTimes = oThisPressure.oRecording(1).TimeSeries(oThisPressure.oRecording(1).Electrodes.Processed.BeatRateIndexes);
@@ -131,12 +144,7 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 %     set(oLine,'color',[0.5 0.5 0.5]);
 %     
 % end
-% %plot time scale
-% plot([oXLim(2)-5; oXLim(2)], [oYLim(1)+100; oYLim(1)+100], '-k','LineWidth', 2)
-% hold(oAxes,'off');
-% oLabel = text(oXLim(2)-2.5,oYLim(1), '5 s', 'parent',oAxes, ...
-%         'FontUnits','points','horizontalalignment','center');
-% set(oLabel,'FontSize',10);
+% 
 % 
 % %plot pressure data
 % oAxes = oSubplotPanel(1,1,2,1).select();
@@ -161,11 +169,11 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % oYLim = get(oAxes,'ylim');
 % oPosition(2) = oYLim(1);
 % set(oYlabel,'position',oPosition);
-% %put arrow on to indicate stimulus timing
-% [figx figy] = dsxy2figxy(oAxes, [5.245; 5.245], ...
-%     [71 - 8 ; 71]);
-% annotation('textarrow',figx,figy,'string','KCN','headstyle','plain',...
-%     'headwidth',4,'headlength',4,'color','k','fontsize',8);
+% %put indication of stimulus timing
+% hold(oAxes,'on');
+% plot(oAxes,[4.051 4.923], [65 65], 'k-','linewidth',2);
+% text(4.051+(4.923-4.051)/2,60,'KCN','fontsize',8,'horizontalalignment','center');
+% hold(oAxes,'off');
 % 
 % % %plot maps
 % %plot the schematic
@@ -256,6 +264,7 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % oLabel = annotation('textbox','position',[0 0.69 0.1 0.1],'string','C','linestyle','none','fontsize',12,'fontweight','bold');
 % oLabel = annotation('textbox','position',[0 0.59 0.1 0.1],'string','D','linestyle','none','fontsize',12,'fontweight','bold');
 % oLabel = annotation('textbox','position',[0 0.4 0.1 0.1],'string','E','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.2 0.1 0.1],'string','F','linestyle','none','fontsize',12,'fontweight','bold');
 % export_fig(strrep(sFileSavePath, '#', '1'),'-png','-r300','-nocrop')
 
 %% create second panel
@@ -263,8 +272,7 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % % get data
 aFolders = {...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828chemo001' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828chemo002' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828chemo003' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814chemo001' ...
     };
 aPressureData = cell(1,numel(aFolders));
 for i = 1:numel(aFolders)
@@ -273,43 +281,44 @@ for i = 1:numel(aFolders)
     aPressureData{i} = oPressure;
     fprintf('Got file %s\n',sFileName);
 end
-aFiles = aFolders{1};
-[pathstr, name, ext, versn] = fileparts(char(aFiles));
-load([pathstr,'\ChemoLocationData.mat']);
+
 
 % set up axes
-oSubplotPanel(2).pack('v',{0.8,0.12,0.02});
+oSubplotPanel(2).pack('v',{0.8,0.1,0.03});
 oSubplotPanel(2,1).pack(numel(aFolders));
 oSubplotPanel(2).de.margin = [0 0 0 0];
 
 iScatterSize = 16;
-aYlim = [100 650];
+aYlim = [100 900];
 aXlim = [-8 20];
 aCRange = [0 7];
+aIndices = [1 1];
 for j = 1:numel(aPressureData)
+    aFile = aFolders{j};
+    [pathstr, name, ext, versn] = fileparts(char(aFile));
+    load([pathstr,'\ChemoLocationData.mat']);
     p = 1;
     oPressure = aPressureData{j};
     aPressureProcessedData = oPressure.FilterData(oPressure.Original.Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, 1);
-    aAdjustedTimes = cell(1,numel(aDistance{j}));
+    aAdjustedTimes = cell(1,numel(aDistance{aIndices(j)}));
         %set up axes
-    oSubplotPanel(2,1,numel(aFolders)-j+1).pack('v',{0.54,0.03,0.2,0.03,0.2});
-    oAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,1).select();
+    oSubplotPanel(2,1,numel(aFolders)-j+1).pack('v',{0.2,0.03,0.54,0.03,0.2});
+    oAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,3).select();
+    oPhrenicAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,5).select();
     if j == 1
         oBaseAxes = oAxes;
+        oDummyAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,1).select();
+        oPressureAxes = axes('position',get(oDummyAxes,'position')-[0 0.05 0 0]);
+        axis(oDummyAxes,'off');
+    else
+        oPressureAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,1).select();
     end
-    oPhrenicAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,3).select();
-    oPressureAxes = oSubplotPanel(2,1,numel(aFolders)-j+1,5).select();
+
     
     iRecordingIndex = 1;
-    if j == 2
-        aCouplingIntervals = 60000 ./ [oPressure.oRecording(iRecordingIndex).Electrodes.Processed.BeatRates];
-        aTimes = oPressure.oRecording(iRecordingIndex).Electrodes.Processed.BeatRateTimes(2:end);
-    else
-        aCouplingIntervals = 60000 ./ [NaN oPressure.oRecording(iRecordingIndex).Electrodes.Processed.BeatRates];
-        aTimes = oPressure.oRecording(iRecordingIndex).Electrodes.Processed.BeatRateTimes;
-    end
+    aCouplingIntervals = 60000 ./ [NaN oPressure.oRecording(iRecordingIndex).Electrodes.Processed.BeatRates];
+    aTimes = oPressure.oRecording(iRecordingIndex).Electrodes.Processed.BeatRateTimes;
     aAdjustedTimes{p} = aTimes - oPressure.HeartRate.Decrease.BeatTimes(1);
-    
     hold(oAxes, 'on');
     %plot baseline
     if p == 1 && j == 1
@@ -323,21 +332,26 @@ for j = 1:numel(aPressureData)
     if j == 1
         oLine = plot(oAxes,[aAdjustedTimes{p}(2); aAdjustedTimes{p}(42)], [dBaseline-30; dBaseline-30], '--k','LineWidth', 0.5);
         oLine = plot(oAxes,[aAdjustedTimes{p}(52); aAdjustedTimes{p}(end-1)], [dBaseline-30; dBaseline-30], '--k','LineWidth', 0.5);
-    elseif j == 2
-        oLine = plot(oAxes,[aAdjustedTimes{p}(2); aAdjustedTimes{p}(44)], [dBaseline-30; dBaseline-30], '--k','LineWidth', 0.5);
-        oLine = plot(oAxes,[aAdjustedTimes{p}(54); aAdjustedTimes{p}(end-1)], [dBaseline-30; dBaseline-30], '--k','LineWidth', 0.5);
     else
         oLine = plot(oAxes,[aAdjustedTimes{p}(2); aAdjustedTimes{p}(end-1)], [dBaseline-30; dBaseline-30], '--k','LineWidth', 0.5);
     end
     % % %     %get locations
-    aLocs =  aDistance{j}{p}(:,1);
-    a2ndLocs = aDistance{j}{p}(:,2);
-    
+    try
+        aLocs =  aDistance{aIndices(j)}{p}(:,1);
+        a2ndLocs = aDistance{aIndices(j)}{p}(:,2);
+        a1stLocIndex = isnan(aDistance{aIndices(j)}{p}(:,2));
+        a2ndLocIndex = ~isnan(aDistance{aIndices(j)}{p}(:,2));
+    catch ex
+        aLocs =  aDistance{aIndices(j)}(:,1);
+        a2ndLocs = aDistance{aIndices(j)}(:,2);
+        a1stLocIndex = isnan(aDistance{aIndices(j)}(:,2));
+        a2ndLocIndex = ~isnan(aDistance{aIndices(j)}(:,2));
+    end
+        
     if size(aLocs,1) ~= numel(aCouplingIntervals);
         x = 1;
     end
-    a1stLocIndex = isnan(aDistance{j}{p}(:,2));
-    a2ndLocIndex = ~isnan(aDistance{j}{p}(:,2));
+    
     %plot 1st locs
     scatter(oAxes, aAdjustedTimes{p}(a1stLocIndex), aCouplingIntervals(a1stLocIndex),iScatterSize,aLocs(a1stLocIndex),'filled');
     %plot 1st locs offset
@@ -371,13 +385,6 @@ for j = 1:numel(aPressureData)
             [figx figy] = dsxy2figxy(oAxes, [7.586 ; 8.506], [min(aCouplingIntervals)-60;min(aCouplingIntervals)-10]);
             annotation('textarrow',figx,figy,'string',sprintf('%3.0f ms',min(aCouplingIntervals)),...
                 'headstyle','plain','headwidth',4,'headlength',4,'headstyle','plain','fontweight','bold','fontsize',8);
-        case 2
-            olabel = text(aAdjustedTimes{1}(Index)+offset,aCouplingIntervals(2)+80, sprintf('%4.0f ms',aCouplingIntervals(2)), 'HorizontalAlignment','left','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
-            set(olabel,'fontsize',8);
-            olabel = text(aAdjustedTimes{1}(49),aCouplingIntervals(49)-100, sprintf('%4.0f ms',aCouplingIntervals(49)), 'HorizontalAlignment','center','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
-            set(olabel,'fontsize',8);
-            olabel = text(aAdjustedTimes{1}(iMaxIdx),max(aCouplingIntervals)+80, sprintf('%4.0f ms',max(aCouplingIntervals)), 'HorizontalAlignment','center','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
-            set(olabel,'fontsize',8);
         otherwise
             olabel = text(aAdjustedTimes{1}(Index)+offset,dBaseline+80, sprintf('%4.0f ms',dBaseline), 'HorizontalAlignment','left','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
             set(olabel,'fontsize',8);
@@ -393,8 +400,7 @@ for j = 1:numel(aPressureData)
     aTimeToPlot = oPressure.TimeSeries.Original(25000:end-20000) - oPressure.HeartRate.Decrease.BeatTimes(1);
     aDataToPlot = aPressureProcessedData(25000:end-20000);
     [PressureMax iPressureMaxIdx] = max(aDataToPlot);
-    plot(oPressureAxes, aTimeToPlot, aDataToPlot, ...
-        'linewidth',1,'color','k');
+    plot(oPressureAxes, aTimeToPlot, aDataToPlot, 'linewidth',0.5,'color','k');
     olabel = text(aTimeToPlot(1),aDataToPlot(1), sprintf('%4.0f',aDataToPlot(1)), ...
         'HorizontalAlignment','right','parent',oPressureAxes,'color','k','fontunits','points','fontweight','bold');
     set(olabel,'fontsize',8);
@@ -409,30 +415,38 @@ for j = 1:numel(aPressureData)
         olabel = text(aXlim(1)+0.7,ylimits(1)+7.5, '15 mmHg', 'HorizontalAlignment','right',...
             'parent',oPressureAxes,'color','k','fontunits','points');
         set(olabel,'fontsize',10);
+        %indicate stimulus timing
+        oLine = plot(oPressureAxes,[-2.91085,-2.91085+(2.91085-2.10)], [82; 82],'k-','LineWidth', 2);
+        text(-2.10-(2.91085-2.10)/2, 76,'KCN','fontsize',8,'parent',oPressureAxes,'horizontalalignment','center');
+    elseif j == 2
+        %indicate stimulus timing
+        oLine = plot(oPressureAxes,[-2.694,-2.694+(2.694-1.49)], [76; 76],'k-','LineWidth', 2);
+        text(-1.49-(2.694-1.49)/2, 70,'KCN','fontsize',8,'parent',oPressureAxes,'horizontalalignment','center');
     end
+    
     hold(oPressureAxes, 'off');
     %put arrow on to indicate stimulus timing 
-    [figx figy] = dsxy2figxy(oPressureAxes, [aTimeToPlot(iPressureMaxIdx); aTimeToPlot(iPressureMaxIdx)], ...
-        [PressureMax-15 ; PressureMax-2]);
-    annotation('arrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4,'color','k');
     set(oPressureAxes,'color','none','box','off');
     axis(oPressureAxes,'off');
     
     % %     %plot phrenic data
     aData =  oPressure.oPhrenic.Electrodes.Processed.Data./ ...
         (oPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
+    aBurstData = ComputeDWTFilteredSignalsKeepingScales(oPressure.oPhrenic, aData,2);
+    oPressure.oPhrenic.ComputeIntegral(200,aBurstData);
+    aData = oPressure.oPhrenic.Electrodes.Processed.Integral/1000;
     aTimeToPlot = oPressure.oPhrenic.TimeSeries - oPressure.HeartRate.Decrease.BeatTimes(1);
     aPointsToPlot = aTimeToPlot > aXlim(1)+1;
-    plot(oPhrenicAxes,aTimeToPlot(aPointsToPlot),aData(aPointsToPlot),'-','linewidth',1,'color','k');
+    plot(oPhrenicAxes,aTimeToPlot(aPointsToPlot),aData(aPointsToPlot),'-','linewidth',0.5,'color','k');
+    axis(oPhrenicAxes,'tight');
     set(oPhrenicAxes,'xlim',aXlim);
-    set(oPhrenicAxes,'ylim',[-70 70]);
+    oYLim = get(oPhrenicAxes,'ylim');
     set(oPhrenicAxes,'color','none','box','off');
     axis(oPhrenicAxes,'off');
     hold(oPhrenicAxes,'on');
     %put y axis on and label ends
-    oLine = plot(oPhrenicAxes,[aXlim(1)+1; aXlim(1)+1], [-70; -70+100], 'LineWidth', 2,'color','k');
     if j == 1
-        olabel = text(aXlim(1)+0.7,-70+50, '100 \muV', 'HorizontalAlignment','right',...
+        olabel = text(aXlim(1)+0.7,oYLim(1)+(oYLim(2)-oYLim(1))/2, '\intPND', 'HorizontalAlignment','right',...
             'parent',oPhrenicAxes,'color','k','fontunits','points');
         set(olabel,'fontsize',10);
     end
@@ -442,7 +456,7 @@ end
 oScaleAxes = axes('parent',oFigure);
 plot(oScaleAxes,[aXlim(1)+1; aXlim(1)+6], [aYlim(1); aYlim(1)], '-k','LineWidth', 4)
 aPosition = get(oBaseAxes,'position');
-set(oScaleAxes,'position',[aPosition(1) aPosition(2)-0.08 aPosition(3) aPosition(4)]);
+set(oScaleAxes,'position',[aPosition(1) aPosition(2)-0.06 aPosition(3) aPosition(4)]);
 aXlim = get(oBaseAxes,'xlim');
 aYlim = get(oBaseAxes,'ylim');
 set(oScaleAxes,'xlim',aXlim);
@@ -459,7 +473,7 @@ aCRange = [aCRange(1) aCRange(2)-1];
 aContours = aCRange(1):1:aCRange(2);
 cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance');
 aCRange = [aCRange(1) aCRange(2)+1];
-oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'Location along SVC-IVC axis (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
+oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'DPS (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
 set(oXlabel,'fontsize',8);
 dcm_obj = datacursormode(oFigure);
 set(dcm_obj,'UpdateFcn',@ScatterCursorCallback);
@@ -469,9 +483,9 @@ set(oFigure,'color','none');
 % print(oFigure,'-dpsc','-r600',sFileSavePath)
 % printgif(oFigure,'-r600',sFileSavePath)
 
-export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent')
+export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent','-painters')
 % %crop the images
 sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.png',strrep(sFileSavePath, '#', '1'))}, ...
     {sprintf(' %s.png',strrep(sFileSavePath, '#', '2'))}, {' -gravity center -composite'},{sprintf(' %s.png', strrep(sFileSavePath, '_#', ''))});
 sStatus = dos(char(sChopString{1}));
-% delete(sprintf('%s.png',strrep(sFileSavePath, '#','1')),sprintf('%s.png',strrep(sFileSavePath, '#', '2')));
+% % delete(sprintf('%s.png',strrep(sFileSavePath, '#','1')),sprintf('%s.png',strrep(sFileSavePath, '#', '2')));

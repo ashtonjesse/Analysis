@@ -291,7 +291,7 @@ else
   if strcmp(sType,'AT') || strcmp(sType,'Distance')
       set(ax,'xlim',[L(1) L(end)+step]);
       xt = [xt,xt(end)+step];
-      xt = [0 2 4 6];
+%       xt = [0 2 4 6];
   end
   %create labels
   %   dSpace = (L(end) - L(1))/(2*numel(L));

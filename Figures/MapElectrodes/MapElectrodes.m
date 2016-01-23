@@ -1207,14 +1207,14 @@ classdef MapElectrodes < SubFigure
                                  ibmax = i;
                              end
                          end
-                         oFigure.cbarmax = round(oFigure.cbarmax); 
-                         oFigure.cbarmin = -20; %arbitrary
+%                          oFigure.cbarmax = round(oFigure.cbarmax); 
+%                          oFigure.cbarmin = -20; %arbitrary
                      end
                      %Assuming the potential field has been normalised.
-                     %                      oFigure.cbarmax = 1;
-                     %                      oFigure.cbarmin = -0.1;
-                     %                      Difference = 0.05;
-                     Difference = round((oFigure.cbarmax - oFigure.cbarmin)/40);
+                     oFigure.cbarmax = 1;
+                     oFigure.cbarmin = -0.1;
+                     Difference = 0.05;
+%                      Difference = round((oFigure.cbarmax - oFigure.cbarmin)/40);
                      aContourRange = oFigure.cbarmin:Difference:oFigure.cbarmax;
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
                      contourf(oMapAxes,oFigure.Potential.x(1,:),oFigure.Potential.y(:,1),oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,aContourRange);

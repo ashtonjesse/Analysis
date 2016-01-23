@@ -343,15 +343,19 @@ text(axlim(1)-200,aylim(2)+1.5,'D','parent',oOverlay,'fontsize',12,'fontweight',
 %get data
 [aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\BaroCLandLocationData.csv');
 aInitialDelCL = aData(:,strcmp(aHeader,'CL2')) - aData(:,strcmp(aHeader,'CL1'));
+aPreInitialDelCL = aInitialDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
 [aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\BaroCLandLocationDataReturn.csv');
 aReturnDelCL = aData(:,strcmp(aHeader,'CL4')) - aData(:,strcmp(aHeader,'CL3'));
+aPreReturnDelCL = aReturnDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
+
 %plot boxplots
-bplot(aInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',1,'width',0.5,'nomean');
+bplot(aPreInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean');
 hold(oAxes,'on');
-bplot(aReturnDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',1,'width',0.5,'nomean','color','r');
+bplot(aPreReturnDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
 hold(oAxes,'off');
+aylim2 = [-400 600];
+set(oAxes,'ylim',aylim2);
 aytick = get(oAxes,'ytick');
-aylim2 = get(oAxes,'ylim');
 set(oAxes,'xlim',[0 4]);
 set(oAxes,'xtick',[1 2 3 4]);
 axtick = get(oAxes,'xtick');
@@ -362,6 +366,12 @@ xticklabels{axtick==3} = ['Last',10,'Shift'];
 text(axtick,ones(numel(axtick),1).*(aylim2(1)-abs(aytick(1)-aytick(2))/1.8),...
     xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
     'horizontalalignment','center');
+xticklabels{axtick==1} = sprintf('n=%1.0f',numel(aPreInitialDelCL));
+xticklabels{axtick==3} = sprintf('n=%1.0f',numel(aPreReturnDelCL));
+text(axtick,ones(numel(axtick),1).*(aylim2(1)-2.5*abs(aytick(1)-aytick(2))/1.8),...
+    xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
+    'horizontalalignment','center');
+
 set(oAxes,'xticklabel',[]);
 set(oAxes,'xtick',[1 3]);
 set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
@@ -369,4 +379,4 @@ set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
 %print
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-% export_fig(sSavePath,'-png','-r300','-nocrop');
+export_fig(sSavePath,'-png','-r300','-nocrop');

@@ -1,14 +1,14 @@
 close all;
-clear all;
+% clear all;
 % % % open all the files 
-aFiles = {...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro001\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro002\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro003\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro004\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro005\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro006\Pressure.mat' ...
-    };
+% aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro002\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro003\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro004\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro005\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro006\Pressure.mat' ...
+%     };
+
 
 
 aPressureData = cell(1,numel(aFiles));
@@ -27,8 +27,8 @@ for j = 1:numel(aFiles)
     oAxes = cell(1,2);
     
     switch (j)
-        case 1
-            iRecording = 2;
+        case {1}
+            iRecording =2;
         otherwise
             iRecording = 1;
     end
@@ -64,7 +64,7 @@ for j = 1:numel(aFiles)
     [oSecondAxes H1 H2] = plotyy(aPressureTime, aPressureProcessedData,aPressureTime,aPressureCurvature);
     hold(oSecondAxes(1),'on');
      %plot the ranges
-    sRanges = {'Baseline','Increase','Plateau',{'HeartRate','Plateau'},'Decrease'};
+    sRanges = {'Baseline','Increase','Plateau',{'HeartRate','Plateau'},{'HeartRate','Increase'}};
     oColors = {'ro','b+','gx','mo','b+'};
     for m = 1:numel(sRanges)
         if iscell(sRanges{m})
@@ -77,7 +77,7 @@ for j = 1:numel(aFiles)
                 plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
                 plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),...
                     aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
-                %                 %for 20140828
+                %                 %for 20140826
                 %                 aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1)) & ...
                 %                     oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) < aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2));
                 %                 if size(aTimePoints,1) > size(aTimePoints,2)
@@ -90,14 +90,7 @@ for j = 1:numel(aFiles)
                 %                     aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
             end
         else
-            % for 20140828
-            %             aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
-            %                 oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes)  < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
-            %             aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
-            %                 aBeatTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes(aTimePoints));
-            %             plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
-            %             plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
-            %                 aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
+            
             aTimePoints = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
                 oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
             aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
@@ -106,6 +99,14 @@ for j = 1:numel(aFiles)
             plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
             plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
                 aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
+            %             % for 20140826
+            %             aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
+            %                 oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes)  < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
+            %             aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
+            %             aBeatTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes(aTimePoints));
+            %             plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
+            %             plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
+            %                 aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
         end
         
     end

@@ -21,7 +21,7 @@ close all;
 
 %set variables
 dWidth = 16;
-dHeight = 16;
+dHeight = 18;
 sFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\BaroData_#';
 
 %Create plot panel that has 3 rows at top to contain pressure, phrenic and
@@ -41,7 +41,7 @@ set(oFigure,'Resize','off');
 xrange = 6;
 yrange = 1;
 oSubplotPanel = panel(oFigure);
-oSubplotPanel.pack('v',{0.6 0.4});
+oSubplotPanel.pack('v',{0.5 0.5});
 oSubplotPanel(1).pack('v',{0.6,0.4});
 oSubplotPanel(1,1).pack('h',{0.1,0.9});
 oSubplotPanel(1,1,2).pack(3);
@@ -50,7 +50,7 @@ oSubplotPanel(1,2,2).pack(yrange,xrange);
 oSubplotPanel(1,2,1).pack('v',{0.2,0.65});
 
 movegui(oFigure,'center');
-oSubplotPanel.margin = [12,2,2,2];
+oSubplotPanel.margin = [14,2,2,2];
 oSubplotPanel.de.margin = [0 0 0 0];%[left bottom right top]
 oSubplotPanel(1,1).de.margin = [0 5 0 0];
 oSubplotPanel(1,1).de.fontsize = 8;
@@ -258,10 +258,11 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % 
 % %create text labels
 % oLabel = annotation('textbox','position',[0 0.9 0.1 0.1],'string','A','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.78 0.1 0.1],'string','B','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.64 0.1 0.1],'string','C','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.52 0.1 0.1],'string','D','linestyle','none','fontsize',12,'fontweight','bold');
-% oLabel = annotation('textbox','position',[0 0.32 0.1 0.1],'string','E','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.8 0.1 0.1],'string','B','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.69 0.1 0.1],'string','C','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.59 0.1 0.1],'string','D','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.4 0.1 0.1],'string','E','linestyle','none','fontsize',12,'fontweight','bold');
+% oLabel = annotation('textbox','position',[0 0.2 0.1 0.1],'string','F','linestyle','none','fontsize',12,'fontweight','bold');
 % export_fig(strrep(sFileSavePath, '#', '1'),'-png','-r300','-nocrop')
 
 %% create second panel
@@ -274,12 +275,16 @@ aPressureData = cell(1,numel(aFolders));
 aCoords = cell(1,numel(aFolders));
 aDistance = cell(1,numel(aFolders));
 aMagnitude = zeros(numel(aFolders),1);
+aBaseline = zeros(numel(aFolders),1);
+aPlateau = zeros(numel(aFolders),1);
 for i = 1:numel(aFolders)
     sFileName = [aFolders{i},'\Pressure.mat'];
      oPressure = GetPressureFromMATFile(Pressure,sFileName,'Optical');
      aPressureData{i} = oPressure;
     fprintf('Got file %s\n',sFileName);
-    aMagnitude(i) = mean(oPressure.Plateau.BeatPressures)-mean(oPressure.Baseline.BeatPressures);
+    aPlateau(i) = mean(oPressure.Plateau.BeatPressures);
+    aBaseline(i) = mean(oPressure.Baseline.BeatPressures);
+    aMagnitude(i) = round(aPlateau(i))-round(aBaseline(i));
 end
 %Sort data in terms of pressure magnitude
 [B SortIdx] = sort(aMagnitude);
@@ -292,8 +297,7 @@ load([pathstr,'\BaroLocationData.mat']);
 % oSubplotPanel(2,1).pack('h',{0.5,0.5});
 % oSubplotPanel(2,1,1).pack(numel(SortIdx));
 % oSubplotPanel(2,1).de.margin = [0 0 0 0];
-
-oSubplotPanel(2).pack('v',{0.7,0.15,0.03});
+oSubplotPanel(2).pack('v',{0.8,0.1,0.03});
 oSubplotPanel(2,1).pack(numel(SortIdx));
 oSubplotPanel(2,1).de.margin = [0 0 0 0];
 
@@ -301,6 +305,7 @@ oSubplotPanel(2,1).de.margin = [0 0 0 0];
 oColors = jet(5);
 iScatterSize = 16;
 aYlim = [150 660];
+aPressureYlim = [75 120];
 aXlim = [-8.5 19];
 aCRange = [0 7];
 aIndices = [3 1];
@@ -336,14 +341,18 @@ for p = 1:numel(SortIdx)
     a2ndLocIndex = ~isnan(aDistance{aIndices(p)}(:,2));
 
     %set up axes
-    oSubplotPanel(2,1,numel(SortIdx)-p+1).pack('v',{0.75,0.25});
-    oAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,1).select();
+    oSubplotPanel(2,1,numel(SortIdx)-p+1).pack('v',{0.4,0.4,0.2});
+    oAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,2).select();
     axis(oAxes);
     if p == 1
         oBaseAxes = oAxes;
+        oDummyAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,1).select();
+        oPressureAxes = axes('position',get(oDummyAxes,'position')-[0 0.02 0 0]);
+        axis(oDummyAxes,'off');
+    else
+        oPressureAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,1).select();
     end
-    %     oPressureAxes = aSubplotPanel(1,numel(SortIdx)-p+1,2).select();
-    oPhrenicAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,2).select();
+    oPhrenicAxes = oSubplotPanel(2,1,numel(SortIdx)-p+1,3).select();
     
     [dBaseline iMinIdx] = min(aCouplingIntervals);
     [dTopline iMaxIdx] = max(aCouplingIntervals);
@@ -366,43 +375,25 @@ for p = 1:numel(SortIdx)
     if p == 1
         olabel = text(aXlim(1)+0.25,min(aCouplingIntervals)+100, '200 ms', 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points');
         set(olabel,'fontsize',10);
+        olabel = text(aXlim(1)+0.25,0.5, '\intPND', 'HorizontalAlignment','right',...
+            'parent',oPhrenicAxes,'color','k','fontunits','points');
+        set(olabel,'fontsize',10);
+        olabel = text(aXlim(1)+0.25,aPressureYlim(1)+12.5, '25 mmHg', 'HorizontalAlignment','right',...
+            'parent',oPressureAxes,'color','k','fontunits','points');
+        set(olabel,'fontsize',10);
     end
-    olabel = text(aAdjustedTimes(1),min(aCouplingIntervals)+60, sprintf('%4.0f ms',min(aCouplingIntervals)), 'HorizontalAlignment','left','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
+    olabel = text(aAdjustedTimes(1),min(aCouplingIntervals)+60, sprintf('%4.0f ms',min(aCouplingIntervals)), ...
+        'HorizontalAlignment','left','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
     set(olabel,'fontsize',8);
-    olabel = text(aAdjustedTimes(iMaxIdx),max(aCouplingIntervals)+60, sprintf('%4.0f ms',max(aCouplingIntervals)), 'HorizontalAlignment','center','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
+    olabel = text(aAdjustedTimes(iMaxIdx),max(aCouplingIntervals)+60, sprintf('%4.0f ms',max(aCouplingIntervals)), ...
+        'HorizontalAlignment','center','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
     set(olabel,'fontsize',8);
-    %put lines on to indicate pressure timing
-    %start of increase
-    [figx figy] = dsxy2figxy(oAxes, [oPressure.Increase.BeatTimes(1) - aTimes(Idx); oPressure.Increase.BeatTimes(1) - aTimes(Idx)], ...
-        [(60000/oPressure.Increase.BeatRates(1))-100 ; (60000/oPressure.Increase.BeatRates(1))-20]);
-    annotation('arrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4);
-    %start of plateau
-    [figx figy] = dsxy2figxy(oAxes, [oPressure.Plateau.BeatTimes(1) - aTimes(Idx); oPressure.Plateau.BeatTimes(1) - aTimes(Idx)], ...
-        [(60000/oPressure.Plateau.BeatRates(1))-100 ; (60000/oPressure.Plateau.BeatRates(1))-20]);
-    annotation('arrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4);
-    %end of plateau
-    [figx figy] = dsxy2figxy(oAxes, [oPressure.Plateau.BeatTimes(end) - aTimes(Idx); oPressure.Plateau.BeatTimes(end) - aTimes(Idx)], ...
-        [(60000/oPressure.Plateau.BeatRates(end))-20 ; (60000/oPressure.Plateau.BeatRates(end))-100]);
-    annotation('arrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4);
-    
-    
     hold(oAxes, 'off');
     set(oAxes,'color','none','box','off');
     axis(oAxes,'off');
-    %label the pressure
-    if p == 1
-        olabel = text(aXlim(2),aYlim(1)+250, ['\Delta',sprintf('P=%2.0f mmHg',aMagnitude(j))], 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
-        set(olabel,'fontsize',10);
-    else
-        olabel = text(aXlim(2),aYlim(1)+250, sprintf('%4.0f mmHg',aMagnitude(j)), 'HorizontalAlignment','right','parent',oAxes,'color','k','fontunits','points','fontweight','bold');
-        set(olabel,'fontsize',10);
-    end
     
-    % %     %plot pressure data
-    %     plot(oPressureAxes,oPressure.TimeSeries.Processed- aTimes(Idx),oPressure.Processed.Data,'k-','linewidth',2);
-    %     set(oPressureAxes,'xlim',xlim);
-    %     set(oPressureAxes,'color','none','box','off');
-    %     axis(oPressureAxes,'off');
+    
+   
     
     %     aData = oPressure.oPhrenic.Electrodes.Processed.Data ./ ...
     %         (oPressure.oExperiment.Phrenic.Amp.OutGain*1000)*10^6;
@@ -413,21 +404,39 @@ for p = 1:numel(SortIdx)
     aData = oPressure.oPhrenic.Electrodes.Processed.Integral/1000;
     aTimeToPlot = oPressure.oPhrenic.TimeSeries - aTimes(Idx);
     aPointsToPlot = aTimeToPlot > aXlim(1)+1;
-    
-    plot(oPhrenicAxes,aTimeToPlot(aPointsToPlot),aData(aPointsToPlot),'-','linewidth',1,'color','k');
+    hold(oPhrenicAxes,'on');
+    plot(oPhrenicAxes,aTimeToPlot(aPointsToPlot),aData(aPointsToPlot),'-','linewidth',0.5,'color','k');
     set(oPhrenicAxes,'xlim',aXlim);
     set(oPhrenicAxes,'ylim',[0 2.5]);
     set(oPhrenicAxes,'color','none','box','off');
     axis(oPhrenicAxes,'off');
-    hold(oPhrenicAxes,'on');
-    %put y axis on and label ends
-    %     oLine = plot(oPhrenicAxes,[aXlim(1)+0.5; aXlim(1)+0.5], [0; 1], 'LineWidth', 2,'color','k');
-    if p == 1
-        olabel = text(aXlim(1)+0.25,0.5, '\intPND', 'HorizontalAlignment','right',...
-            'parent',oPhrenicAxes,'color','k','fontunits','points');
-        set(olabel,'fontsize',10);
-    end
     hold(oPhrenicAxes,'off');
+    
+    %     %plot pressure data
+    aTimeToPlot = oPressure.TimeSeries.Original - aTimes(Idx);
+    aPointsToPlot = aTimeToPlot > aXlim(1)+1;
+    hold(oPressureAxes,'on');
+    plot(oPressureAxes,aTimeToPlot(aPointsToPlot),aPressureProcessedData(aPointsToPlot),'k-','linewidth',0.5);
+    set(oPressureAxes,'xlim',aXlim);
+    set(oPressureAxes,'ylim',aPressureYlim);
+    set(oPressureAxes,'color','none','box','off');
+    axis(oPressureAxes,'off');
+    %label the pressure
+    olabel = text(aXlim(2),aPressureYlim(1)+15, ['\Delta',sprintf('P=%2.0f mmHg',aMagnitude(j))], ...
+        'HorizontalAlignment','right','parent',oPressureAxes,'color','k','fontunits','points','fontweight','bold');
+    set(olabel,'fontsize',10);
+    %     put y axis on and label ends
+    oLine = plot(oPressureAxes,[aXlim(1)+0.5; aXlim(1)+0.5], [aPressureYlim(1); aPressureYlim(1)+25],'LineWidth', 2,'color','k');
+    aData = aPressureProcessedData(aPointsToPlot);
+    aTimeData = aTimeToPlot(aPointsToPlot);
+    olabel = text(aTimeData(1),aData(1)+5, sprintf('%3.0f mmHg',aBaseline(j)), ...
+        'HorizontalAlignment','left','parent',oPressureAxes,'color','k','fontunits','points','fontweight','bold');
+    set(olabel,'fontsize',8);
+    [val ind] = max(aData);
+    olabel = text(aTimeData(ind),val+5, sprintf('%3.0f mmHg',aPlateau(j)), ...
+        'HorizontalAlignment','center','parent',oPressureAxes,'color','k','fontunits','points','fontweight','bold');
+    set(olabel,'fontsize',8);
+    hold(oPressureAxes,'off');
 end
 %create time scale
 oScaleAxes = axes('parent',oFigure);
@@ -439,7 +448,7 @@ aYlim = get(oBaseAxes,'ylim');
 set(oScaleAxes,'xlim',aXlim);
 set(oScaleAxes,'ylim',aYlim);
 %label the scale
-olabel = text(aXlim(1)+1+5/2,aYlim(1)-75, '5 s', 'HorizontalAlignment','center','parent',oScaleAxes,'color','k','fontunits','points');
+olabel = text(aXlim(1)+1+5/2,aYlim(1)-100, '5 s', 'HorizontalAlignment','center','parent',oScaleAxes,'color','k','fontunits','points');
 set(olabel,'fontsize',10);
 axis(oScaleAxes,'off');
 
@@ -450,7 +459,7 @@ aCRange = [aCRange(1) aCRange(2)-1];
 aContours = aCRange(1):1:aCRange(2);
 cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance');
 aCRange = [aCRange(1) aCRange(2)+1];
-oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'Dominant pacemaker location (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
+oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'DPS (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
 set(oXlabel,'fontsize',8);
 dcm_obj = datacursormode(oFigure);
 set(dcm_obj,'UpdateFcn',@ScatterCursorCallback);
@@ -458,13 +467,13 @@ set(dcm_obj,'UpdateFcn',@ScatterCursorCallback);
 
 
 set(oFigure,'resizefcn',[]);
-% set(oFigure,'color','none');
-% print(oFigure,'-dpsc','-r600',sFileSavePath)
-% printgif(oFigure,'-r600',strrep(sFileSavePath, '#', '2'));
+set(oFigure,'color','none');
+% % print(oFigure,'-dpsc','-r600',sFileSavePath)
+% % printgif(oFigure,'-r600',strrep(sFileSavePath, '#', '2'));
 
-% export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent','-painters');%
-% % % %crop the images
-% sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.png',strrep(sFileSavePath, '#', '1'))}, ...
-%     {sprintf(' %s.png',strrep(sFileSavePath, '#', '2'))}, {' -gravity center -composite'},{sprintf(' %s.png', strrep(sFileSavePath, '_#', ''))});
-% sStatus = dos(char(sChopString{1}));
+export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent','-painters');%
+% % %crop the images
+sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.png',strrep(sFileSavePath, '#', '1'))}, ...
+    {sprintf(' %s.png',strrep(sFileSavePath, '#', '2'))}, {' -gravity center -composite'},{sprintf(' %s.png', strrep(sFileSavePath, '_#', ''))});
+sStatus = dos(char(sChopString{1}));
 % delete(sprintf('%s.png',strrep(sFileSavePath, '#', '1')),sprintf('%s.png',strrep(sFileSavePath, '#', '2')));
