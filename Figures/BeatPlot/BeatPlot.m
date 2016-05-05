@@ -519,7 +519,8 @@ classdef BeatPlot < SubFigure
                  %without gradient
                  plot(oSignalPlot,aTime,aData,'-r');
              end
-             
+%              set(oSignalPlot,'xlim',[TimeMin TimeMax-0.12]);
+%              set(oSlopePlot,'xlim',[TimeMin TimeMax-0.12]);
             
              
              %Create a label that shows the channel name

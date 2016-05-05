@@ -4,9 +4,7 @@ classdef ECG < BasePotential
     %   ECG inherits all properties and methods from BasePotential.
     
     properties
-        oExperiment;
         Original;
-        TimeSeries;
         Processed;
     end
     

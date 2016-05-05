@@ -213,9 +213,14 @@ classdef Optical < BasePotential
             end
         end
         
-        function oMapData = PreparePotentialMap(oOptical, dInterpDim, iBeatIndex, oPotentialData)
+        function oMapData = PreparePotentialMap(oOptical, dInterpDim, iBeatIndex, sEventID, oPotentialData)
             %get the accepted channels
-            aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'Accepted');
+            if isfield(oOptical.Electrodes(1).(sEventID),'Map')
+                aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,sEventID,'Map');
+                aAcceptedChannels = aAcceptedChannels(iBeatIndex,:);
+            else
+                aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'Accepted');
+            end
             aElectrodes = oOptical.Electrodes(logical(aAcceptedChannels));
             if isempty(oPotentialData) || size(oPotentialData.DT,1) ~= length(aElectrodes)
                 aCoords = cell2mat({aElectrodes(:).Coords});

@@ -1,13 +1,8 @@
-% close all;
+close all;
 % % % Open unemap file
 % oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20140505\20140505baro002\pabaro002_unemap.mat');
 % oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20140505\20140505baro002\baro002_pressure.mat','Extracellular');
-% for i = 1:numel(oUnemap.Electrodes)
-%     [x b] = oUnemap.CalculateSinusRate(i);
-%     oUnemap.Electrodes(i).Processed.BeatRateData = oUnemap.Electrodes(i).Processed.BeatRateData';
-%     oUnemap.Electrodes(i).Processed.BeatRates = oUnemap.Electrodes(i).Processed.BeatRates';
-%     oUnemap.Electrodes(i).Processed.BeatRateTimes = oUnemap.Electrodes(i).Processed.BeatRateTimes';
-% end
+% oUnemap.CalculateSinusRate();
 % % % % % oUnemap.RotateArray();
 % oActivation = oUnemap.PrepareEventMap(100, 1, 35);
 
@@ -35,7 +30,7 @@ oSubplotPanel = panel(oFigure);
 oSubplotPanel.pack({0.25 0.73 0.02});
 oSubplotPanel(1).pack('h',{0.06,0.94});
 oSubplotPanel(2).pack(xrange,yrange);
-oSubplotPanel(3).pack('h',{0.95});
+oSubplotPanel(3).pack('h',{0.02 0.95});
 movegui(oFigure,'center');
 
 oSubplotPanel.margin = [5 12 5 5];
@@ -56,10 +51,10 @@ iBoxXLocation = 1;
 oAxes = oSubplotPanel(1,2).select();
 aXTickLabels = cell(1,xrange*yrange);
 for k = iStartBeat:1:iStartBeat+(xrange*yrange)-1
-    iMapBeat = k + 1;
+    iMapBeat = k;
     idxCV = find(~isnan(oActivation.Beats(iMapBeat).CVApprox));
     aCVdata = oActivation.Beats(iMapBeat).CVApprox(idxCV);
-    bplot(aCVdata,oAxes,iBoxXLocation,'nolegend','nomean','nooutliers','tukey','linewidth',1);
+    bplot(aCVdata,oAxes,iBoxXLocation,'nolegend','nomean','nooutliers','tukey','linewidth',1,'width',0.8);
     aXTickLabels{1,iBoxXLocation} = sprintf('%d',k);
     iBoxXLocation = iBoxXLocation + 1;
     hold(oAxes,'on');
@@ -84,8 +79,9 @@ set(oYlabel,'position',oPosition);
 aAcceptedChannels = MultiLevelSubsRef(oUnemap.oDAL.oHelper,oUnemap.Electrodes,'Accepted');
 aElectrodes = oUnemap.Electrodes(logical(aAcceptedChannels));
 aRates = oUnemap.oDAL.oHelper.MultiLevelSubsRef(aElectrodes,'Processed','BeatRates');
-aTimeData = oUnemap.oDAL.oHelper.MultiLevelSubsRef(aElectrodes,'Processed','BeatRateTimes');
-aMeanRates = mean(aRates,2);
+aIndexes = oUnemap.oDAL.oHelper.MultiLevelSubsRef(aElectrodes,'Processed','BeatRateIndexes');
+aTimeData = oUnemap.TimeSeries(aIndexes);
+aMeanRates = 60000./mean(aRates,2);
 aMeanTimes = mean(aTimeData,2);
 
 % %plot maps
@@ -96,7 +92,7 @@ aCVContours = aCVRange(1):0.1:aCVRange(2);
 for i = 1:yrange
     for j = 1:xrange
         iBeat = iStartBeat + iBeatCount;
-        iMapBeat = iBeat + 1;
+        iMapBeat = iBeat;
         if (i == 1) && (j == 1)
             oAxes = oSubplotPanel(2,1,1).select();
             oOverlay = axes('position',get(oAxes,'position'));
@@ -122,7 +118,7 @@ for i = 1:yrange
             set(oLabel,'fontsize',8);
             oLabel = text(0,0.3,'IVC','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','right');
             set(oLabel,'fontsize',8);
-            oLabel = text(5,0.5,'RA','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+            oLabel = text(4.2,0.5,'RAA','parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
             set(oLabel,'fontsize',8);
          else
             oAxes = oSubplotPanel(2,i,j).select();
@@ -150,9 +146,9 @@ for i = 1:yrange
         [MinVal MinIndex] = min(abs(oPressure.TimeSeries.Processed - aMeanTimes(iBeat)));
         oLabel = text(aXlim(1),4,sprintf('%d mmHg',round(oPressure.Processed.Data(MinIndex))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',6);
-        oLabel = text(aXlim(1),3,sprintf('%d bpm',round(aMeanRates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        oLabel = text(aXlim(1),3,sprintf('%d ms',round(aMeanRates(iBeat))),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',6);
-        oLabel = text(aXlim(1),5.5,sprintf('#%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
+        oLabel = text(aXlim(1),5.5,sprintf('%d',iBeat),'parent',oOverlay,'fontweight','bold','fontunits','points','HorizontalAlignment','left');
         set(oLabel,'fontsize',12);
         %plot earliest activation
         oFirstElectrodes = oUnemap.Electrodes(~logical(oActivation.Beats(iMapBeat).FullActivationTimes));
@@ -166,10 +162,10 @@ for i = 1:yrange
         hold(oOverlay,'off');
     end
 end
-oAxes = oSubplotPanel(3,1).select();
-cbarf_edit(aCVRange, aCVContours,'horiz','linear',oAxes,'CV');
-oXlabel = text(((aCVRange(2)-aCVRange(1))/2)+abs(aCVRange(1)),-2.2,'Apparent CV (m/s)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
+oAxes = oSubplotPanel(3,2).select();
+cbarf_edit(aCVRange, aCVContours,'horiz','linear',oAxes,'CV',10);
+oXlabel = text(((aCVRange(2)-aCVRange(1)+0.1)/2)+abs(aCVRange(1)),-2.2,'Apparent CV (m/s)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
 set(oXlabel,'fontsize',12);
-
+set(oFigure,'resizefcn',[]);
 % print(oFigure,'-dbmp','-r600',sSavePath)
 print(oFigure,'-dpsc','-r600',sSavePath)

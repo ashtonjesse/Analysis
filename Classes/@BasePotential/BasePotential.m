@@ -273,6 +273,9 @@ classdef BasePotential < BaseSignal
             % electrodes
             
             %initialise variables
+            if ~isfield(oBasePotential,'Beats')
+                oBasePotential.Beats.Indexes = oBasePotential.Electrodes(1).Processed.BeatIndexes;
+            end
             dPeaks = zeros(size(oBasePotential.Beats.Indexes,1),length(oBasePotential.Electrodes));
             aBeatRates = NaN(size(dPeaks,1),size(dPeaks,2));
             aBeatRateIndexes = NaN(size(dPeaks,1),size(dPeaks,2));
@@ -519,7 +522,7 @@ classdef BasePotential < BaseSignal
                 %create the axispoint array
                 [oBasePotential.Electrodes(:).AxisPoint] = deal(false);
             end
-            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = true;
+            [oBasePotential.Electrodes(iElectrodeNumber).AxisPoint] = deal(true);
         end
         
         function ClearAxisPoint(oBasePotential, iElectrodeNumber)
@@ -527,7 +530,7 @@ classdef BasePotential < BaseSignal
                 %create the axispoint array
                 [oBasePotential.Electrodes(:).AxisPoint] = deal(false);
             end
-            oBasePotential.Electrodes(iElectrodeNumber).AxisPoint = false;
+            [oBasePotential.Electrodes(iElectrodeNumber).AxisPoint] = deal(false);
         end
         
         %% Event related functions

@@ -36,10 +36,10 @@ for j = 1:numel(aFiles)
 % %         %         aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
 %     else
          
-        aRates = [NaN,oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates]';
-        aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes;
-%         aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
-%         aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
+%         aRates = [NaN,oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates]';
+%         aTimes = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateTimes;
+        aRates = oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRates;
+        aTimes = oPressure.oRecording(aRecordingIndex(j)).TimeSeries(oPressure.oRecording(aRecordingIndex(j)).Electrodes.Processed.BeatRateIndexes);
         
 %     end
     

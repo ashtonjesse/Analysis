@@ -33,6 +33,7 @@ classdef AnalyseSignals < SubFigure
         NewSignalEventCreated;
         NewBeatInserted;
         SignalEventLoaded;
+        EventRangeChange;
     end
     
     methods

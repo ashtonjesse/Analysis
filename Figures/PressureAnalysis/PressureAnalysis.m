@@ -419,12 +419,13 @@ classdef PressureAnalysis < SubFigure
         function oUpdatePhrenicMenu_Callback(oFigure, src, event)
             %this puts the refsignal data into the phrenic signal field
             oPressure = oFigure.oParentFigure.oGuiHandle.oPressure;
-            oPressure.oPhrenic = Phrenic(oPressure.oExperiment,oPressure.RefSignal.Original,oPressure.TimeSeries.Original);
-            if strcmp(oPressure.TimeSeries.Status,'Processed')
-                oPressure.oPhrenic.TimeSeries = oPressure.TimeSeries.Processed;
-                oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.RefSignal.Processed;
-                oPressure.oPhrenic.Electrodes.Status = 'Processed';
-            end
+                        oPressure.oPhrenic = Phrenic(oPressure.oExperiment,oPressure.RefSignal.Original,oPressure.TimeSeries.Original);
+%             oPressure.RefSignal.Original = oPressure.oPhrenic.Electrodes.Potential.Data;
+                        if strcmp(oPressure.TimeSeries.Status,'Processed')
+                            oPressure.oPhrenic.TimeSeries = oPressure.TimeSeries.Processed;
+                            oPressure.oPhrenic.Electrodes.Processed.Data = oPressure.RefSignal.Processed;
+                            oPressure.oPhrenic.Electrodes.Status = 'Processed';
+                        end
         end
         
         function ThresholdCurvature(oFigure, src, event)
@@ -1069,8 +1070,8 @@ classdef PressureAnalysis < SubFigure
                 %                 ~isfield(oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.Electrodes.Processed,'Integral')
                 aBurstData = ComputeDWTFilteredSignalsKeepingScales(oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic, ...
                     oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.Electrodes.Processed.Data./ ...
-                     (oFigure.oParentFigure.oGuiHandle.oPressure(j).oExperiment.Phrenic.Amp.OutGain*1000)*10^6,3);
-                oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.ComputeIntegral(50,aBurstData);
+                     (oFigure.oParentFigure.oGuiHandle.oPressure(j).oExperiment.Phrenic.Amp.OutGain*1000)*10^6,2);
+                oFigure.oParentFigure.oGuiHandle.oPressure(j).oPhrenic.ComputeIntegral(200,aBurstData);
                 %                 end
             end
             
@@ -1290,11 +1291,14 @@ classdef PressureAnalysis < SubFigure
                         oRecording.CalculateSinusRate();
                         aRateData = oRecording.GetBeatRateData(1);
                         hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
-                    case 'Phrenic'
-                        [aRateData dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
-                        hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
-                    case 'Reference Signal'
-                        [aRateData aRates dPeaks] = oRecording.GetRateData(oFigure.Peaks(2,:));
+                    case {'Phrenic','Reference Signal'}
+                        if ~isempty(oFigure.Peaks)
+                            [aRateData dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
+                        elseif isfield(oRecording.Electrodes.Processed,'BeatRates')
+                            aRateData = oRecording.Electrodes.Processed.BeatRateData;
+                        else
+                            [aRateData dPeaks] = oRecording.GetHeartRateData(oFigure.Peaks(2,:));
+                        end
                         hline = plot(oAxesHandle,oRecording.TimeSeries, aRateData,'k');
                 end
             end
@@ -1319,16 +1323,18 @@ classdef PressureAnalysis < SubFigure
                     set(oBeatLabel,'parent',oAxesHandle);
                 end
             elseif strcmp(oFigure.RecordingType,'Optical')
-                for k = 4:4:numel(oRecording.Electrodes.Processed.BeatRateIndexes)
-                    if ((oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
-                            (oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50) < oFigure.CurrentZoomLimits(1,2)))
-                        oBeatLabel = text(oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50),...
-                            aRateData(oRecording.Electrodes.Processed.BeatRateIndexes(k-1))+2, num2str(k));%+300,+5
-                        set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
-                        set(oBeatLabel,'FontSize',8);
-                        set(oBeatLabel,'parent',oAxesHandle);
+                if ~strcmp(oFigure.SignalToUseForBeatDetection,{'Reference Signal','Phrenic'})
+                    for k = 4:4:numel(oRecording.Electrodes.Processed.BeatRateIndexes)
+                        if ((oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50) > oFigure.CurrentZoomLimits(1,1)) && ...
+                                (oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50) < oFigure.CurrentZoomLimits(1,2)))
+                            oBeatLabel = text(oRecording.TimeSeries(oRecording.Electrodes.Processed.BeatRateIndexes(k)-50),...
+                                aRateData(oRecording.Electrodes.Processed.BeatRateIndexes(k-1))+2, num2str(k));%+300,+5
+                            set(oBeatLabel,'color','k','FontWeight','bold','FontUnits','points');
+                            set(oBeatLabel,'FontSize',8);
+                            set(oBeatLabel,'parent',oAxesHandle);
+                        end
+                        
                     end
-                    
                 end
             end
         end

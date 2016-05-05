@@ -29,9 +29,8 @@ sFiles = {...
 %set variables
 dWidth = 16;
 dHeight = 10;
-sFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\IVBData.png';
-
-
+sPaperFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\IVBData.png';
+sThesisFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\IVBData.eps';
 
 %set up figure
 oFigure = figure();
@@ -315,7 +314,7 @@ oSubplotPanel(2).pack('h',{0.1,0.75});
 oBarAxes = oSubplotPanel(2,2).select();
 aCRange = [aCRange(1) aCRange(2)-1];
 aContours = aCRange(1):1:aCRange(2);
-cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance');
+cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance',8);
 aCRange = [aCRange(1) aCRange(2)+1];
 oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'DPS (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
 set(oXlabel,'fontsize',8);
@@ -326,7 +325,8 @@ set(oFigure,'resizefcn',[]);
 % set(oFigure,'color','none');
 
 
-export_fig(sFileSavePath,'-png','-r300','-nocrop','-painters');
+export_fig(sPaperFileSavePath,'-png','-r300','-nocrop','-painters');
+print(sThesisFileSavePath,'-dpsc','-r300');
 % export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop','-transparent','-painters')
 %crop the images
 % sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.png',strrep(sFileSavePath, '#', '1'))}, ...

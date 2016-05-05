@@ -63,7 +63,20 @@ classdef Pressure < BaseSignal
         
         function SmoothData(oPressure, iCutoff)
             %apply lowpass filter to data
-            oPressure.Processed.Data = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, iCutoff);
+            %             TestData = oPressure.FilterData(oPressure.(oPressure.Status).Data, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, iCutoff);
+            %             TestData2 = padarray(oPressure.(oPressure.Status).Data,[10000,0],'symmetric');
+            %             TestData2 = oPressure.FilterData(TestData2, 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, iCutoff);
+            %             TestData3 = TestData2(10000:end-10000);
+            %                         figure();
+            %                         oAxes = axes();
+            %                         plot(oAxes,TestData);
+            %                         hold(oAxes,'on');
+            %                         plot(oAxes,TestData3,'r');
+            %                         plot(oAxes,oPressure.(oPressure.Status).Data,'k-');
+            
+            
+            FilteredData = oPressure.FilterData(padarray(oPressure.(oPressure.Status).Data,[10000,0],'symmetric'), 'LowPass', oPressure.oExperiment.PerfusionPressure.SamplingRate, iCutoff);
+            oPressure.Processed.Data = FilteredData(10000:end-10000);
             oPressure.Status = 'Processed';
             %take a second off each end to remove end effects
             bOver = oPressure.TimeSeries.(oPressure.TimeSeries.Status) > 1;
@@ -73,6 +86,7 @@ classdef Pressure < BaseSignal
             oPressure.RefSignal.Processed = oPressure.RefSignal.(oPressure.RefSignal.Status);
             oPressure.oPhrenic.Electrodes.Status  = 'Processed';
             oPressure.RefSignal.Status = 'Processed';
+            oPressure.TimeSeries.Status = 'Processed';
             oPressure.TruncateData(bIndexesToKeep);
         end
         
@@ -90,6 +104,23 @@ classdef Pressure < BaseSignal
             oPressure.TimeSeries.Status = 'Processed';
             oPressure.RefSignal.Status = 'Processed';
             oPressure.Status = 'Processed';
+        end
+        
+        function ResetData(oPressure)
+            oPressure.Processed.Data = ...
+                oPressure.Original.Data;
+            oPressure.RefSignal.Processed = ...
+                oPressure.RefSignal.Original;
+            oPressure.oPhrenic.Electrodes.Processed.Data = ...
+                oPressure.oPhrenic.Electrodes.Potential.Data;
+            oPressure.oPhrenic.TimeSeries = ...
+                oPressure.TimeSeries.Original;
+            oPressure.TimeSeries.Processed = ...
+                oPressure.TimeSeries.Original;
+            oPressure.RefSignal.Status = 'Processed';
+            oPressure.TimeSeries.Status = 'Processed';
+            oPressure.Status = 'Processed';
+            oPressure.oPhrenic.Electrodes.Status = 'Processed';
         end
         
         function oPressure = GetPressureFromMATFile(oPressure, sFile, sRecordingType)

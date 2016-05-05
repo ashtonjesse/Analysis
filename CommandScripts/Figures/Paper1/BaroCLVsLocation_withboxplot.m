@@ -309,7 +309,7 @@ aCRange = [aCRange(1) aCRange(2)-1];
 aContours = aCRange(1):1:aCRange(2);
 cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance',8);
 aCRange = [aCRange(1) aCRange(2)+1];
-oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),2,'DPS (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
+oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),2,'DP site (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
 set(oXlabel,'fontsize',8);
 
 %plot histogram of locations
@@ -323,7 +323,7 @@ axis(oAxes,'tight');
 %overlay an axes because the bars cover the axes
 set(oOverlay,'xlim',get(oAxes,'xlim'),'ylim',get(oAxes,'ylim'))
 axis(oAxes,'off');
-set(get(oOverlay,'xlabel'),'string','DPS (mm)','fontsize',8);
+set(get(oOverlay,'xlabel'),'string','DP site (mm)','fontsize',8);
 set(get(oOverlay,'ylabel'),'string','# of beats','fontsize',8);
 set(oOverlay,'fontsize',8,'box','off');
 %save the data to file
@@ -349,12 +349,12 @@ text(axlim(1)-200,aylim(2)+1.5,'B','parent',oLabelAxes,'fontsize',12,'fontweight
 set(oOnsetAxes,'xlim',axlim);
 set(oOnsetAxes,'ylim',aylim);
 set(get(oOnsetAxes,'xlabel'),'string','CL (ms)');
-set(get(oOnsetAxes,'ylabel'),'string','DPS (mm)');
+set(get(oOnsetAxes,'ylabel'),'string','DP site (mm)');
 set(get(oOnsetAxes,'title'),'string','Onset','fontweight','bold');
 set(oRecoveryAxes,'xlim',axlim);
 set(oRecoveryAxes,'ylim',aylim);
 set(get(oRecoveryAxes,'xlabel'),'string','CL (ms)');
-set(get(oRecoveryAxes,'ylabel'),'string','DPS (mm)');
+set(get(oRecoveryAxes,'ylabel'),'string','DP site (mm)');
 set(get(oRecoveryAxes,'title'),'string','Recovery','fontweight','bold');
 %add panel label
 text(axlim(1)-200,aylim(2)+1.5,'C','parent',oOnsetAxes,'fontsize',12,'fontweight','bold');

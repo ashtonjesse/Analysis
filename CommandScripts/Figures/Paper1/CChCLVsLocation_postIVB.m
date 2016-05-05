@@ -4,7 +4,8 @@
 % close all;
 % clear all;
 
-sSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\ChemoCChCLVsLocation_postIVB.png';
+sPaperSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\CLVsLocation_postIVB.png';
+sThesisSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\CLVsLocation_postIVB.eps';
 % %set up figure
 % dWidth = 9;
 % dHeight = 10;
@@ -69,7 +70,7 @@ aAllInitialLocs = cell(1,numel(aControlFiles));
 aMaxLocs = cell(numel(aControlFiles),1);
 aCombinedLocs = cell(numel(aControlFiles),1);
 %select the axes to plot the dynamic data
-oOnsetAxes = aSubplotPanel(1,2).select();
+oOnsetAxes = aSubplotPanel(2,2,1,2).select();
 
 %define the colour range for plots
 aScatterColor = {...
@@ -187,25 +188,26 @@ hold(oOnsetAxes, 'off');
 set(oOnsetAxes,'xlim',axlim);
 set(oOnsetAxes,'ylim',aylim);
 set(oOnsetAxes,'ytick',[2 4 6 8]);
+set(oOnsetAxes,'yticklabel',[]);
 set(get(oOnsetAxes,'xlabel'),'string','CL (ms)','fontsize',8);
-set(get(oOnsetAxes,'ylabel'),'string','DPS (mm)','fontsize',8);
-set(get(oOnsetAxes,'title'),'string','CCh','fontweight','bold','fontsize',8);
+% set(get(oOnsetAxes,'ylabel'),'string','DP site (mm)','fontsize',8);
+set(get(oOnsetAxes,'title'),'string','Onset','fontweight','bold','fontsize',8);
 % %add panel label
-text(axlim(1)-200,aylim(2)+1.5,'C','parent',oOnsetAxes,'fontsize',12,'fontweight','bold');
-oLegend = legend(oOnsetAxes,'Pre-IVB','Post-IVB','location','northeast');
-set(oLegend,'position', [0.6021    0.8395    0.2933    0.1005]);
-oChildren = get(oLegend,'children');
-oChildren = get(oChildren(1),'children');
-set(oChildren,'markerfacecolor','none','markeredgecolor','r');
-legend(oOnsetAxes,'boxoff');
+text(axlim(1)-100,aylim(2)+1.5,'F','parent',oOnsetAxes,'fontsize',12,'fontweight','bold');
+% oLegend = legend(oOnsetAxes,'Pre-IVB','Post-IVB','location','northeast');
+% set(oLegend,'position', [0.8454    0.8289    0.1650    0.1005]);
+% oChildren = get(oLegend,'children');
+% oChildren = get(oChildren(1),'children');
+% set(oChildren,'markerfacecolor','none','markeredgecolor','r');
+% legend(oOnsetAxes,'boxoff');
 
 %create boxplots panel
-oAxes = aSubplotPanel(2,2).select();
+oAxes = aSubplotPanel(2,2,2,2).select();
 oOverlay = axes('parent',oFigure,'position',get(oAxes,'position'));
 set(oOverlay,'xlim',axlim);
 set(oOverlay,'ylim',aylim);
 axis(oOverlay,'off');
-text(axlim(1)-200,aylim(2)+1.5,'D','parent',oOverlay,'fontsize',12,'fontweight','bold');
+text(axlim(1)-100,aylim(2)+1.5,'G','parent',oOverlay,'fontsize',12,'fontweight','bold');
 %get data
 [aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\CChCLandLocationData.csv');
 aInitialDelCL = aData(:,strcmp(aHeader,'CL2')) - aData(:,strcmp(aHeader,'CL1'));
@@ -228,6 +230,7 @@ aylim2 = get(oAxes,'ylim');
 aylim2 = [-400 600];
 set(oAxes,'ylim',aylim2);
 aytick = get(oAxes,'ytick');
+set(oAxes,'yticklabel',[]);
 set(oAxes,'xlim',[0 8]);
 set(oAxes,'xtick',[1 2 3 4 5 6 7 8]);
 plot(oAxes,[4 4],[aylim2(1) aylim2(2)]-[0 50],'k--');
@@ -239,23 +242,25 @@ xticklabels{axtick==1} = ['Pre-',10,'IVB'];
 xticklabels{axtick==3} = ['Post-',10,'IVB'];
 xticklabels{axtick==5} = ['Pre-',10,'IVB'];
 xticklabels{axtick==7} = ['Post-',10,'IVB'];
-text(axtick,ones(numel(axtick),1).*(aylim2(1)-abs(aytick(1)-aytick(2))/1.2),...
+text(axtick,ones(numel(axtick),1).*(aylim2(1)-abs(aytick(1)-aytick(2))/1.5),...
     xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
     'horizontalalignment','center');
 xticklabels{axtick==1} = sprintf('n=%1.0f',numel(aPreInitialDelCL));
 xticklabels{axtick==3} = sprintf('n=%1.0f',numel(aPostInitialDelCL));
 xticklabels{axtick==5} = sprintf('n=%1.0f',numel(aPreReturnDelCL));
 xticklabels{axtick==7} = sprintf('n=%1.0f',numel(aPostReturnDelCL));
-text(axtick,ones(numel(axtick),1).*(aylim2(1)-2*abs(aytick(1)-aytick(2))/1.2),...
+text(axtick,ones(numel(axtick),1).*(aylim2(1)-2.2*abs(aytick(1)-aytick(2))/1.5),...
     xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
     'horizontalalignment','center');
 set(oAxes,'xticklabel',[]);
 set(oAxes,'xtick',[1 3 5 7]);
-set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
+% set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
 %put titles on 
 text(2,aylim2(2)+50,['First',10,'shift'],'fontsize',8,'fontweight','bold','horizontalalignment','center','parent',oAxes);
 text(6,aylim2(2)+50,['Last',10,'shift'],'fontsize',8,'fontweight','bold','horizontalalignment','center','parent',oAxes);
+
 %print
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-export_fig(sSavePath,'-png','-r300','-nocrop','-painters');
+% export_fig(sPaperSavePath,'-png','-r300','-nocrop','-painters');
+% print(sThesisSavePath,'-dpsc','-r300');

@@ -18,7 +18,7 @@ close all;
 % oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
 % % % read in the pressure entity
 % oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
-
+% 
 %set variables
 dWidth = 16;
 dHeight = 18;
@@ -57,7 +57,7 @@ oSubplotPanel(1,1).de.fontsize = 8;
 oSubplotPanel(1,2,1).margin = [0 0 2 0];
 oSubplotPanel(1,2,2).margin = [0 0 0 0];
 
-%% plot top panel
+% %% plot top panel
 % dlabeloffset = 3.5;
 % 
 % %plot phrenic
@@ -129,11 +129,11 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % oYLim = get(oAxes,'ylim');
 % oPosition(2) = oYLim(1);% + (oYLim(2) - oYLim(1)) / 10
 % set(oYlabel,'position',oPosition);
-% iBeats = [40,49,50,51,52,74];
+% iBeats = [40,49,50,52,74,86];
 % sLabels = {'1','2','3','4','5','6'};
-% dIncremements = [100,-100,100,140,100,180];
-% dLineIncrements = [30,-30,20,30,20,30];
-% dLineAngle = [0,0,-0.4,0,0.4,0,0];
+% dIncremements = [100,-100,100,100,180,100];
+% dLineIncrements = [30,-30,20,20,30,30];
+% dLineAngle = [0,0,0,0,0,0,0];
 % hold(oAxes,'on');
 % for k = 1:numel(iBeats)
 %     iIndex = iBeats(k);% + 1; %mapping between beats in pressure and beats in optical
@@ -183,7 +183,7 @@ oSubplotPanel(1,2,2).margin = [0 0 0 0];
 % for i = 1:yrange
 %     for j = 1:xrange
 %         iCount = iCount + 1;
-%         oActivation = oOptical.PrepareActivationMap(100, 'Contour', 'abhsm', 24, iBeats(iCount), []);
+%         oActivation = oOptical.PrepareActivationMap(100, 'Contour', 'arsps', 24, iBeats(iCount), []);
 %         oAxes = oSubplotPanel(1,2,2,i,j).select();
 %              %plot the schematic
 %         oOverlay = axes('position',get(oAxes,'position'));
@@ -457,9 +457,9 @@ oSubplotPanel(2,3).pack('h',{0.1,0.75});
 oBarAxes = oSubplotPanel(2,3,2).select();
 aCRange = [aCRange(1) aCRange(2)-1];
 aContours = aCRange(1):1:aCRange(2);
-cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance');
+cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance',8);
 aCRange = [aCRange(1) aCRange(2)+1];
-oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'DPS (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
+oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),-2.5,'DP site (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
 set(oXlabel,'fontsize',8);
 dcm_obj = datacursormode(oFigure);
 set(dcm_obj,'UpdateFcn',@ScatterCursorCallback);

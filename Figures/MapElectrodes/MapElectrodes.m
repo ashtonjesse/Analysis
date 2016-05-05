@@ -20,6 +20,7 @@ classdef MapElectrodes < SubFigure
         oRootFigure;
         BasePotentialFile;
         AxesOrder = {'HiddenPlot','SchematicOverLay','PointsPlot','MapPlot','cbarf_vertical_linear'};
+        ImageLine;
     end
     
     events
@@ -68,6 +69,8 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oHideChannelsMenu, 'callback', @(src, event) oHideChannelsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSavePlotLimitsMenu, 'callback', @(src, event) oSavePlotLimitsMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oViewSchematicMenu, 'callback', @(src, event) oViewSchematicMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oLineToolMenu, 'oncallback', @(src, event) oLineToolMenu_OnCallback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oLineToolMenu, 'offcallback', @(src, event) oLineToolMenu_OffCallback(oFigure, src, event));
             %Sets the figure close function. This lets the class know that
             %the figure wants to close and thus the class should cleanup in
             %memory as well
@@ -535,9 +538,9 @@ classdef MapElectrodes < SubFigure
             
             %Check if the potential data needs to be prepared
             if isempty(oFigure.Potential)
-                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,[]);
+                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[]);
             elseif isempty(oFigure.Potential.Beats(oFigure.oParentFigure.SelectedBeat).Fields)
-                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.Potential);
+                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,oFigure.Potential);
             end
             
             %Update the plot type
@@ -556,6 +559,9 @@ classdef MapElectrodes < SubFigure
             %Generate activation map for the current beat
             
             %Check if the activation data needs to be prepared
+            if isempty(oFigure.oParentFigure.SelectedEventID)
+                oFigure.oParentFigure.SelectedEventID = 'arsps';
+            end
             iEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
             if isempty(oFigure.Activation)
                 if iEvent > 1
@@ -616,9 +622,9 @@ classdef MapElectrodes < SubFigure
                     oFigure.RefreshActivationData();
                 case 'Potential2DContour'
                     if isempty(oFigure.Potential)
-                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,[]);
+                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[]);
                     elseif isempty(oFigure.Potential.Beats(oFigure.oParentFigure.SelectedBeat).Fields)
-                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.Potential);
+                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,oFigure.Potential);
                     end
                     oFigure.PlotData(0);
             end
@@ -723,6 +729,37 @@ classdef MapElectrodes < SubFigure
         function oHideChannelsMenu_Callback(oFigure, src, event)
             oEditControl = EditControl(oFigure,'Enter range of beats to apply to:',2);
             addlistener(oEditControl,'ValuesEntered',@(src,event) oFigure.HideChannels(src, event));
+        end
+        
+        % --------------------------------------------------------------------
+        function oLineToolMenu_OnCallback(oFigure,src,event)
+            oFigure.ImageLine = imline;
+            %get children 
+            oChildren = get(oFigure.ImageLine,'children');
+            oPoints = {get(oChildren(2)), get(oChildren(1))};
+            %get nearest electrode to each point
+            iStartElectrode = GetNearestElectrodeID(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile), oPoints{1}.XData, oPoints{1}.YData);
+            iEndElectrode = GetNearestElectrodeID(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile), oPoints{2}.XData, oPoints{2}.YData);
+            %calc conduction time and velocity
+            iAtrialEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
+            iSANEvent = oFigure.GetEventIndexFromID('aghsm');
+            iBeat = oFigure.oParentFigure.SelectedBeat;
+            oBasePotential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile);
+            aTime =  oBasePotential.TimeSeries(...
+                oBasePotential.Beats.Indexes(iBeat,1):...
+                oBasePotential.Beats.Indexes(iBeat,2));
+            dStartTime = aTime(oBasePotential.Electrodes(iStartElectrode).(oBasePotential.Electrodes(iStartElectrode).SignalEvents{iSANEvent}).Index(iBeat));
+            dEndTime = aTime(oBasePotential.Electrodes(iEndElectrode).(oBasePotential.Electrodes(iEndElectrode).SignalEvents{iAtrialEvent}).Index(iBeat));
+            dConductionTime = (dEndTime - dStartTime)*1000;
+            dDistance = sqrt((oPoints{1}.XData - oPoints{2}.XData).^2 + ...
+                (oPoints{1}.YData - oPoints{2}.YData).^2);
+            dVelocity = (dDistance/10)/(dConductionTime/1000);
+            text(oPoints{2}.XData,oPoints{2}.YData,sprintf('%4.2f ms\n%4.2f mm\n%4.2f cm/s',[dConductionTime dDistance dVelocity]),'fontweight','bold');
+            
+        end
+        function oLineToolMenu_OffCallback(oFigure,src,event)
+            delete(oFigure.ImageLine);
+            oFigure.ImageLine = [];
         end
      end
      
@@ -853,14 +890,14 @@ classdef MapElectrodes < SubFigure
              
              dRes = oFigure.oRootFigure.oGuiHandle.oOptical.oExperiment.Optical.SpatialResolution;
              oPlot = oPointsPlot;
-             for n = 1:numel(oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints)
-                 hold(oPlot,'on');
-                 plot(oPlot,oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line1(1:2)*dRes, ...
-                     oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line1(3:4)*dRes, '-k','LineWidth', 2)
-                 plot(oPlot,oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line2(1:2)*dRes, ...
-                     oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line2(3:4)*dRes, '-k','LineWidth', 2)
-                 hold(oPlot,'off');
-             end
+%              for n = 1:numel(oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints)
+%                  hold(oPlot,'on');
+%                  plot(oPlot,oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line1(1:2)*dRes, ...
+%                      oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line1(3:4)*dRes, '-k','LineWidth', 2)
+%                  plot(oPlot,oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line2(1:2)*dRes, ...
+%                      oFigure.oRootFigure.oGuiHandle.oOptical.ReferencePoints(n).Line2(3:4)*dRes, '-k','LineWidth', 2)
+%                  hold(oPlot,'off');
+%              end
              
              %Set the axis limits
              axis(oMapPlot, 'equal');
@@ -978,7 +1015,7 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
              aContourRange = oFigure.ColourBarLevels;
-             aContourRange = 0:1.2:24;
+             aContourRange = 0:1.2:8.4;
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContourRange);
@@ -1015,23 +1052,23 @@ classdef MapElectrodes < SubFigure
              oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
-                     'MarkerSize',8,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
+                     'MarkerSize',1,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
              end
-             if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Origin')
-                 %will have to change this if I have multiple signal
-                 %events...
+%              if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Origin')
+%                  %will have to change this if I have multiple signal
+%                  %events...
                  aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
-                     oElectrodes,oFigure.oParentFigure.SelectedEventID,'Origin');
+                     oElectrodes,'aghsm','Origin');
                  aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
                  if ~isempty(aCoords)
                      scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
-                         'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
+                         'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
                  end
                  %              else
                  %                  [C iFirstActivationChannel] = min(oActivation.Beats(iBeat).FullActivationTimes);
                  %                  plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
                  %                      'MarkerSize',8,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
-             end
+%              end
              if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Exit')
                  %will have to change this if I have multiple signal
                  %events...
@@ -1039,29 +1076,29 @@ classdef MapElectrodes < SubFigure
                      oElectrodes,oFigure.oParentFigure.SelectedEventID,'Exit');
                  aCoords = cell2mat({oElectrodes(aExitData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
                  if ~isempty(aCoords)
-                     scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
-                         'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
+%                      scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
+%                          'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
                  end
              end
-             if isfield(oElectrodes(1),'AxisPoint')
-                 aAxisData = cell2mat({oElectrodes(:).AxisPoint});
-                 oAxesElectrodes = oElectrodes(aAxisData);
-                 if ~isempty(oAxesElectrodes)
-                     aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
-                     scatter(oMapAxes,aAxesCoords(1,:),aAxesCoords(2,:), ...
-                         'sizedata',122,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
-                     if numel(oAxesElectrodes) == 2
-                         aAxesLine = line(aAxesCoords(1,:),aAxesCoords(2,:),'linewidth',2,'color','k');
-                         z = [1 2 3 4 5 6];
-                         slabels = {'1','2','3','4','5','6'};
-                         scatter(oMapAxes,((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2),...
-                             ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2),'Marker','+',...
-                             'sizedata',144,'MarkerEdgeColor','w');
-                         text(((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2)+0.1,...
-                             ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2)+0.1,slabels,'fontweight','bold','color','w');
-                     end
-                 end
-             end
+%              if isfield(oElectrodes(1),'AxisPoint')
+%                  aAxisData = cell2mat({oElectrodes(:).AxisPoint});
+%                  oAxesElectrodes = oElectrodes(aAxisData);
+%                  if ~isempty(oAxesElectrodes)
+%                      aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
+%                      scatter(oMapAxes,aAxesCoords(1,:),aAxesCoords(2,:), ...
+%                          'sizedata',122,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+%                      if numel(oAxesElectrodes) == 2
+%                          aAxesLine = line(aAxesCoords(1,:),aAxesCoords(2,:),'linewidth',2,'color','k');
+%                          z = [1 2 3 4 5 6];
+%                          slabels = {'1','2','3','4','5','6'};
+%                          scatter(oMapAxes,((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2),...
+%                              ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2),'Marker','+',...
+%                              'sizedata',144,'MarkerEdgeColor','w');
+%                          text(((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2)+0.1,...
+%                              ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2)+0.1,slabels,'fontweight','bold','color','w');
+%                      end
+%                  end
+%              end
              hold(oMapAxes,'off');
              
              %              set(oMapAxes,'fontsize',8);
@@ -1207,13 +1244,13 @@ classdef MapElectrodes < SubFigure
                                  ibmax = i;
                              end
                          end
-%                          oFigure.cbarmax = round(oFigure.cbarmax); 
-%                          oFigure.cbarmin = -20; %arbitrary
+                         oFigure.cbarmax = round(oFigure.cbarmax); 
+                         oFigure.cbarmin = -20; %arbitrary
                      end
                      %Assuming the potential field has been normalised.
                      oFigure.cbarmax = 1;
                      oFigure.cbarmin = -0.1;
-                     Difference = 0.05;
+                     Difference = 0.02;
 %                      Difference = round((oFigure.cbarmax - oFigure.cbarmin)/40);
                      aContourRange = oFigure.cbarmin:Difference:oFigure.cbarmax;
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
@@ -1319,8 +1356,11 @@ classdef MapElectrodes < SubFigure
          end
          
          function PlotSchematic(oFigure, oAxes)
-             oImage = imshow(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oExperiment.(oFigure.BasePotentialFile(2:end)).SchematicFilePath...
-                 ,'Parent', oAxes, 'Border', 'tight');
+             %use schematic with guide
+             %              sFilePath = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oExperiment.(oFigure.BasePotentialFile(2:end)).SchematicFilePath;
+             sGuideFile = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140703\20140703Schematic_noholes.bmp';
+%              sGuideFile = strrep(sFilePath, '.bmp', '_guide.bmp');
+             oImage = imshow(sGuideFile,'Parent', oAxes, 'Border', 'tight');
              %make it transparent in the right places
              aCData = get(oImage,'cdata');
              aBlueData = aCData(:,:,3);
@@ -1355,5 +1395,7 @@ classdef MapElectrodes < SubFigure
              aIndices = ismember(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).SignalEvents,sEventID);
              iIndex = find(aIndices);
          end
+         
+
      end
 end

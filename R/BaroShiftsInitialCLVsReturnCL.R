@@ -3,8 +3,8 @@ library("s20x")
 library("nortest")
 
 barodata <- read.table("G:/PhD/Experiments/Auckland/InSituPrep/Statistics/BaroCLandLocationData.csv", sep=",", header=TRUE)
-barodelCLPreIVB <- t(barodata[which(barodata$IVB==1),"CL2"]-barodata[which(barodata$IVB==1),"CL1"])
-barodelCLPostIVB <- t(barodata[which(barodata$IVB==2),"CL2"]-barodata[which(barodata$IVB==2),"CL1"])
+barodelCLPreIVB <- t(barodata[which(barodata$IVB==0),"CL2"]-barodata[which(barodata$IVB==0),"CL1"])
+barodelCLPostIVB <- t(barodata[which(barodata$IVB==1),"CL2"]-barodata[which(barodata$IVB==1),"CL1"])
 
 #check normality
 shapiro.test(barodelCLPreIVB)
@@ -14,8 +14,8 @@ normcheck(barodelCLPreIVB)
 t.test(barodelCLPreIVB)
 
 returnbarodata <- read.table("G:/PhD/Experiments/Auckland/InSituPrep/Statistics/BaroCLandLocationDataReturn.csv", sep=",", header=TRUE)
-returnbarodelCLPreIVB <- t(returnbarodata[which(returnbarodata$IVB==1),"CL4"]-returnbarodata[which(returnbarodata$IVB==1),"CL3"])
-returnbarodelCLPostIVB <- t(returnbarodata[which(returnbarodata$IVB==2),"CL4"]-returnbarodata[which(returnbarodata$IVB==2),"CL3"])
+returnbarodelCLPreIVB <- t(returnbarodata[which(returnbarodata$IVB==0),"CL4"]-returnbarodata[which(returnbarodata$IVB==0),"CL3"])
+returnbarodelCLPostIVB <- t(returnbarodata[which(returnbarodata$IVB==1),"CL4"]-returnbarodata[which(returnbarodata$IVB==1),"CL3"])
 
 #check normality
 shapiro.test(returnbarodelCLPreIVB)

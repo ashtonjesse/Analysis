@@ -1,19 +1,17 @@
 close all;
-clear all;
-% % % open all the files 
-aFiles = {...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh001\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh002\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh004\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh005\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh006\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh007\Pressure.mat' ...
-    };
-aPressureData = cell(1,numel(aFiles));
-for i = 1:numel(aFiles)
-    aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
-    fprintf('Got file %s\n',char(aFiles{i}));
-end
+% % clear all;
+% % % % % open all the files 
+% aFiles = {...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821CCh001\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821CCh002\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821CCh003\Pressure.mat', ...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821CCh004\Pressure.mat' ...
+%     };
+% aPressureData = cell(1,numel(aFiles));
+% for i = 1:numel(aFiles)
+%     aPressureData{i} = GetPressureFromMATFile(Pressure,char(aFiles{i}),'Optical');
+%     fprintf('Got file %s\n',char(aFiles{i}));
+% end
 
 % %plot all the HR traces
 for j = 1:numel(aFiles)
@@ -25,7 +23,10 @@ for j = 1:numel(aFiles)
     oAxes = cell(1,2);
     
     aRates = oPressure.oPhrenic.Electrodes.Processed.BeatRates';
-    aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end);
+    aTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes;
+    if numel(aTimes) ~= numel(aRates)
+        aTimes = aTimes(2:end);
+    end
     [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,2,500,5);
     
     %get pressure data and filter
@@ -47,8 +48,9 @@ for j = 1:numel(aFiles)
      %plot the ranges
     hold(oFirstAxes(1),'on');
     hold(oSecondAxes(1),'on');
-    sRanges = {{'HeartRate','Decrease'},{'HeartRate','Plateau'}};
+    sRanges = {{'HeartRate','Decrease'},'Baseline'};
     oColors = {'ro','b+','gx','mo'};
+    iRecording = 1;
     for m = 1:numel(sRanges)
         if iscell(sRanges{m})
             if oPressure.HeartRate.Decrease.Range(1) > 0
@@ -64,6 +66,19 @@ for j = 1:numel(aFiles)
                 plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),...
                     aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
             end
+        else
+            aTimePoints = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
+                oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(2:end) < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
+            if size(aTimePoints,1) > size(aTimePoints,2)
+                aTimePoints = aTimePoints';
+            end
+            aBeats = oPressure.oPhrenic.Electrodes.Processed.BeatRates(aTimePoints);
+            aTimePoints = [false aTimePoints];
+            aBeatTimes = oPressure.oPhrenic.Electrodes.Processed.BeatRateTimes(aTimePoints);
+            plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
+            plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
+                aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
+
         end
     end
     hold(oFirstAxes(1),'off');

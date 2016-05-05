@@ -21,8 +21,9 @@ close all;
 
 dWidth = 12;
 dHeight = 12;
-sSavePath1 = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\OpticalMappingProcess.eps';
-sSavePath2 = 'D:\Users\jash042\Documents\PhD\Publications\2015\Paper1\Figures\OpticalMappingProcess.bmp';
+% sSavePath1 = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\OpticalMappingProcess.eps';
+% sSavePath2 = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\OpticalMappingProcess.bmp';
+sFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\OpticalMappingProcess_#';
 
 oFigure = figure();
 
@@ -39,7 +40,7 @@ set(oFigure,'Resize','off');
 oSubplotPanel = panel(oFigure,'no-manage-font');
 oSubplotPanel.pack('v',{0.44 0.44 0.03});
 oSubplotPanel(1).pack('h',{0.5 0.5});
-oSubplotPanel(2).pack('h',{0.5 0.5});
+oSubplotPanel(2).pack('h',3);
 oSubplotPanel.margin = [1 1 1 1]; %left bottom right top
 oSubplotPanel(1).margin = [0 0 0 0];
 oSubplotPanel(2).margin = [1 1 1 10];
@@ -48,91 +49,126 @@ oSubplotPanel(2).margin = [1 1 1 10];
 % oSubplotPanel(1,2,2).margin = [1 0 1 1];
 movegui(oFigure,'center');
 
-%plot schematic
-oImageAxes = oSubplotPanel(1,1).select();
-imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140722\ImageForFigure.png','Parent', oImageAxes, 'Border', 'tight');
-set(oImageAxes,'box','off','color','none');
-axis(oImageAxes,'tight');
-axis(oImageAxes,'off');
-
-
-%% plot optical action potentials
-oAxes = oSubplotPanel(1,2).select();
-%plot electrode 1
-% [oElectrode1, iIndex] = GetElectrodeByName(oOptical,'25-10');
+% %% plot schematic
+% oImageAxes = oSubplotPanel(1,1).select();
+% imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140722\ImageForFigure.png','Parent', oImageAxes, 'Border', 'tight');
+% set(oImageAxes,'box','off','color','none');
+% axis(oImageAxes,'tight');
+% axis(oImageAxes,'off');
+% 
+% 
+% %% plot optical action potentials
+% oAxes = oSubplotPanel(1,2).select();
+% 
 %plot beat 10
 iBeat = 10;
 iPrefix = 10;
 iSuffix = 40;
 XLim = [2.15 2.28];
 YLim = [-50 600];
-aData = oElectrode1.Processed.Data(oOptical.Beats.Indexes(iBeat,1)-iPrefix:oOptical.Beats.Indexes(iBeat,2)+iSuffix);
-aTime = oOptical.TimeSeries(oOptical.Beats.Indexes(iBeat,1)-iPrefix:oOptical.Beats.Indexes(iBeat,2)+iSuffix);
-plot(oAxes,aTime,aData,'b-','linewidth',1.5);
-hold(oAxes,'on');
-aBeatTime = oOptical.TimeSeries(oOptical.Beats.Indexes(iBeat,1):oOptical.Beats.Indexes(iBeat,2));
-aBeatData = oElectrode1.Processed.Data(oOptical.Beats.Indexes(iBeat,1):oOptical.Beats.Indexes(iBeat,2));
-%plot lines for activation
-oLine = plot(oAxes,[aTime(1) aTime(end)],[oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1)) ...
-    oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1))],'b--');
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-oLine = plot(oAxes,[aTime(1) aTime(end)],[oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1)) ...
-    oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1))],'b--');
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%plot activation time
-oLine = plot(oAxes,[aBeatTime(oElectrode1.aghsm.Index(iBeat)) aBeatTime(oElectrode1.aghsm.Index(iBeat))],...
-    [YLim(1)+40 oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1))],'b--');
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-oLine = scatter(oAxes,aBeatTime(oElectrode1.aghsm.Index(iBeat)), aBeatData(oElectrode1.aghsm.Index(iBeat)),36,'b','filled');
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%label activation time
-text(aBeatTime(oElectrode1.aghsm.Index(iBeat)-2), aBeatData(oElectrode1.aghsm.Index(iBeat)),'AP50%',...
-    'horizontalalignment','right','parent',oAxes,'color','b');
-text(XLim(1)+0.08,aBeatData(oElectrode1.aghsm.Index(iBeat)),'SAN','color','b','parent',oAxes,'horizontalalignment','center','rotation',90);
-
-%plot electrode 2
+% 
+% %plot electrode 2
 % [oElectrode2, iIndex] = GetElectrodeByName(oOptical,'29-16');
-aData = oElectrode2.Processed.Data(oOptical.Beats.Indexes(iBeat,1)-iPrefix:oOptical.Beats.Indexes(iBeat,2)+iSuffix);
-plot(oAxes,aTime,aData,'r-','linewidth',1.5);
-aBeatData = oElectrode2.Processed.Data(oOptical.Beats.Indexes(iBeat,1):oOptical.Beats.Indexes(iBeat,2));
-%plot lines for activation
-oLine = plot(oAxes,[aTime(1) aTime(end)],[oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5) ...
-    oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5)],'r--','linewidth',1);
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%plot activation time
-oLine = plot(oAxes,[aBeatTime(oElectrode2.abhsm.Index(iBeat)) aBeatTime(oElectrode2.abhsm.Index(iBeat))],...
-    [YLim(1)+40 oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5)],'r--');
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-oLine = scatter(oAxes,aBeatTime(oElectrode2.abhsm.Index(iBeat)), aBeatData(oElectrode2.abhsm.Index(iBeat)),36,'r','filled');
-set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-%label activation time
-text(aBeatTime(oElectrode2.abhsm.Index(iBeat)-2), aBeatData(oElectrode2.abhsm.Index(iBeat)),'AP50%',...
-    'horizontalalignment','right','parent',oAxes,'color','r');
-text([XLim(1)+0.105],aBeatData(oElectrode2.abhsm.Index(iBeat)),'Atrial','color','r','parent',oAxes,'horizontalalignment','center','rotation',90);
-%create legend
-oLegend = legend(oAxes,'show',{'1-SAN','2-CT'});
-legend('boxoff');
-set(oLegend,'position',[0.5019    0.8301    0.2115    0.0925]);
-%create time scale
-oLine = plot(oAxes,[aBeatTime(oElectrode1.aghsm.Index(iBeat)) aBeatTime(oElectrode1.aghsm.Index(iBeat))+0.05],...
-    [YLim(1)+30 YLim(1)+30],'k-','linewidth',2);
-text(aBeatTime(oElectrode1.aghsm.Index(iBeat))+0.025,YLim(1),'50 ms','parent',oAxes,'horizontalalignment','center');
-hold(oAxes,'off');
-%set axes limits
-xlim(oAxes,XLim);
-ylim(oAxes,YLim);
-set(oAxes,'box','off','color','none');
-axis(oAxes,'off');
-
-%annotate with arrows
-[figx figy] = dsxy2figxy(oAxes, [XLim(1)+0.075 ; XLim(1)+0.075], ...
-        [oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1)) ;
-    oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1))]);
-annotation('doublearrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4,'color','b');
-[figx figy] = dsxy2figxy(oAxes, [XLim(1)+0.1 ; XLim(1)+0.1], ...
-        [oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1)) ;
-    oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5)]);
-annotation('doublearrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4,'color','r');
+% aData = oElectrode2.Processed.Data(oOptical.Beats.Indexes(iBeat,1)-iPrefix:oOptical.Beats.Indexes(iBeat,2)+iSuffix);
+% aTime = oOptical.TimeSeries(oOptical.Beats.Indexes(iBeat,1)-iPrefix:oOptical.Beats.Indexes(iBeat,2)+iSuffix);
+% plot(oAxes,aTime,aData,'r-','linewidth',1.5);
+% hold(oAxes,'on');
+% aBeatTime = oOptical.TimeSeries(oOptical.Beats.Indexes(iBeat,1):oOptical.Beats.Indexes(iBeat,2));
+% aBeatData = oElectrode2.Processed.Data(oOptical.Beats.Indexes(iBeat,1):oOptical.Beats.Indexes(iBeat,2));
+% %plot lines for activation
+% oLine = plot(oAxes,[aTime(1) aTime(end)],[oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5) ...
+%     oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5)],'r--','linewidth',1);
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% %plot activation time
+% oLine = plot(oAxes,[aBeatTime(oElectrode2.abhsm.Index(iBeat)) aBeatTime(oElectrode2.abhsm.Index(iBeat))],...
+%     [YLim(1)+40 oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5)],'r--');
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% oLine = scatter(oAxes,aBeatTime(oElectrode2.abhsm.Index(iBeat)), aBeatData(oElectrode2.abhsm.Index(iBeat)),36,'r','filled');
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% %label activation time
+% text(aBeatTime(oElectrode2.abhsm.Index(iBeat)-2), aBeatData(oElectrode2.abhsm.Index(iBeat)),'AP50%',...
+%     'horizontalalignment','right','parent',oAxes,'color','r');
+% text([XLim(1)+0.105],aBeatData(oElectrode2.abhsm.Index(iBeat)),'Atrial','color','r','parent',oAxes,'horizontalalignment','center','rotation',90);
+% 
+% %plot electrode 1
+% [oElectrode1, iIndex] = GetElectrodeByName(oOptical,'25-10');
+% aData = oElectrode1.Processed.Data(oOptical.Beats.Indexes(iBeat,1)-iPrefix:oOptical.Beats.Indexes(iBeat,2)+iSuffix);
+% plot(oAxes,aTime,aData,'b-','linewidth',1.5);
+% aBeatData = oElectrode1.Processed.Data(oOptical.Beats.Indexes(iBeat,1):oOptical.Beats.Indexes(iBeat,2));
+% %plot lines for activation
+% oLine = plot(oAxes,[aTime(1) aTime(end)],[oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1)) ...
+%     oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1))],'b--');
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% oLine = plot(oAxes,[aTime(1) aTime(end)],[oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1)) ...
+%     oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1))],'b--');
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% %plot activation time
+% oLine = plot(oAxes,[aBeatTime(oElectrode1.aghsm.Index(iBeat)) aBeatTime(oElectrode1.aghsm.Index(iBeat))],...
+%     [YLim(1)+40 oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1))],'b--');
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% oLine = scatter(oAxes,aBeatTime(oElectrode1.aghsm.Index(iBeat)), aBeatData(oElectrode1.aghsm.Index(iBeat)),36,'b','filled');
+% set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+% %label activation time
+% text(aBeatTime(oElectrode1.aghsm.Index(iBeat)-2), aBeatData(oElectrode1.aghsm.Index(iBeat)),'AP50%',...
+%     'horizontalalignment','right','parent',oAxes,'color','b');
+% text(XLim(1)+0.08,aBeatData(oElectrode1.aghsm.Index(iBeat)),'SAN','color','b','parent',oAxes,'horizontalalignment','center','rotation',90);
+% 
+% 
+% %create legend
+% oLegend = legend(oAxes,'show',{'1-SAN','2-CT'});
+% legend('boxoff');
+% set(oLegend,'position',[0.5019    0.8301    0.2115    0.0925]);
+% oChildren = get(oLegend,'children');
+% set(oChildren(5),'color','b');
+% set(oChildren(2),'color','r');
+% %create time scale
+% oLine = plot(oAxes,[aBeatTime(oElectrode1.aghsm.Index(iBeat)) aBeatTime(oElectrode1.aghsm.Index(iBeat))+0.05],...
+%     [YLim(1)+30 YLim(1)+30],'k-','linewidth',2);
+% text(aBeatTime(oElectrode1.aghsm.Index(iBeat))+0.025,YLim(1),'50 ms','parent',oAxes,'horizontalalignment','center');
+% hold(oAxes,'off');
+% %set axes limits
+% xlim(oAxes,XLim);
+% ylim(oAxes,YLim);
+% set(oAxes,'box','off','color','none');
+% axis(oAxes,'off');
+% 
+% %annotate with arrows
+% [figx figy] = dsxy2figxy(oAxes, [XLim(1)+0.075 ; XLim(1)+0.075], ...
+%         [oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1)) ;
+%     oElectrode1.Processed.Data(oElectrode1.aghsm.RangeEnd(iBeat,1))]);
+% annotation('doublearrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4,'color','b');
+% [figx figy] = dsxy2figxy(oAxes, [XLim(1)+0.1 ; XLim(1)+0.1], ...
+%         [oElectrode1.Processed.Data(oElectrode1.aghsm.RangeStart(iBeat,1)) ;
+%     oElectrode2.Processed.Data(oElectrode2.abhsm.RangeEnd(iBeat,1)-5)]);
+% annotation('doublearrow',figx,figy,'headstyle','plain','headwidth',4,'headlength',4,'color','r');
+% 
+% %% create labels
+% annotation('textbox',[0,0.9,0.1,0.1],'string','A','linestyle','none','fontweight','normal','color','k','fontsize',14);
+% annotation('textbox',[0.5,0.9,0.1,0.1],'string','B','linestyle','none','fontweight','normal','color','k','fontsize',14);
+% annotation('textbox',[0,0.48,0.1,0.1],'string','C','linestyle','none','fontweight','normal','color','k','fontsize',14);
+% annotation('textbox',[0.32,0.48,0.1,0.1],'string','D','linestyle','none','fontweight','normal','color','k','fontsize',14);
+% annotation('textbox',[0.65,0.48,0.1,0.1],'string','E','linestyle','none','fontweight','normal','color','k','fontsize',14);
+% 
+% %put points on image as well
+% aXlim = oOptical.oExperiment.Optical.AxisOffsets(1,1:2);
+% aYlim = oOptical.oExperiment.Optical.AxisOffsets(2,1:2);
+% oPointAxes = axes('position',get(oImageAxes,'position'));
+% scatter(oPointAxes, oElectrode1.Coords(1,:), oElectrode1.Coords(2,:), ...
+%     'sizedata',49,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','none');
+% text(oElectrode1.Coords(1,:), oElectrode1.Coords(2,:),'1','color','w','parent',oPointAxes,'fontsize',6,'horizontalalignment','center');
+% hold(oPointAxes,'on');
+% scatter(oPointAxes, oElectrode2.Coords(1,:), oElectrode2.Coords(2,:), ...
+%     'sizedata',49,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','none');
+% text(oElectrode2.Coords(1,:), oElectrode2.Coords(2,:),'2','color','w','parent',oPointAxes,'fontsize',6,'horizontalalignment','center');
+% hold(oPointAxes,'off');
+% axis(oPointAxes,'equal');
+% set(oPointAxes,'xlim',[aXlim(1)-0.2, aXlim(2)-0.2],'ylim',[aYlim(1)+0.3, aYlim(2)+0.3],'box','off','color','none');
+% axis(oPointAxes,'off');
+% 
+% %print this
+% set(oFigure,'resizefcn',[]);
+% set(oFigure,'color','none');
+% export_fig(strrep(sFileSavePath, '#', '1'),'-png','-r300','-nocrop','-transparent','-painters');%
 
 %% Plot SAN activation 
 % %plot maps
@@ -171,7 +207,7 @@ hold(oPointAxes,'on');
 scatter(oPointAxes, oElectrode2.Coords(1,:), oElectrode2.Coords(2,:), ...
     'sizedata',49,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','none');
 text(oElectrode2.Coords(1,:), oElectrode2.Coords(2,:),'2','color','k','parent',oPointAxes,'fontsize',6,'horizontalalignment','center');
-%plot SVC-IVC axis
+% plot SVC-IVC axis
 aAxisData = cell2mat({oOptical.Electrodes(:).AxisPoint});
 oAxesElectrodes = oOptical.Electrodes(aAxisData);
 aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
@@ -192,10 +228,17 @@ axis(oAxes,'off');
 axis(oPointAxes,'equal');
 set(oPointAxes,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
 axis(oPointAxes,'off');
-[figx figy] = dsxy2figxy(oPointAxes, [aAxesCoords(1,1)+0.4;aAxesCoords(1,1)-0.05], ...
-    [aAxesCoords(2,1)-1;aAxesCoords(2,1)-0.21]);
-annotation('textarrow',figx,figy,'string','SVC-IVC axis (mm)','headstyle','plain','headwidth',4,'headlength',4,'color','k','horizontalalignment','right');
-%% Plot atrial activation 
+set(get(oAxes,'title'),'string',['SAN component',10,'AP50%'],'fontweight','bold');
+
+% [figx figy] = dsxy2figxy(oPointAxes, [aAxesCoords(1,1)-0.5;aAxesCoords(1,1)-0.05], ...
+%     [aAxesCoords(2,1)-1.5;aAxesCoords(2,1)+0.2]);
+% annotation('textarrow',figx,figy,'string',['SVC-IVC',10,'axis (mm)'],'headstyle','plain','headwidth',4,'headlength',4,'color','k','horizontalalignment','right');
+% % [figx figy] = dsxy2figxy(oPointAxes, [aAxesCoords(1,1)+0.4;aAxesCoords(1,1)-0.05], ...
+% %     [aAxesCoords(2,1)-1;aAxesCoords(2,1)-0.11]);
+% % annotation('textarrow',figx,figy,'string','SVC-IVC axis (mm)','headstyle','plain','headwidth',4,'headlength',4,'color','k','horizontalalignment','right');
+
+
+% Plot atrial activation 
 % %plot maps
 %plot the schematic
 aContourRange = [0 10.8];
@@ -240,20 +283,54 @@ axis(oAxes,'off');
 axis(oPointAxes,'equal');
 set(oPointAxes,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
 axis(oPointAxes,'off');
+set(get(oAxes,'title'),'string',['Atrial component',10,'AP50%'],'fontweight','bold');
 
-%put points on image as well
-oPointAxes = axes('position',get(oImageAxes,'position'));
+%% Plot dVdtmax
+% %plot maps
+%plot the schematic
+aContourRange = [0 10.8];
+aContours = aContourRange(1):1.2:aContourRange(2);
+%get the interpolation points
+aXlim = oOptical.oExperiment.Optical.AxisOffsets(1,1:2);
+aYlim = oOptical.oExperiment.Optical.AxisOffsets(2,1:2);
+oActivation = oOptical.PrepareActivationMap(100, 'Contour', 'arsps', 24, iBeat, []);
+oAxes = oSubplotPanel(2,3).select();
+oOverlay = axes('position',get(oAxes,'position'));
+oPointAxes = axes('position',get(oAxes,'position'));
+%plot the schematic
+oImage = imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140722\SchematicForFigure.bmp','Parent', oOverlay, 'Border', 'tight');
+%make it transparent in the right places
+aCData = get(oImage,'cdata');
+aBlueData = aCData(:,:,3);
+aAlphaData = aCData(:,:,3);
+aAlphaData(aBlueData < 100) = 1;
+aAlphaData(aBlueData > 100) = 1;
+aAlphaData(aBlueData == 100) = 0;
+aAlphaData = double(aAlphaData);
+set(oImage,'alphadata',aAlphaData);
+set(oOverlay,'box','off','color','none');
+axis(oOverlay,'tight');
+axis(oOverlay,'off');
+[C, oContour] = contourf(oAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContours);
+caxis(oAxes,aContourRange);
+colormap(oAxes, colormap(flipud(colormap(jet))));
+%plot points
 scatter(oPointAxes, oElectrode1.Coords(1,:), oElectrode1.Coords(2,:), ...
-    'sizedata',49,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','none');
-text(oElectrode1.Coords(1,:), oElectrode1.Coords(2,:),'1','color','w','parent',oPointAxes,'fontsize',6,'horizontalalignment','center');
+    'sizedata',49,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','none');
+text(oElectrode1.Coords(1,:), oElectrode1.Coords(2,:),'1','color','k','parent',oPointAxes,'fontsize',6,'horizontalalignment','center');
 hold(oPointAxes,'on');
 scatter(oPointAxes, oElectrode2.Coords(1,:), oElectrode2.Coords(2,:), ...
     'sizedata',49,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','none');
 text(oElectrode2.Coords(1,:), oElectrode2.Coords(2,:),'2','color','w','parent',oPointAxes,'fontsize',6,'horizontalalignment','center');
 hold(oPointAxes,'off');
+
+axis(oAxes,'equal');
+set(oAxes,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
+axis(oAxes,'off');
 axis(oPointAxes,'equal');
-set(oPointAxes,'xlim',[aXlim(1)-0.2, aXlim(2)-0.2],'ylim',[aYlim(1)+0.3, aYlim(2)+0.3],'box','off','color','none');
+set(oPointAxes,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
 axis(oPointAxes,'off');
+set(get(oAxes,'title'),'string',['Atrial component',10,'dF/dt max'],'fontweight','bold');
 
 %% create scale
 oSubplotPanel(3).pack('h',{0.1,0.8});
@@ -265,10 +342,12 @@ aCRange = [0 12];
 oXlabel = text(((aCRange(2)-aCRange(1))/2)+(aCRange(1)),-2.2,'Activation Time (ms)','parent',oAxes,'fontunits','points','horizontalalignment','center');
 set(oXlabel,'fontsize',10);
 
-%% create labels
-annotation('textbox',[0.04,0.9,0.1,0.1],'string','A.','linestyle','none','fontweight','normal','color','w','fontsize',14);
-annotation('textbox',[0.5,0.9,0.1,0.1],'string','B.','linestyle','none','fontweight','normal','color','k','fontsize',14);
-annotation('textbox',[0.04,0.48,0.1,0.1],'string','C.   SAN activation','linestyle','none','fontweight','normal','color','k','fontsize',14);
-annotation('textbox',[0.5,0.48,0.1,0.1],'string','D.  Atrial activation','linestyle','none','fontweight','normal','color','k','fontsize',14);
-print(oFigure,'-dpsc','-r600',sSavePath1)
-print(oFigure,'-dbmp','-r300',sSavePath2)
+set(oFigure,'resizefcn',[]);
+% % print(oFigure,'-dpsc','-r600',sFileSavePath)
+% % printgif(oFigure,'-r600',strrep(sFileSavePath, '#', '2'));
+% 
+export_fig(strrep(sFileSavePath, '#', '2'),'-png','-r300','-nocrop');%
+% % %crop the images
+sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s.png',strrep(sFileSavePath, '#', '2'))}, ...
+    {sprintf(' %s.png',strrep(sFileSavePath, '#', '1'))}, {' -gravity center -composite'},{sprintf(' %s.png', strrep(sFileSavePath, '_#', ''))});
+sStatus = dos(char(sChopString{1}));

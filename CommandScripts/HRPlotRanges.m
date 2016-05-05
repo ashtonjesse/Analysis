@@ -1,13 +1,12 @@
 close all;
-% clear all;
-% % % open all the files 
-% aFiles = {'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001\Pressure.mat', ...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro002\Pressure.mat', ...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro003\Pressure.mat', ...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro004\Pressure.mat', ...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro005\Pressure.mat', ...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro006\Pressure.mat' ...
-%     };
+clear all;
+% % open all the files 
+aFiles = {...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro001\Pressure.mat' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro002\Pressure.mat' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro003\Pressure.mat'...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro004\Pressure.mat'...
+    };
 
 
 
@@ -28,15 +27,15 @@ for j = 1:numel(aFiles)
     
     switch (j)
         case {1}
-            iRecording =2;
+            iRecording =1;
         otherwise
             iRecording = 1;
     end
     
-        aRates = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates';
-        aTimes = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end);
-%     aRates = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates;
-%     aTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes);
+%         aRates = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates';
+%         aTimes = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end);
+    aRates = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates;
+    aTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes);
     
     [aRateCurvature xbar] = EstimateDerivative(aRates,aTimes,2,500,5);
     [aRateSlope xbar] = EstimateDerivative(aRates,aTimes,1,500,5);
@@ -64,49 +63,49 @@ for j = 1:numel(aFiles)
     [oSecondAxes H1 H2] = plotyy(aPressureTime, aPressureProcessedData,aPressureTime,aPressureCurvature);
     hold(oSecondAxes(1),'on');
      %plot the ranges
-    sRanges = {'Baseline','Increase','Plateau',{'HeartRate','Plateau'},{'HeartRate','Increase'}};
+    sRanges = {'Baseline','Increase','Plateau',{'HeartRate','Decrease'},{'HeartRate','Increase'}};
     oColors = {'ro','b+','gx','mo','b+'};
     for m = 1:numel(sRanges)
         if iscell(sRanges{m})
             if oPressure.HeartRate.Plateau.Range(1) > 0
-                aTimePoints = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) > aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1)) & ...
-                    oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) < aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2));
-                aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
-                aTimePoints = [false aTimePoints];
-                aBeatTimes = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(aTimePoints);
-                plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
-                plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),...
-                    aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
-                %                 %for 20140826
-                %                 aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1)) & ...
-                %                     oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) < aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2));
-                %                 if size(aTimePoints,1) > size(aTimePoints,2)
-                %                     aTimePoints = aTimePoints';
-                %                 end
-                %                 aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
-                %                 aBeatTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes(aTimePoints));
-                %                 plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
-                %                 plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),...
-                %                     aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
+%                 aTimePoints = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) > aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1)) & ...
+%                     oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) < aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2));
+%                 aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
+%                 aTimePoints = [false aTimePoints];
+%                 aBeatTimes = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(aTimePoints);
+%                 plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
+%                 plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),...
+%                     aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
+                                %for 20140826
+                                aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1)) & ...
+                                    oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) < aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2));
+                                if size(aTimePoints,1) > size(aTimePoints,2)
+                                    aTimePoints = aTimePoints';
+                                end
+                                aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
+                                aBeatTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes(aTimePoints));
+                                plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
+                                plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),...
+                                    aPressureProcessedData(oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(1):oPressure.(char(sRanges{m}{1})).(char(sRanges{m}{2})).Range(2)),char(oColors{m}));
             end
         else
             
-            aTimePoints = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
-                oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
-            aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
-            aTimePoints = [false aTimePoints];
-            aBeatTimes = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(aTimePoints);
-            plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
-            plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
-                aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
+%             aTimePoints = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
+%                 oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(2:end) < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
+%             aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
+%             aTimePoints = [false aTimePoints];
+%             aBeatTimes = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateTimes(aTimePoints);
+%             plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
+%             plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
+%                 aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
             %             % for 20140826
-            %             aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
-            %                 oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes)  < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
-            %             aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
-            %             aBeatTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes(aTimePoints));
-            %             plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
-            %             plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
-            %                 aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
+                        aTimePoints = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes) > aPressureTime(oPressure.(char(sRanges{m})).Range(1)) & ...
+                            oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes)  < aPressureTime(oPressure.(char(sRanges{m})).Range(2));
+                        aBeats = oPressure.oRecording(iRecording).Electrodes.Processed.BeatRates(aTimePoints);
+                        aBeatTimes = oPressure.oRecording(iRecording).TimeSeries(oPressure.oRecording(iRecording).Electrodes.Processed.BeatRateIndexes(aTimePoints));
+                        plot(oAxes{1},aBeatTimes,aBeats,char(oColors{m}));
+                        plot(oAxes{2},aPressureTime(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),...
+                            aPressureProcessedData(oPressure.(char(sRanges{m})).Range(1):oPressure.(char(sRanges{m})).Range(2)),char(oColors{m}));
         end
         
     end

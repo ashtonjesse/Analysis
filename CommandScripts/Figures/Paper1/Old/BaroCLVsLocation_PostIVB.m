@@ -6,7 +6,8 @@ clear all;
 
 % },{
 %     'G:\PhD\Experiments\Bordeaux\Data\20131129\20131129baro003\Pressure.mat'...
-sSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\BaroCLVsLocation_postIVB.png';
+sPaperSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\BaroCLVsLocation_postIVB.png';
+sThesisSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\BaroCLVsLocation_postIVB.eps';
 %set up figure
 dWidth = 16;
 dHeight = 6;
@@ -288,4 +289,5 @@ text(6,aylim2(2)+50,['Last',10,'shift'],'fontsize',8,'fontweight','bold','horizo
 %print
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-export_fig(sSavePath,'-png','-r300','-nocrop','-painters');
+export_fig(sPaperSavePath,'-png','-r300','-nocrop','-painters');
+print(sThesisSavePath,'-dpsc','-r300');
