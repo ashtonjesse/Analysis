@@ -70,7 +70,7 @@ aAllInitialLocs = cell(1,numel(aControlFiles));
 aMaxLocs = cell(numel(aControlFiles),1);
 aCombinedLocs = cell(numel(aControlFiles),1);
 %select the axes to plot the dynamic data
-oOnsetAxes = aSubplotPanel(2,2,1,2).select();
+oOnsetAxes = aSubplotPanel(2,4).select();
 
 %define the colour range for plots
 aScatterColor = {...
@@ -191,73 +191,15 @@ set(oOnsetAxes,'ytick',[2 4 6 8]);
 set(oOnsetAxes,'yticklabel',[]);
 set(get(oOnsetAxes,'xlabel'),'string','CL (ms)','fontsize',8);
 % set(get(oOnsetAxes,'ylabel'),'string','DP site (mm)','fontsize',8);
-set(get(oOnsetAxes,'title'),'string','Onset','fontweight','bold','fontsize',8);
+set(get(oOnsetAxes,'title'),'string','Onset','fontweight','bold','fontsize',10);
 % %add panel label
-text(axlim(1)-100,aylim(2)+1.5,'F','parent',oOnsetAxes,'fontsize',12,'fontweight','bold');
+text(axlim(1)-100,aylim(2)+1,'D','parent',oOnsetAxes,'fontsize',12,'fontweight','bold');
 % oLegend = legend(oOnsetAxes,'Pre-IVB','Post-IVB','location','northeast');
 % set(oLegend,'position', [0.8454    0.8289    0.1650    0.1005]);
 % oChildren = get(oLegend,'children');
 % oChildren = get(oChildren(1),'children');
 % set(oChildren,'markerfacecolor','none','markeredgecolor','r');
 % legend(oOnsetAxes,'boxoff');
-
-%create boxplots panel
-oAxes = aSubplotPanel(2,2,2,2).select();
-oOverlay = axes('parent',oFigure,'position',get(oAxes,'position'));
-set(oOverlay,'xlim',axlim);
-set(oOverlay,'ylim',aylim);
-axis(oOverlay,'off');
-text(axlim(1)-100,aylim(2)+1.5,'G','parent',oOverlay,'fontsize',12,'fontweight','bold');
-%get data
-[aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\CChCLandLocationData.csv');
-aInitialDelCL = aData(:,strcmp(aHeader,'CL2')) - aData(:,strcmp(aHeader,'CL1'));
-aPreInitialDelCL = aInitialDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
-aPostInitialDelCL = aInitialDelCL(logical(aData(:,strcmp(aHeader,'IVB'))));
-[aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\CChCLandLocationDataReturn.csv');
-aReturnDelCL = aData(:,strcmp(aHeader,'CL4')) - aData(:,strcmp(aHeader,'CL3'));
-aPreReturnDelCL = aReturnDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
-aPostReturnDelCL = aReturnDelCL(logical(aData(:,strcmp(aHeader,'IVB'))));
-
-%plot boxplots
-bplot(aPreInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean');
-hold(oAxes,'on');
-bplot(aPostInitialDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
-hold(oAxes,'on');
-bplot(aPreReturnDelCL,oAxes,5,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','k');
-hold(oAxes,'on');
-bplot(aPostReturnDelCL,oAxes,7,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
-aylim2 = get(oAxes,'ylim');
-aylim2 = [-400 600];
-set(oAxes,'ylim',aylim2);
-aytick = get(oAxes,'ytick');
-set(oAxes,'yticklabel',[]);
-set(oAxes,'xlim',[0 8]);
-set(oAxes,'xtick',[1 2 3 4 5 6 7 8]);
-plot(oAxes,[4 4],[aylim2(1) aylim2(2)]-[0 50],'k--');
-hold(oAxes,'off');
-axtick = get(oAxes,'xtick');
-xticklabels = cell(1,numel(axtick));
-[xticklabels{:}] = deal('');
-xticklabels{axtick==1} = ['Pre-',10,'IVB'];
-xticklabels{axtick==3} = ['Post-',10,'IVB'];
-xticklabels{axtick==5} = ['Pre-',10,'IVB'];
-xticklabels{axtick==7} = ['Post-',10,'IVB'];
-text(axtick,ones(numel(axtick),1).*(aylim2(1)-abs(aytick(1)-aytick(2))/1.5),...
-    xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
-    'horizontalalignment','center');
-xticklabels{axtick==1} = sprintf('n=%1.0f',numel(aPreInitialDelCL));
-xticklabels{axtick==3} = sprintf('n=%1.0f',numel(aPostInitialDelCL));
-xticklabels{axtick==5} = sprintf('n=%1.0f',numel(aPreReturnDelCL));
-xticklabels{axtick==7} = sprintf('n=%1.0f',numel(aPostReturnDelCL));
-text(axtick,ones(numel(axtick),1).*(aylim2(1)-2.2*abs(aytick(1)-aytick(2))/1.5),...
-    xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
-    'horizontalalignment','center');
-set(oAxes,'xticklabel',[]);
-set(oAxes,'xtick',[1 3 5 7]);
-% set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
-%put titles on 
-text(2,aylim2(2)+50,['First',10,'shift'],'fontsize',8,'fontweight','bold','horizontalalignment','center','parent',oAxes);
-text(6,aylim2(2)+50,['Last',10,'shift'],'fontsize',8,'fontweight','bold','horizontalalignment','center','parent',oAxes);
 
 %print
 movegui(oFigure,'center');
