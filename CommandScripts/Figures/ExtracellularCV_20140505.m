@@ -66,11 +66,11 @@ set(oAxes,'xtick',aXticks)
 set(oAxes,'xlim',[0 iBoxXLocation]);
 set(oAxes,'ylim',aCVRange);
 set(oAxes,'xticklabel',aXTickLabels);
-xlabel(oAxes,'Beat #');
-oYlabel = ylabel(oAxes,['Apparent', 10,'CV (m/s)']);
+xlabel(oAxes,'Cycle #');
+oYlabel = ylabel(oAxes,['Apparent', 10,'CV (ms^{-1})']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
-oPosition(1) = - 2.5;
+oPosition(1) = - 2.2;
 oYLim = get(oAxes,'ylim');
 oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 2;
 set(oYlabel,'position',oPosition);
@@ -164,7 +164,7 @@ for i = 1:yrange
 end
 oAxes = oSubplotPanel(3,2).select();
 cbarf_edit(aCVRange, aCVContours,'horiz','linear',oAxes,'CV',10);
-oXlabel = text(((aCVRange(2)-aCVRange(1)+0.1)/2)+abs(aCVRange(1)),-2.2,'Apparent CV (m/s)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
+oXlabel = text(((aCVRange(2)-aCVRange(1)+0.1)/2)+abs(aCVRange(1)),-2.2,'Apparent CV (ms^{-1})','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
 set(oXlabel,'fontsize',12);
 set(oFigure,'resizefcn',[]);
 % print(oFigure,'-dbmp','-r600',sSavePath)

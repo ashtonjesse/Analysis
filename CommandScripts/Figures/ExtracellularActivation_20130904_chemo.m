@@ -152,6 +152,9 @@ oPosition(1) = oXLim(1) - dYLabelOffset;
 oYLim = get(oAxes,'ylim');
 oPosition(2) = oYLim(1) + (oYLim(2) - oYLim(1)) / 4;
 set(oYlabel,'position',oPosition);
+[figx figy] = dsxy2figxy(oAxes, [0.1 ; 0.1],[oYLim(1)-5;oYLim(1)-2]);
+annotation('textarrow',figx,figy,'string','KCN','headstyle','plain','headwidth',2,'headlength',2,'fontsize',6);
+
 
 % %plot maps
 % oUnemap.RotateArray();

@@ -1,10 +1,10 @@
 close all;
 % % % %Open unemap file
-% oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
-% oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\chemo002_pressure.mat','Extracellular');
-% oUnemap.CalculateSinusRate();
-% % % oUnemap.RotateArray();
-% oActivation = oUnemap.PrepareEventMap(100, 1, 35);
+oUnemap = GetUnemapFromMATFile(Unemap,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\pachemo002_unemap.mat');
+oPressure = GetPressureFromMATFile(Pressure,'G:\PhD\Experiments\Auckland\InSituPrep\20130904\0904chemo002\chemo002_pressure.mat','Extracellular');
+oUnemap.CalculateSinusRate();
+% % oUnemap.RotateArray();
+oActivation = oUnemap.PrepareEventMap(100, 1, 35);
 
 %set variables
 dWidth = 16;
@@ -66,8 +66,8 @@ set(oAxes,'xtick',aXticks)
 set(oAxes,'xlim',[0 iBoxXLocation]);
 set(oAxes,'ylim',aCVRange);
 set(oAxes,'xticklabel',aXTickLabels);
-xlabel(oAxes,'Beat #');
-oYlabel = ylabel(oAxes,['Apparent', 10,'CV (m/s)']);
+xlabel(oAxes,'Cycle #');
+oYlabel = ylabel(oAxes,['Apparent', 10,'CV (ms^{-1})']);
 set(oYlabel,'rotation',0);
 oPosition = get(oYlabel,'position');
 oPosition(1) = - 2.4;
@@ -164,7 +164,7 @@ for i = 1:yrange
 end
 oAxes = oSubplotPanel(3,2).select();
 cbarf_edit(aCVRange, aCVContours,'horiz','linear',oAxes,'CV',10);
-oXlabel = text(((aCVRange(2)-aCVRange(1)+0.1)/2)+abs(aCVRange(1)),-2.2,'Apparent CV (m/s)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
+oXlabel = text(((aCVRange(2)-aCVRange(1)+0.1)/2)+abs(aCVRange(1)),-2.2,'Apparent CV (ms^{-1})','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center');
 set(oXlabel,'fontsize',12);
 set(oFigure,'resizefcn',[]);
 % print(oFigure,'-dbmp','-r600',sSavePath)
