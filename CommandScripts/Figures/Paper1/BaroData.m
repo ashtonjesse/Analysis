@@ -6,18 +6,18 @@
 %save to file as gif
 % 
 close all;
-% clear all;
-% % % %Read in the file containing all the optical data
-% sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140723\';
-% sSubDir = [sBaseDir,'20140723baro007\'];
-% 
-% %% read in the optical entities
-% sAvOpticalFileName = [sSubDir,'baro007_3x3_1ms_7x_g10_LP100Hz-wave.mat'];
-% oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
-% sOpticalFileName = [sSubDir,'baro007_3x3_1ms_7x_g10_LP100Hz-waveEach-forpaper.mat'];
-% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
-% % % read in the pressure entity
-% oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
+clear all;
+% % %Read in the file containing all the optical data
+sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140723\';
+sSubDir = [sBaseDir,'20140723baro007\'];
+
+%% read in the optical entities
+sAvOpticalFileName = [sSubDir,'baro007_3x3_1ms_7x_g10_LP100Hz-wave.mat'];
+oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
+sOpticalFileName = [sSubDir,'baro007_3x3_1ms_7x_g10_LP100Hz-waveEach-forpaper.mat'];
+oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % read in the pressure entity
+oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
 % 
 %set variables
 dWidth = 16;

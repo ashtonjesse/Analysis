@@ -2,6 +2,7 @@
 %load data
 %plot data
 %save to file as gif
+%this figure needs to have a CI plot added to it called CChPhase
 
 close all;
 clear all;
@@ -20,7 +21,7 @@ oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optica
 %set variables
 dWidth = 16;
 dHeight = 14;
-sPaperFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\ChemoData.png';
+sPaperFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\ChemoData.bmp';
 sThesisFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ChemoData.eps';
 %Create plot panel that has 3 rows at top to contain pressure, phrenic and
 %heart rate 
@@ -442,22 +443,22 @@ set(oOverlay,'xlim',axlim);
 set(oOverlay,'ylim',aylim);
 axis(oOverlay,'off');
 text(axlim(1)-200,aylim(2)+1.5,'F','parent',oOverlay,'fontsize',12,'fontweight','bold');
-%get data
-[aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\ChemoCLandLocationData.csv');
-aInitialDelCL = aData(:,strcmp(aHeader,'CL2')) - aData(:,strcmp(aHeader,'CL1'));
-aPreInitialDelCL = aInitialDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
-aPostInitialDelCL = aInitialDelCL(logical(aData(:,strcmp(aHeader,'IVB'))));
-[aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\ChemoCLandLocationDataReturn.csv');
-aReturnDelCL = aData(:,strcmp(aHeader,'CL4')) - aData(:,strcmp(aHeader,'CL3'));
-aPreReturnDelCL = aReturnDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
-aPostReturnDelCL = aReturnDelCL(logical(aData(:,strcmp(aHeader,'IVB'))));
+% %get data
+% [aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\ChemoCLandLocationData.csv');
+% aInitialDelCL = aData(:,strcmp(aHeader,'CL2')) - aData(:,strcmp(aHeader,'CL1'));
+% aPreInitialDelCL = aInitialDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
+% aPostInitialDelCL = aInitialDelCL(logical(aData(:,strcmp(aHeader,'IVB'))));
+% [aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\ChemoCLandLocationDataReturn.csv');
+% aReturnDelCL = aData(:,strcmp(aHeader,'CL4')) - aData(:,strcmp(aHeader,'CL3'));
+% aPreReturnDelCL = aReturnDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
+% aPostReturnDelCL = aReturnDelCL(logical(aData(:,strcmp(aHeader,'IVB'))));
 
 %plot boxplots
-bplot(aPreInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean');
-hold(oAxes,'on');
-bplot(aPreReturnDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
+% bplot(aPreInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean');
+% hold(oAxes,'on');
+% bplot(aPreReturnDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
 % aylim2 = get(oAxes,'ylim');
-aylim2 = [-200 400];
+aylim2 = [-100 300];
 set(oAxes,'ylim',aylim2);
 aytick = get(oAxes,'ytick');
 set(oAxes,'xlim',[0 4]);
@@ -465,14 +466,9 @@ set(oAxes,'xtick',[1 2 3 4]);
 axtick = get(oAxes,'xtick');
 xticklabels = cell(1,numel(axtick));
 [xticklabels{:}] = deal('');
-xticklabels{axtick==1} = ['First',10,'Shift'];
-xticklabels{axtick==3} = ['Last',10,'Shift'];
+xticklabels{axtick==1} = ['n=5'];
+xticklabels{axtick==3} = ['n=5'];
 text(axtick,ones(numel(axtick),1).*(aylim2(1)-abs(aytick(1)-aytick(2))/1.6),...
-    xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
-    'horizontalalignment','center');
-xticklabels{axtick==1} = sprintf('n=%1.0f',numel(aPreInitialDelCL));
-xticklabels{axtick==3} = sprintf('n=%1.0f',numel(aPreReturnDelCL));
-text(axtick,ones(numel(axtick),1).*(aylim2(1)-2*abs(aytick(1)-aytick(2))/1.6),...
     xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
     'horizontalalignment','center');
 set(oAxes,'xticklabel',[]);
@@ -480,5 +476,5 @@ set(oAxes,'xtick',[1 3]);
 set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
 
 set(oFigure,'resizefcn',[]);
-export_fig(sPaperFileSavePath,'-png','-r300','-nocrop')
+export_fig(sPaperFileSavePath,'-bmp','-r600','-nocrop')
 print(sThesisFileSavePath,'-dpsc','-r600')

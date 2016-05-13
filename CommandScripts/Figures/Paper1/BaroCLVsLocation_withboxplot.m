@@ -3,6 +3,7 @@
 %plot on axes and hold on
 close all;
 clear all;
+%this figure needs to have a CI plot added to it called BaroPhase
 
 % },{
 %     'G:\PhD\Experiments\Bordeaux\Data\20131129\20131129baro003\Pressure.mat'...
@@ -127,7 +128,7 @@ aCombinedLocs = cell(numel(aControlFiles),1);
 oSSAxes = aSubplotPanel(1,1,2).select();
 oOnsetAxes = aSubplotPanel(2,1).select();
 oRecoveryAxes = aSubplotPanel(2,2).select();
-
+aRsq = cell(1,numel(aControlFiles));
 %define the colour range for plots
 aCRange = [0 7];
 for i = 1:numel(aControlFiles)
@@ -265,12 +266,12 @@ for i = 1:numel(aControlFiles)
     caxis(oSSAxes, aCRange);
     hold(oSSAxes,'on');
     
-    %         X = [ones(length(ThisPressure),1) ThisPressure];
-    %         b = X\ThisCL;
-    %         yCalc = X*b;
-    %         Rsq = 1 - sum((ThisCL - yCalc).^2)/sum((ThisCL - mean(ThisCL)).^2);
-    %         oLine = plot(oAxes,ThisPressure,yCalc,'-','color','k');
-    %         text(max(ThisPressure),max(yCalc),sprintf('%4.3f',Rsq),'color','k','parent',oAxes);
+            X = [ones(length(ThisPressure),1) ThisPressure];
+            b = X\ThisCL;
+            yCalc = X*b;
+            aRsq{i} = 1 - sum((ThisCL - yCalc).^2)/sum((ThisCL - mean(ThisCL)).^2);
+%             oLine = plot(oSSAxes,ThisPressure,yCalc,'-','color','k');
+%             text(max(ThisPressure),max(yCalc),sprintf('%4.3f',aRsq{i}),'color','k','parent',oSSAxes);
     
     %save the dynamic data
     aAllInitialLocs{i} = vertcat(aInitialStackedLocs{:});
@@ -285,7 +286,7 @@ yCalc = X*b;
 Rsq = 1 - sum((StackedCI - yCalc).^2)/sum((StackedCI - mean(StackedCI)).^2);
 oLine = plot(oSSAxes,StackedPressures,yCalc,'-','color','k');
 set(get(get(oLine,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-text(max(StackedPressures)-5,max(yCalc)-100,sprintf('r=%4.2f',Rsq),'color','k',...
+text(max(StackedPressures)-5,max(yCalc)-100,sprintf('r=%4.2f',mean(horzcat(aRsq{1:5}))),'color','k',...
     'parent',oSSAxes,'horizontalalignment','left','fontsize',8);
 set(oSSAxes,'ylim',[0 800]);
 set(oSSAxes,'ytick',[0 400 800]);
@@ -368,20 +369,13 @@ set(oOverlay,'xlim',axlim);
 set(oOverlay,'ylim',aylim);
 axis(oOverlay,'off');
 text(axlim(1)-200,aylim(2)+1.5,'E','parent',oOverlay,'fontsize',12,'fontweight','bold');
-%get data
-[aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\BaroCLandLocationData.csv');
-aInitialDelCL = aData(:,strcmp(aHeader,'CL2')) - aData(:,strcmp(aHeader,'CL1'));
-aPreInitialDelCL = aInitialDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
-[aHeader aData] = ReadCSV('G:\PhD\Experiments\Auckland\InSituPrep\Statistics\BaroCLandLocationDataReturn.csv');
-aReturnDelCL = aData(:,strcmp(aHeader,'CL4')) - aData(:,strcmp(aHeader,'CL3'));
-aPreReturnDelCL = aReturnDelCL(~logical(aData(:,strcmp(aHeader,'IVB'))));
 
 %plot boxplots
-bplot(aPreInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean');
-hold(oAxes,'on');
-bplot(aPreReturnDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
-hold(oAxes,'off');
-aylim2 = [-400 400];
+% bplot(aPreInitialDelCL,oAxes,1,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean');
+% hold(oAxes,'on');
+% bplot(aPreReturnDelCL,oAxes,3,'nolegend','outliers','tukey','linewidth',0.5,'width',0.5,'nomean','color','r');
+% hold(oAxes,'off');
+aylim2 = [-200 300];
 set(oAxes,'ylim',aylim2);
 aytick = get(oAxes,'ytick');
 set(oAxes,'xlim',[0 4]);
@@ -389,14 +383,9 @@ set(oAxes,'xtick',[1 2 3 4]);
 axtick = get(oAxes,'xtick');
 xticklabels = cell(1,numel(axtick));
 [xticklabels{:}] = deal('');
-xticklabels{axtick==1} = ['First',10,'Shift'];
-xticklabels{axtick==3} = ['Last',10,'Shift'];
+xticklabels{axtick==1} = ['n=10'];
+xticklabels{axtick==3} = ['n=10'];
 text(axtick,ones(numel(axtick),1).*(aylim2(1)-abs(aytick(1)-aytick(2))/1.6),...
-    xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
-    'horizontalalignment','center');
-xticklabels{axtick==1} = sprintf('n=%1.0f',numel(aPreInitialDelCL));
-xticklabels{axtick==3} = sprintf('n=%1.0f',numel(aPreReturnDelCL));
-text(axtick,ones(numel(axtick),1).*(aylim2(1)-2.2*abs(aytick(1)-aytick(2))/1.6),...
     xticklabels,'parent',oAxes,'fontsize',get(oAxes,'fontsize'),...
     'horizontalalignment','center');
 set(oAxes,'xticklabel',[]);
@@ -406,5 +395,5 @@ set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
 %print
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-export_fig(sPaperSavePath,'-png','-r300','-nocrop');
-print(sThesisSavePath,'-dpsc','-r600');
+% export_fig(sPaperSavePath,'-png','-r300','-nocrop');
+% print(sThesisSavePath,'-dpsc','-r600');
