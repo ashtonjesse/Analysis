@@ -12,6 +12,7 @@ classdef OpticalBeatDetection < BaseFigure
         SelectedEventID;
         SelectedTimePoint = 25;
         CurrentZoomLimits = [];
+        DefaultDirectory;
     end
     
     events
@@ -31,6 +32,7 @@ classdef OpticalBeatDetection < BaseFigure
     methods
         function oFigure = OpticalBeatDetection()
             oFigure = oFigure@BaseFigure('OpticalBeatDetection',@OpeningFcn);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'position',[22.0000   21.1250  112.1667   41.1250]);
             %Set the callback functions to the menu items
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oDummy_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oOpenMenu, 'callback', @(src, event) oOpenMenu_Callback(oFigure, src, event));
@@ -56,6 +58,7 @@ classdef OpticalBeatDetection < BaseFigure
             oFigure.oGuiHandle.oPanel.pack(1,1);
             
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'closerequestfcn', @(src,event) Close_fcn(oFigure, src, event));
+            
             
             function OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -153,6 +156,7 @@ classdef OpticalBeatDetection < BaseFigure
                 oFigure.OpenBeatSlider();
             end
             oFigure.Replot(oFigure.SelectedChannel);
+            oFigure.DefaultDirectory = pathstr;
         end
         
         function oFigure = oSmoothMenu_Callback(oFigure,src,event)
@@ -219,7 +223,7 @@ classdef OpticalBeatDetection < BaseFigure
             addlistener(oBeatPlotFigure,'TimePointChange',@(src,event) oFigure.TimeSlideValueListener(src,event));
             
             %Open a time point slider
-            oTimeSliderControl = SlideControl(oFigure,'Select Time Point',{'TimeSelectionChange'});
+            oTimeSliderControl = SlideControl(oFigure,'Select Time Point',{'TimeSelectionChange'},[194.0000    0.8750  110.8333   10.2500]);
             iBeatLength = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes(oFigure.SelectedBeat,2) - ...
                 oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes(oFigure.SelectedBeat,1);
             set(oTimeSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
@@ -452,7 +456,7 @@ classdef OpticalBeatDetection < BaseFigure
         
         function OpenBeatSlider(oFigure)
             %Set up beat slider
-            oBeatSliderControl = SlideControl(oFigure,'Select Beat', {'BeatSelectionChange','NewBeatInserted'});
+            oBeatSliderControl = SlideControl(oFigure,'Select Beat', {'BeatSelectionChange','NewBeatInserted'},[ 23.6667    1.0625  110.6667   10.2500]);
             iNumBeats = size(oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Beats.Indexes,1);
             set(oBeatSliderControl.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
                 iNumBeats, 'Value', 1 ,'SliderStep',[1/iNumBeats  0.02]);

@@ -64,8 +64,14 @@ function [CV,Vect,ATGrad] = ReComputeCV(Locs,AT,ns,BandProportion)
           NG = norm(G);
           if NG >= Tol && (min(sum(quadrant,1)) >= 1) % points must exist in all four quadrants
               CV(i) = 1.0/NG;
-              Vect(i,:) = G/NG;
-              ATGrad(i) = NG;
+              if CV(i) > 1.5
+                  CV(i) = NaN;
+                  Vect(i,:) = NaN*ones(size(G));
+                  ATGrad(i) = NaN;
+              else
+                  Vect(i,:) = G/NG;
+                  ATGrad(i) = NG;
+              end
           else
               CV(i) = NaN;
               Vect(i,:) = NaN*ones(size(G));

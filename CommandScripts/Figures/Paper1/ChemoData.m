@@ -5,23 +5,23 @@
 %this figure needs to have a CI plot added to it called CChPhase
 
 close all;
-clear all;
-% % % %Read in the file containing all the optical data
-sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140826\';
-sSubDir = [sBaseDir,'20140826chemo001\'];
-
-%% read in the optical entities
-sAvOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-wave.mat'];
-oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
-sOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-waveEach-forpaper.mat'];
-oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
-% % read in the pressure entity
-oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
+% clear all;
+% % % % %Read in the file containing all the optical data
+% sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140826\';
+% sSubDir = [sBaseDir,'20140826chemo001\'];
+% 
+% %% read in the optical entities
+% sAvOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-wave.mat'];
+% oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
+% sOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-waveEach-forpaper.mat'];
+% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % % read in the pressure entity
+% oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
 
 %set variables
 dWidth = 16;
 dHeight = 14;
-sPaperFileSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\ChemoData.bmp';
+sPaperFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\Working\ChemoData.bmp';
 sThesisFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\ChemoData.eps';
 %Create plot panel that has 3 rows at top to contain pressure, phrenic and
 %heart rate 
@@ -251,7 +251,7 @@ end
 oAxes = oSubplotPanel(1,2,1,2).select();
 aCRange = [0 10.8];
 aContours = 0:1.2:10.8;
-cbarf_edit(aCRange, aContours,'vertical','nonlinear',oAxes,'AT');
+cbarf_edit(aCRange, aContours,'vertical','nonlinear',oAxes,'AT',8);
 aCRange = [0 12];
 oLabel = text(-2.8,(aCRange(2)-aCRange(1))/2,'Atrial AT (ms)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center','rotation',90);
 set(oLabel,'fontsize',8);
@@ -476,5 +476,5 @@ set(oAxes,'xtick',[1 3]);
 set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
 
 set(oFigure,'resizefcn',[]);
-export_fig(sPaperFileSavePath,'-bmp','-r600','-nocrop')
-print(sThesisFileSavePath,'-dpsc','-r600')
+% export_fig(sPaperFileSavePath,'-bmp','-r600','-nocrop')
+% print(sThesisFileSavePath,'-dpsc','-r600')

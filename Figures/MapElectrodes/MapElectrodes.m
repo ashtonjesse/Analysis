@@ -6,6 +6,7 @@ classdef MapElectrodes < SubFigure
         Overlay = 0;
         ElectrodeMarkerVisible = 1;
         ColourBarVisible = 1;
+        AxesVisible = 1;
         ColourBarOrientation = 'vert';
         ColourBarLevels = 0:1:12;
         Potential = [];
@@ -56,6 +57,7 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oRefreshEventMenu, 'callback', @(src, event) oRefreshEventMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oMontageMenu, 'callback', @(src, event) oMontageMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleColourBarMenu, 'callback', @(src, event) oToggleColourBarMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oToggleAxesBarMenu, 'callback', @(src, event) oToggleAxesBarMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oToggleElectrodeMarkerMenu, 'callback', @(src, event) oToggleElectrodeMarkerMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRotateArrayMenu, 'callback', @(src, event) oRotateArrayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRefreshBeatEventMenu, 'callback', @(src, event) oRefreshBeatEventMenu_Callback(oFigure, src, event));
@@ -112,7 +114,7 @@ classdef MapElectrodes < SubFigure
             set(hManager.WindowListenerHandles,'Enable','off');
             %reset the keypressfcn
             set(oFigure.oGuiHandle.(oFigure.sFigureTag),  'keypressfcn', oldKeyPressFcnHook);
-            
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'position',[0.575521 0.286111 0.419271 0.636111]);
             % --- Executes just before BaselineCorrection is made visible.
             function MapElectrodes_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -179,176 +181,190 @@ classdef MapElectrodes < SubFigure
         function oSaveMapMenu_Callback(oFigure, src, event)
             %Get the save file path
             %Call built-in file dialog to select filename
-            [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
-            %Make sure the dialogs return char objects
-            if (~ischar(sFilename) && ~ischar(sPathName))
-                return
-            end
-%                         Save individual beat activation time
-%                         iBeat = oFigure.oParentFigure.SelectedBeat;
-%                         sLongDataFileName=strcat(sPathName,sFilename,'.bmp');
-%                         oFigure.PrintFigureToFile(sLongDataFileName);
-%                         sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',sLongDataFileName)});
-%                         sChopString = strcat(sChopString, {' -gravity South -chop 0x50 -gravity West -chop 50x0 -gravity East -chop 50x0'}, {sprintf(' %s',sLongDataFileName)});
-%                         sStatus = dos(char(sChopString{1}));
-                        
-            %Save series of potential fields
-%             iBeat = oFigure.oParentFigure.SelectedBeat;
-%             oFigure.PlotType = 'Potential2DContour';
-%             for i = 1:length(oFigure.Potential.Beats(iBeat).Fields)
-%                 %Get the full file name and save it to string attribute
-%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-%                 oFigure.oParentFigure.SelectedTimePoint = i;
-%                 oFigure.PlotData();
-%                 drawnow; pause(.2);
-%                 oFigure.PrintFigureToFile(sLongDataFileName);
-%             end
+            %             [sFilename, sPathName] = uiputfile('','Specify a directory to save to');
+            %             %Make sure the dialogs return char objects
+            %             if (~ischar(sFilename) && ~ischar(sPathName))
+            %                 return
+            %             end
+            % %                         Save individual beat activation time
+            iBeat = oFigure.oParentFigure.SelectedBeat;
+            sLongDataFileName=strcat(oFigure.oParentFigure.DefaultDirectory,'\',sprintf('Beat%d',iBeat),'.bmp');
+            oFigure.PrintFigureToFile(sLongDataFileName);
+            sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',sLongDataFileName)});
+            sChopString = strcat(sChopString, {' -gravity South -chop 0x25 -gravity West -chop 50x0 -gravity East -chop 50x0'}, {sprintf(' %s',sLongDataFileName)});
+            sStatus = dos(char(sChopString{1}));
             
 %                         %Save series of activation maps
             
-            %             for i =
-            %             1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes,1);
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
-            iStartBeat = oFigure.oParentFigure.SelectedBeat;
-            %Set figure size
-            iMontageX = 5;%5
-            iMontageY = 9;%9
-            dMontageWidth = 8.27 - 2; %in inches, with borders
-            dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
-            dWidth = dMontageWidth/iMontageX; %in inches
-            dHeight = dMontageHeight/iMontageY; %in inches
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dWidth dHeight])
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dWidth dHeight])
-            aSubPlots = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
-            oMapPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'MapPlot');
-            oHiddenPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'HiddenPlot');
-            axis(oMapPlot,'on');
-            axis(oHiddenPlot,'off');
-            set(oMapPlot,'units','normalized');
-            set(oMapPlot,'outerposition',[0 0 1 1]);
-            aTightInset = get(oMapPlot, 'TightInset');
-            aPosition(1) = aTightInset(1);
-            aPosition(2) = aTightInset(2);
-            aPosition(3) = 1-aTightInset(1)-aTightInset(3);
-            aPosition(4) = 1 - aTightInset(2) - aTightInset(4)-0.05;
-            set(oMapPlot, 'Position', aPosition);
-            sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',oFigure.oParentFigure.SelectedBeat),'.bmp');
-            oFigure.PlotData(0);
-            drawnow; pause(.2);
-            
-            
-            set(oMapPlot,'FontUnits','points');
-            set(oMapPlot,'FontSize',6);
-            aYticks = get(oMapPlot,'ytick');
-            aYticks = aYticks - aYticks(1);
-            aYtickstring = cell(length(aYticks),1);
-            for i=1:length(aYticks)
-                %Check if the label has a decimal place and hide this label
-                if ~mod(aYticks(i),1) == 0
-                    aYtickstring{i} = '';
-                else
-                    aYtickstring{i} = num2str(aYticks(i));
-                end
-            end
-            set(oMapPlot,'xticklabel',[]);
-            set(oMapPlot,'xtickmode','manual');
-            set(oMapPlot,'yticklabel', char(aYtickstring));
-            set(oMapPlot,'ytickmode','manual');
-            set(oMapPlot,'Box','off');
-            oXLim = get(oMapPlot,'xlim');
-            oYLim = get(oMapPlot,'ylim');
-            oBeatLabel = text(oXLim(1)+0.1,oYLim(2)-0.5, sprintf('%d',oFigure.oParentFigure.SelectedBeat));
-            set(oBeatLabel,'units','normalized');
-            set(oBeatLabel,'fontsize',14,'fontweight','bold');
-            set(oBeatLabel,'parent',oMapPlot);
-            oFigure.PrintFigureToFile(sLongDataFileName);
-            
-            for i = oFigure.oParentFigure.SelectedBeat+1:min(size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes,1),oFigure.oParentFigure.SelectedBeat+iMontageX*iMontageY-1)
-                %Get the full file name and save it to string attribute
-                sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
-                oFigure.oParentFigure.SelectedBeat = i;
-                oFigure.PlotData(0);
-                drawnow; pause(.2);
-                oBeatLabel = text(oXLim(1)+0.1,oYLim(2)-0.5, sprintf('%d',i));
-                set(oBeatLabel,'units','normalized');
-                set(oBeatLabel,'fontsize',14,'fontweight','bold');
-                set(oBeatLabel,'parent',oMapPlot);
-                axis(oMapPlot, 'off');
-                
-                oFigure.PrintFigureToFile(sLongDataFileName);
-            end
-            %reset the beat to what was originally selected
-            oFigure.oParentFigure.SelectedBeat = iStartBeat;
+%             for i =1:size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes,1);
+%             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
+%             iStartBeat = oFigure.oParentFigure.SelectedBeat;
+%             %Set figure size
+%             iMontageX = 5;%5
+%             iMontageY = 9;%9
+%             dMontageWidth = 8.27 - 2; %in inches, with borders
+%             dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
+%             dWidth = dMontageWidth/iMontageX; %in inches
+%             dHeight = dMontageHeight/iMontageY; %in inches
+%             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dWidth dHeight])
+%             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dWidth dHeight])
+%             aSubPlots = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+%             oMapPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'MapPlot');
+%             oHiddenPlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'HiddenPlot');
+%             axis(oMapPlot,'on');
+%             axis(oHiddenPlot,'off');
+%             set(oMapPlot,'units','normalized');
+%             set(oMapPlot,'outerposition',[0 0 1 1]);
+%             aTightInset = get(oMapPlot, 'TightInset');
+%             aPosition(1) = aTightInset(1);
+%             aPosition(2) = aTightInset(2);
+%             aPosition(3) = 1-aTightInset(1)-aTightInset(3);
+%             aPosition(4) = 1 - aTightInset(2) - aTightInset(4)-0.05;
+%             set(oMapPlot, 'Position', aPosition);
+%             sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',oFigure.oParentFigure.SelectedBeat),'.bmp');
+%             oFigure.PlotData(0);
+%             drawnow; pause(.2);
+%             
+%             
+%             set(oMapPlot,'FontUnits','points');
+%             set(oMapPlot,'FontSize',6);
+%             aYticks = get(oMapPlot,'ytick');
+%             aYticks = aYticks - aYticks(1);
+%             aYtickstring = cell(length(aYticks),1);
+%             for i=1:length(aYticks)
+%                 %Check if the label has a decimal place and hide this label
+%                 if ~mod(aYticks(i),1) == 0
+%                     aYtickstring{i} = '';
+%                 else
+%                     aYtickstring{i} = num2str(aYticks(i));
+%                 end
+%             end
+%             set(oMapPlot,'xticklabel',[]);
+%             set(oMapPlot,'xtickmode','manual');
+%             set(oMapPlot,'yticklabel', char(aYtickstring));
+%             set(oMapPlot,'ytickmode','manual');
+%             set(oMapPlot,'Box','off');
+%             oXLim = get(oMapPlot,'xlim');
+%             oYLim = get(oMapPlot,'ylim');
+%             oBeatLabel = text(oXLim(1)+0.1,oYLim(2)-0.5, sprintf('%d',oFigure.oParentFigure.SelectedBeat));
+%             set(oBeatLabel,'units','normalized');
+%             set(oBeatLabel,'fontsize',14,'fontweight','bold');
+%             set(oBeatLabel,'parent',oMapPlot);
+%             oFigure.PrintFigureToFile(sLongDataFileName);
+%             
+%             for i = oFigure.oParentFigure.SelectedBeat+1:min(size(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes,1),oFigure.oParentFigure.SelectedBeat+iMontageX*iMontageY-1)
+%                 %Get the full file name and save it to string attribute
+%                 sLongDataFileName=strcat(sPathName,sFilename,sprintf('%d',i),'.bmp');
+%                 oFigure.oParentFigure.SelectedBeat = i;
+%                 oFigure.PlotData(0);
+%                 drawnow; pause(.2);
+%                 oBeatLabel = text(oXLim(1)+0.1,oYLim(2)-0.5, sprintf('%d',i));
+%                 set(oBeatLabel,'units','normalized');
+%                 set(oBeatLabel,'fontsize',14,'fontweight','bold');
+%                 set(oBeatLabel,'parent',oMapPlot);
+%                 axis(oMapPlot, 'off');
+%                 
+%                 oFigure.PrintFigureToFile(sLongDataFileName);
+%             end
+%             %reset the beat to what was originally selected
+%             oFigure.oParentFigure.SelectedBeat = iStartBeat;
         end
         
         % -----------------------------------------------------------------
         function oMontageMenu_Callback(oFigure, src, event)
-            %Get the save file path
-            %Call built-in file dialog to select filename
-            [sFileName,sPathName]=uigetfile('*.*','Select image file(s)','multiselect','on');
-            %Make sure the dialogs return char objects
-            if iscell(sFileName)
-                if (~ischar(sFileName{1}) && ~ischar(sPathName))
-                    return
-                end
-                sDosString = 'D:\Users\jash042\Documents\PhD\Analysis\Utilities\montage.exe ';
-                for i = 1:length(sFileName)
-                    %Loop through files adding them to list
-                    sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
-                end
-                iMontageX = 5;%5
-                iMontageY = 9;%9
-                dMontageWidth = 8.27 - 2; %in inches, with borders
-                dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
-                dWidth = dMontageWidth/iMontageX; %in inches
-                dHeight = dMontageHeight/iMontageY; %in inches
-                iPixelWidth = dWidth*300;
-                iPixelHeight = dHeight*300;
-                sDosString = strcat(sDosString, {' -quality 98 -tile '},{sprintf('%d',iMontageX)},'x',{sprintf('%d',iMontageY)},{' -geometry '},{sprintf('%d',iPixelWidth)},'x',{sprintf('%d',iPixelHeight)},{'+0+0 '}, sPathName, 'montage.png');
-
-            else
-                if (~ischar(sFileName) && ~ischar(sPathName))
-                    return
-                end
-            end
-            sStatus = dos(char(sDosString{1}));
-            if ~sStatus
-%                 figure();
-%                 disp(char(sDosString));
-%                 imshow(strcat(sPathName, 'montage.png'));
-            end
-            oFigure.ColourBarVisible = true;
-            oFigure.ColourBarOrientation = 'horiz';
-
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dMontageWidth dMontageHeight]);
-            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dMontageWidth dMontageHeight]);
-
-            oFigure.PlotData(0);
-            switch (oFigure.PlotType)
-                case 'Activation2DContour'
-                    sSaveCbarFilePath = fullfile(sPathName,'ATcolorbar.bmp');
-                    sSaveFilePath = fullfile(sPathName,'ATmontage_cbar.png');
-                case 'CV2DScatter'
-                    sSaveCbarFilePath = fullfile(sPathName,'CVcolorbar.bmp');
-                    sSaveFilePath = fullfile(sPathName,'CVmontage_cbar.png');
-            end
-            aPathFolders = regexp(sPathName,'\\','split');
-            sFigureTitle = char(aPathFolders{end-1});
-            oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
-            oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
-            oFigureTitle = text('string', sFigureTitle, 'parent', oHandle);
-            set(oFigureTitle, 'units', 'normalized');
-            set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
-            set(oFigureTitle, 'position', [0 3.2]);
-            oFigure.PrintFigureToFile(sSaveCbarFilePath);
-            sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
-                {' -gravity North -chop 0x2180'},{' -gravity South -chop 0x100'}, {sprintf(' %s', sSaveCbarFilePath)});
-            sStatus = dos(char(sChopString{1}));
+            %             %Get the save file path
+            %             %Call built-in file dialog to select filename
+            % %             [sFileName,sPathName]=uigetfile('*.*','Select image file(s)','multiselect','on');
+            % %             %Make sure the dialogs return char objects
+            % %             if iscell(sFileName)
+            % %                 if (~ischar(sFileName{1}) && ~ischar(sPathName))
+            % %                     return
+            % %                 end
+            % %                 sDosString = 'D:\Users\jash042\Documents\PhD\Analysis\Utilities\montage.exe ';
+            % %                 for i = 1:length(sFileName)
+            % %                     %Loop through files adding them to list
+            % %                     sDosString = strcat(sDosString, {sprintf(' %s%s',sPathName,char(sFileName{i}))});
+            % %                 end
+            % %                 iMontageX = 5;%5
+            % %                 iMontageY = 9;%9
+            % %                 dMontageWidth = 8.27 - 2; %in inches, with borders
+            % %                 dMontageHeight = 11.69 - 2.5 - 1; %in inches, with borders and two lines for caption and space for the colour bar
+            % %                 dWidth = dMontageWidth/iMontageX; %in inches
+            % %                 dHeight = dMontageHeight/iMontageY; %in inches
+            % %                 iPixelWidth = dWidth*300;
+            % %                 iPixelHeight = dHeight*300;
+            % %                 sDosString = strcat(sDosString, {' -quality 98 -tile '},{sprintf('%d',iMontageX)},'x',{sprintf('%d',iMontageY)},{' -geometry '},{sprintf('%d',iPixelWidth)},'x',{sprintf('%d',iPixelHeight)},{'+0+0 '}, sPathName, 'montage.png');
+            % %
+            % %             else
+            % %                 if (~ischar(sFileName) && ~ischar(sPathName))
+            % %                     return
+            % %                 end
+            % %             end
+            % %             sStatus = dos(char(sDosString{1}));
+            % %             if ~sStatus
+            % % %                 figure();
+            % % %                 disp(char(sDosString));
+            % % %                 imshow(strcat(sPathName, 'montage.png'));
+            % %             end
+            % %             oFigure.ColourBarVisible = true;
+            % %             oFigure.ColourBarOrientation = 'horiz';
+            % %
+            % %             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperunits','inches');
+            % %             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'paperposition',[0 0 dMontageWidth dMontageHeight]);
+            % %             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'papersize',[dMontageWidth dMontageHeight]);
+            % %
+            % %             oFigure.PlotData(0);
+            % %             switch (oFigure.PlotType)
+            % %                 case 'Activation2DContour'
+            % %                     sSaveCbarFilePath = fullfile(sPathName,'ATcolorbar.bmp');
+            % %                     sSaveFilePath = fullfile(sPathName,'ATmontage_cbar.png');
+            % %                 case 'CV2DScatter'
+            % %                     sSaveCbarFilePath = fullfile(sPathName,'CVcolorbar.bmp');
+            % %                     sSaveFilePath = fullfile(sPathName,'CVmontage_cbar.png');
+            % %             end
+            % %             aPathFolders = regexp(sPathName,'\\','split');
+            % %             sFigureTitle = char(aPathFolders{end-1});
+            % %             oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+            % %             oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+            % %             oFigureTitle = text('string', sFigureTitle, 'parent', oHandle);
+            % %             set(oFigureTitle, 'units', 'normalized');
+            % %             set(oFigureTitle,'fontsize',12, 'fontweight', 'bold');
+            % %             set(oFigureTitle, 'position', [0 3.2]);
+            % %             oFigure.PrintFigureToFile(sSaveCbarFilePath);
+            % %             sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
+            % %                 {' -gravity North -chop 0x2180'},{' -gravity South -chop 0x100'}, {sprintf(' %s', sSaveCbarFilePath)});
+            % %             sStatus = dos(char(sChopString{1}));
+            % %
+            % %             sAppend = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
+            % %                 {sprintf(' %s', sPathName)}, 'montage.png',{' -append'}, {sprintf(' %s', sSaveFilePath)});
+            % %             sStatus = dos(char(sAppend{1}));
             
-            sAppend = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s', sSaveCbarFilePath)}, ...
-                {sprintf(' %s', sPathName)}, 'montage.png',{' -append'}, {sprintf(' %s', sSaveFilePath)});
-            sStatus = dos(char(sAppend{1}));
+            %Save series of potential fields
+            iBeat = oFigure.oParentFigure.SelectedBeat;
+            oFigure.PlotType = 'Potential2DContour';
+            sDirectory = strcat(oFigure.oParentFigure.DefaultDirectory,'\',sprintf('Beat%d',iBeat));
+            if ~isdir(sDirectory)
+                mkdir(sDirectory);
+            end
+            sFileNames = cell(1,13);
+            iCount = 0;
+            for i = oFigure.oParentFigure.SelectedTimePoint:oFigure.oParentFigure.SelectedTimePoint+12;
+                iCount = iCount + 1;
+                %Get the full file name and save it to string attribute
+                sFileNames{iCount}=strcat(sDirectory,'\',oFigure.PlotType,sprintf('_%d',i),'.bmp');
+                oFigure.oParentFigure.SelectedTimePoint = i;
+                oFigure.PlotData(0);
+                drawnow; pause(.2);
+                oFigure.PrintFigureToFile(char(sFileNames{iCount}));
+                sChopString = strcat('D:\Users\jash042\Documents\PhD\Analysis\Utilities\convert.exe', {sprintf(' %s',char(sFileNames{iCount}))});
+                sChopString = strcat(sChopString, {' -gravity South -chop 0x50 -gravity West -chop 50x0 -gravity East -chop 50x0'}, {sprintf(' %s',char(sFileNames{iCount}))});
+                sStatus = dos(char(sChopString{1}));
+            end
+            %run virtualdub to create video
+            sCommandString = strcat({'D:\Users\jash042\Documents\InstallationFiles\VirtualDub-1.9.11-AMD64\Veedub64.exe  '}, ...
+                {'/i D:\Users\jash042\Documents\InstallationFiles\VirtualDub-1.9.11-AMD64\CreateMovie.vcf '},...
+                char(sFileNames{2}),{' '},sDirectory,'.avi /x');
+            sStatus = dos(char(sCommandString));
         end
         
         function oSavePlotLimitsMenu_Callback(oFigure, src, event)
@@ -409,6 +425,11 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotData(0);
         end
          
+        function oToggleAxesBarMenu_Callback(oFigure,src,event)
+            oFigure.AxesVisible = ~oFigure.AxesVisible;
+            oFigure.PlotData(0);
+        end
+        
         function oViewSchematicMenu_Callback(oFigure, src, event)
             %rearrange plots so that points and maps are above schematic
             if strcmp(oFigure.AxesOrder{2},'SchematicOverLay')
@@ -598,7 +619,7 @@ classdef MapElectrodes < SubFigure
             
             %Check if the conduction velocity data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID);
+                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID,24,oFigure.oParentFigure.SelectedBeat,[]);
             end
             
             %Update the plot type
@@ -618,7 +639,7 @@ classdef MapElectrodes < SubFigure
             %Is called when the user selects a new beat using the electrode
             %plot in AnalyseSignals
             switch (oFigure.PlotType)
-                case  'Activation2DContour'
+                case { 'Activation2DContour','CV2DScatter'}
                     oFigure.RefreshActivationData();
                 case 'Potential2DContour'
                     if isempty(oFigure.Potential)
@@ -742,20 +763,20 @@ classdef MapElectrodes < SubFigure
             iEndElectrode = GetNearestElectrodeID(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile), oPoints{2}.XData, oPoints{2}.YData);
             %calc conduction time and velocity
             iAtrialEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
-            iSANEvent = oFigure.GetEventIndexFromID('aghsm');
-            iBeat = oFigure.oParentFigure.SelectedBeat;
+            %             iSANEvent = oFigure.GetEventIndexFromID('aghsm');
             oBasePotential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile);
-            aTime =  oBasePotential.TimeSeries(...
-                oBasePotential.Beats.Indexes(iBeat,1):...
-                oBasePotential.Beats.Indexes(iBeat,2));
-            dStartTime = aTime(oBasePotential.Electrodes(iStartElectrode).(oBasePotential.Electrodes(iStartElectrode).SignalEvents{iSANEvent}).Index(iBeat));
-            dEndTime = aTime(oBasePotential.Electrodes(iEndElectrode).(oBasePotential.Electrodes(iEndElectrode).SignalEvents{iAtrialEvent}).Index(iBeat));
-            dConductionTime = (dEndTime - dStartTime)*1000;
-            dDistance = sqrt((oPoints{1}.XData - oPoints{2}.XData).^2 + ...
-                (oPoints{1}.YData - oPoints{2}.YData).^2);
-            dVelocity = (dDistance/10)/(dConductionTime/1000);
-            text(oPoints{2}.XData,oPoints{2}.YData,sprintf('%4.2f ms\n%4.2f mm\n%4.2f cm/s',[dConductionTime dDistance dVelocity]),'fontweight','bold');
-            
+            for iBeat = 1:size(oBasePotential.Beats.Indexes,1)
+                aTime =  oBasePotential.TimeSeries(...
+                    oBasePotential.Beats.Indexes(iBeat,1):...
+                    oBasePotential.Beats.Indexes(iBeat,2));
+                dStartTime = aTime(oBasePotential.Electrodes(iStartElectrode).(oBasePotential.Electrodes(iStartElectrode).SignalEvents{iAtrialEvent}).Index(iBeat));
+                dEndTime = aTime(oBasePotential.Electrodes(iEndElectrode).(oBasePotential.Electrodes(iEndElectrode).SignalEvents{iAtrialEvent}).Index(iBeat));
+                dConductionTime = (dEndTime - dStartTime)*1000;
+                dDistance = sqrt((oPoints{1}.XData - oPoints{2}.XData).^2 + ...
+                    (oPoints{1}.YData - oPoints{2}.YData).^2);
+                dVelocity = (dDistance/10)/(dConductionTime/1000);
+                fprintf('%2.0f,%4.2f,%4.2f,%4.2f\n',[iBeat dConductionTime dDistance dVelocity]);
+            end
         end
         function oLineToolMenu_OffCallback(oFigure,src,event)
             delete(oFigure.ImageLine);
@@ -863,7 +884,7 @@ classdef MapElectrodes < SubFigure
                      set(oTitle,'String','');
                      axis(oMapPlot, 'on');
                  case 'Activation2DContour'
-                     oFigure.PlotActivation(oMapPlot,bUpdateColorBar);
+                     oFigure.PlotActivation(oMapPlot,oPointsPlot,bUpdateColorBar);
                      if oFigure.Overlay
                          oFigure.PlotElectrodes(oPointsPlot);
                      end
@@ -902,13 +923,24 @@ classdef MapElectrodes < SubFigure
              %Set the axis limits
              axis(oMapPlot, 'equal');
              set(oMapPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
-             %              axis(oMapPlot, 'off');
+             if oFigure.AxesVisible
+                 axis(oMapPlot, 'on');
+             else
+                 axis(oMapPlot, 'off');
+             end
              %              set(oMapPlot,'xticklabel',{},'yticklabel',{});
              axis(oPointsPlot, 'equal');
              set(oPointsPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
              axis(oHiddenPlot, 'equal');
              set(oHiddenPlot,'xlim',oFigure.PlotLimits(1,:),'ylim',oFigure.PlotLimits(2,:));
-             %              axis(oHiddenPlot, 'off');
+
+             if oFigure.AxesVisible
+                 axis(oPointsPlot, 'on');
+                 axis(oHiddenPlot, 'on');
+             else
+                 axis(oPointsPlot, 'off');
+                 axis(oHiddenPlot, 'off');
+             end
              %              axes(oSchematicOverLay);
              %Refocus on HiddenPlot has this needs to be on the top to
              %receive user clicks.
@@ -998,7 +1030,7 @@ classdef MapElectrodes < SubFigure
              hold(oMapAxes,'off');
          end
          
-         function PlotActivation(oFigure, oMapAxes, bUpdateColorBar)
+         function PlotActivation(oFigure, oMapAxes, oPointAxes, bUpdateColorBar)
              %Plots a map of non-intepolated activation times
              %Make sure the current figure is MapElectrodes
              set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
@@ -1015,10 +1047,11 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
              aContourRange = oFigure.ColourBarLevels;
-             aContourRange = 0:1.2:8.4;
+             aContourRange = 0:1.2:12;
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).z,aContourRange);
+             set(oContour,'linewidth',1.5);
              caxis([aContourRange(1) aContourRange(end)]);
              colormap(oMapAxes, colormap(flipud(colormap(jet))));
              if oHandle < 0 
@@ -1054,21 +1087,22 @@ classdef MapElectrodes < SubFigure
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                      'MarkerSize',1,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
              end
-%              if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Origin')
-%                  %will have to change this if I have multiple signal
-%                  %events...
-                 aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
-                     oElectrodes,'aghsm','Origin');
-                 aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
-                 if ~isempty(aCoords)
-                     scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
-                         'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
-                 end
-                 %              else
-                 %                  [C iFirstActivationChannel] = min(oActivation.Beats(iBeat).FullActivationTimes);
-                 %                  plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                 %                      'MarkerSize',8,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
-%              end
+             %              if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Origin')
+             %                  %will have to change this if I have multiple signal
+             %                  %events...
+             aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
+                 oElectrodes,'aghsm','Origin');
+             aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
+             if ~isempty(aCoords)
+                 scatter(oPointAxes, aCoords(1,:), aCoords(2,:), ...
+                     'sizedata',1000,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
+             end
+             
+             %              aEarlySites = find(oActivation.Beats(iBeat).FullActivationTimes == min(oActivation.Beats(iBeat).FullActivationTimes));
+             %              aEarlyCoords = [oElectrodes(aEarlySites).Coords];
+             %              scatter(oPointAxes, aEarlyCoords(1,:), aEarlyCoords(2,:), ...
+             %                  'sizedata',12,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
+             
              if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Exit')
                  %will have to change this if I have multiple signal
                  %events...
@@ -1076,29 +1110,29 @@ classdef MapElectrodes < SubFigure
                      oElectrodes,oFigure.oParentFigure.SelectedEventID,'Exit');
                  aCoords = cell2mat({oElectrodes(aExitData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
                  if ~isempty(aCoords)
-%                      scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
-%                          'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
+                     %                      scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
+                     %                          'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
                  end
              end
-%              if isfield(oElectrodes(1),'AxisPoint')
-%                  aAxisData = cell2mat({oElectrodes(:).AxisPoint});
-%                  oAxesElectrodes = oElectrodes(aAxisData);
-%                  if ~isempty(oAxesElectrodes)
-%                      aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
-%                      scatter(oMapAxes,aAxesCoords(1,:),aAxesCoords(2,:), ...
-%                          'sizedata',122,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
-%                      if numel(oAxesElectrodes) == 2
-%                          aAxesLine = line(aAxesCoords(1,:),aAxesCoords(2,:),'linewidth',2,'color','k');
-%                          z = [1 2 3 4 5 6];
-%                          slabels = {'1','2','3','4','5','6'};
-%                          scatter(oMapAxes,((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2),...
-%                              ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2),'Marker','+',...
-%                              'sizedata',144,'MarkerEdgeColor','w');
-%                          text(((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2)+0.1,...
-%                              ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2)+0.1,slabels,'fontweight','bold','color','w');
-%                      end
-%                  end
-%              end
+             %              if isfield(oElectrodes(1),'AxisPoint')
+             %                  aAxisData = cell2mat({oElectrodes(:).AxisPoint});
+             %                  oAxesElectrodes = oElectrodes(aAxisData);
+             %                  if ~isempty(oAxesElectrodes)
+             %                      aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
+             %                      scatter(oMapAxes,aAxesCoords(1,:),aAxesCoords(2,:), ...
+             %                          'sizedata',122,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
+             %                      if numel(oAxesElectrodes) == 2
+             %                          aAxesLine = line(aAxesCoords(1,:),aAxesCoords(2,:),'linewidth',2,'color','k');
+             %                          z = [1 2 3 4 5 6];
+             %                          slabels = {'1','2','3','4','5','6'};
+             %                          scatter(oMapAxes,((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2),...
+             %                              ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2),'Marker','+',...
+             %                              'sizedata',144,'MarkerEdgeColor','w');
+             %                          text(((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(1,2)+0.1,...
+             %                              ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*z+aAxesCoords(2,2)+0.1,slabels,'fontweight','bold','color','w');
+             %                      end
+             %                  end
+             %              end
              hold(oMapAxes,'off');
              
              %              set(oMapAxes,'fontsize',8);
@@ -1120,7 +1154,7 @@ classdef MapElectrodes < SubFigure
              idxCV = find(~isnan(oFigure.Activation.Beats(iBeat).CVApprox));
              aCVdata = oFigure.Activation.Beats(iBeat).CVApprox(idxCV);
              aCVdata(aCVdata > 1) = 1;
-             scatter(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),12,aCVdata,'filled');
+             scatter(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),44,aCVdata,'filled');
              hold(oMapAxes, 'on');
              oQuivers = quiver(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,1),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,2),'color','k','linewidth',0.6);
              % %              set(oQuivers,'autoscale','on');
@@ -1189,9 +1223,13 @@ classdef MapElectrodes < SubFigure
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                      'MarkerSize',6,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
              end
-             [C iFirstActivationChannel] = min(oFigure.Activation.Beats(iBeat).FullActivationTimes);
-             plot(oMapAxes, oElectrodes(iFirstActivationChannel).Coords(1), oElectrodes(iFirstActivationChannel).Coords(2), ...
-                 'MarkerSize',6,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
+             aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
+                 oElectrodes,'aghsm','Origin');
+             aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
+             if ~isempty(aCoords)
+                 scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
+                         'sizedata',1000,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
+             end
              hold(oMapAxes,'off');
              %              set(oMapAxes,'fontsize',8);
              %              %              set(oMapAxes,'ytick',1:5);
@@ -1250,7 +1288,7 @@ classdef MapElectrodes < SubFigure
                      %Assuming the potential field has been normalised.
                      oFigure.cbarmax = 1;
                      oFigure.cbarmin = -0.1;
-                     Difference = 0.02;
+                     Difference = 0.05;
 %                      Difference = round((oFigure.cbarmax - oFigure.cbarmin)/40);
                      aContourRange = oFigure.cbarmin:Difference:oFigure.cbarmax;
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
@@ -1357,10 +1395,11 @@ classdef MapElectrodes < SubFigure
          
          function PlotSchematic(oFigure, oAxes)
              %use schematic with guide
-             %              sFilePath = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oExperiment.(oFigure.BasePotentialFile(2:end)).SchematicFilePath;
-             sGuideFile = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140703\20140703Schematic_noholes.bmp';
-%              sGuideFile = strrep(sFilePath, '.bmp', '_guide.bmp');
-             oImage = imshow(sGuideFile,'Parent', oAxes, 'Border', 'tight');
+             sFilePath = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oExperiment.(oFigure.BasePotentialFile(2:end)).SchematicFilePath;
+                          sGuideFile = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140703\20140703Schematic_noholes.bmp';
+                          sGuideFile = strrep(sFilePath, '.bmp', '_highres.bmp');
+                          oImage = imshow(sGuideFile,'Parent', oAxes, 'Border', 'tight');
+%              oImage = imshow(sFilePath,'Parent', oAxes, 'Border', 'tight');
              %make it transparent in the right places
              aCData = get(oImage,'cdata');
              aBlueData = aCData(:,:,3);
@@ -1395,7 +1434,6 @@ classdef MapElectrodes < SubFigure
              aIndices = ismember(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).SignalEvents,sEventID);
              iIndex = find(aIndices);
          end
-         
 
      end
 end

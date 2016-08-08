@@ -7,9 +7,9 @@ classdef SlideControl < SubFigure
     
     methods
         %% Constructor
-        function oFigure = SlideControl(oParent,sTitle,sEvent)
+        function oFigure = SlideControl(oParent,sTitle,sEvent,aLocation)
             oFigure = oFigure@SubFigure(oParent,'SlideControl',@SlideControl_OpeningFcn);
-            
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'position',aLocation);
             %set up slider
             aSliderTexts = [oFigure.oGuiHandle.oSliderTxtLeft,oFigure.oGuiHandle.oSliderTxtRight];
             sliderPanel(oFigure.oGuiHandle.(oFigure.sFigureTag), {'Title', sTitle}, {'Min', 1, 'Max', ...

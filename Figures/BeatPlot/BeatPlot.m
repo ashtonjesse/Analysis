@@ -23,6 +23,7 @@ classdef BeatPlot < SubFigure
         function oFigure = BeatPlot(oParent,oRootFigure,sBasePotentialFile)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'BeatPlot',@OpeningFcn);
+            set(oFigure.oGuiHandle.(oFigure.sFigureTag),'position',[22.3333   14.0000  184.6667   49.7500]);
             oFigure.oRootFigure = oRootFigure;
             oFigure.BasePotentialFile = sBasePotentialFile;
             %Add a listener so that the figure knows when a user has

@@ -533,6 +533,15 @@ classdef BasePotential < BaseSignal
             [oBasePotential.Electrodes(iElectrodeNumber).AxisPoint] = deal(false);
         end
         
+        function aNormalisedData = NormaliseDataToPeak(oBasePotential,aData)
+            %this function normalises the input data to the peak (designed
+            %for a single AP)
+            dBaseLine = mean(aData(1:20));
+            aNormalisedData = (aData+sign(dBaseLine)*(-1)*abs(dBaseLine));
+            dPeak = max(aNormalisedData);
+            aNormalisedData = aNormalisedData./dPeak;
+        end
+        
         %% Event related functions
          function sEventID = CreateNewEvent(oBasePotential, aElectrodes, aBeats, varargin)
              %Create a new event from the provided details
