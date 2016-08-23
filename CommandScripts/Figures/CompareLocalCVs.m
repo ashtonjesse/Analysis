@@ -7,14 +7,16 @@ oOptical = ans.oGuiHandle.oOptical;
 %set variables
 dWidth = 16;
 dHeight = 14;
-sFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\CompareCVs_20140718baro001.bmp';
+sFileSavePath = 'D:\Users\jash042\Documents\PhD\Thesis\Figures\CompareCVs_20140828baro001';
+sSchematicPath = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140828\20140828Schematic_noholes.bmp';
 % sSavePath = 'D:\Users\jash042\Documents\PhD\Analysis\Test.bmp';
 %Create plot panel that has 3 rows at top to contain pressure, phrenic and
 %heart rate 
+oFigure2 = figure();
+oSummaryAxes = axes('parent',oFigure2);
 
 oFigure = figure();
-
-%set up figure
+%set up figure1
 set(oFigure,'color','white')
 set(oFigure,'inverthardcopy','off')
 set(oFigure,'PaperUnits','centimeters');
@@ -60,10 +62,10 @@ aContours = aContourRange(1):1.2:aContourRange(2);
 aXlim = oOptical.oExperiment.Optical.AxisOffsets(1,1:2);
 aYlim = oOptical.oExperiment.Optical.AxisOffsets(2,1:2);
 %[1,2,3,4,5,22,23,24,25,26]
-for i = [1,2,3,4,5,22,23,24,25,26]
+for i = [1,2,3,4,5,31,32,34,35,36]
 
     if i > 5 && bNewFigure
-        sPlotColour = 'k';
+        sPlotColour = 'r';
         bNewFigure = false;
         iPanelIndex = 2;
         iAxesIndex = 0;
@@ -77,7 +79,7 @@ for i = [1,2,3,4,5,22,23,24,25,26]
     %% plot activation
     oActivation = oOptical.PrepareActivationMap(100, 'Contour', sEventID, 24, iBeatIndex, []);
     oOverlay = axes('position',get(oActivationAxes,'position'));
-    oImage = imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140718\20140718Schematic_noholes.bmp','Parent', oOverlay, 'Border', 'tight');
+    oImage = imshow(sSchematicPath,'Parent', oOverlay, 'Border', 'tight');
     %make it transparent in the right places
     aCData = get(oImage,'cdata');
     aBlueData = aCData(:,:,3);
@@ -94,9 +96,10 @@ for i = [1,2,3,4,5,22,23,24,25,26]
     aOriginData = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'aghsm','Origin');
     aOriginCoords = cell2mat({oOptical.Electrodes(aOriginData(iBeatIndex,:)).Coords});
     if ~isempty(aOriginCoords)
-        scatter(oOriginAxes, aOriginCoords(1,:), aOriginCoords(2,:), ...
-            'sizedata',81,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
+%         scatter(oOriginAxes, aOriginCoords(1,:), aOriginCoords(2,:), ...
+%             'sizedata',81,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
     end
+    hold(oOriginAxes,'on');
     [C, oContour] = contourf(oActivationAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeatIndex).z,aContours);
     axis(oActivationAxes,'equal');
     set(oActivationAxes,'xlim',aXlim,'ylim',aYlim,'box','off','color','none');
@@ -111,7 +114,7 @@ for i = [1,2,3,4,5,22,23,24,25,26]
     
     %% plot CV
     oOverlay = axes('position',get(oCVAxes,'position'));
-    oImage = imshow('D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140718\20140718Schematic_noholes.bmp','Parent', oOverlay, 'Border', 'tight');
+    oImage = imshow(sSchematicPath,'Parent', oOverlay, 'Border', 'tight');
     %make it transparent in the right places
     aCData = get(oImage,'cdata');
     aBlueData = aCData(:,:,3);
@@ -136,15 +139,34 @@ for i = [1,2,3,4,5,22,23,24,25,26]
     axis(oCVAxes,'off');
     
     %% Plot spatial CV
-    aEarlySites = find(oActivation.Beats(iBeatIndex).FullActivationTimes == min(oActivation.Beats(iBeatIndex).FullActivationTimes));
-    aEarlyCoords = [oOptical.Electrodes(aEarlySites).Coords];
-    
-    %find centre of mass
-    Mx = mean(aEarlyCoords(1,:));
-    My = mean(aEarlyCoords(2,:));
-    [val Ox] = min(abs(aEarlyCoords(1,:)-Mx));
-    [val Oy] = min(abs(aEarlyCoords(2,:)-My));
-    
+    if isfield(oOptical.Electrodes(1).(sEventID),'Exit')
+        aExitData = MultiLevelSubsRef(oOptical.oDAL.oHelper,...
+            oOptical.Electrodes,sEventID,'Exit');
+        aEarlyCoords = cell2mat({oOptical.Electrodes(aExitData(iBeatIndex,:)).Coords});
+        if isempty(aEarlyCoords)
+            aEarlySites = find(oActivation.Beats(iBeatIndex).FullActivationTimes == min(oActivation.Beats(iBeatIndex).FullActivationTimes));
+            aEarlyCoords = [oOptical.Electrodes(aEarlySites).Coords];
+            %find centre of mass
+            Mx = mean(aEarlyCoords(1,:));
+            My = mean(aEarlyCoords(2,:));
+            [val Ox] = min(abs(aEarlyCoords(1,:)-Mx));
+            [val Oy] = min(abs(aEarlyCoords(2,:)-My));
+        else
+            Ox = 1; Oy = 1;
+        end
+        
+    else
+        aEarlySites = find(oActivation.Beats(iBeatIndex).FullActivationTimes == min(oActivation.Beats(iBeatIndex).FullActivationTimes));
+        aEarlyCoords = [oOptical.Electrodes(aEarlySites).Coords];
+        %find centre of mass
+        Mx = mean(aEarlyCoords(1,:));
+        My = mean(aEarlyCoords(2,:));
+        [val Ox] = min(abs(aEarlyCoords(1,:)-Mx));
+        [val Oy] = min(abs(aEarlyCoords(2,:)-My));
+    end
+
+    scatter(oOriginAxes,aEarlyCoords(1,Ox),aEarlyCoords(2,Oy), ...
+         'sizedata',12,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
     %find min and max CVs from an area of 9x9 not include the central 3x3
     %get CVs for accepted electrodes
     aCVs = oActivation.Beats(iBeatIndex).CVApprox(logical(aAcceptedChannels));
@@ -153,21 +175,16 @@ for i = [1,2,3,4,5,22,23,24,25,26]
     RelativeDistVectors = aCoords-repmat([aEarlyCoords(1,Ox),aEarlyCoords(2,Oy)],[size(aCoords,1),1]);
     [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
     aLocalRegion = sort(SupportPoints(1:49),1,'ascend');
-    %remove central 3x3
+    %don't remove central 3x3
     aCentralRegion = sort(SupportPoints(1:9),1,'ascend');
     aPointsToPlot = false(1,numel(aElectrodes));
     aPointsToPlot(aLocalRegion) = true;
-    aPointsToPlot(aCentralRegion) = false;
+    aPointsToPlot(aCentralRegion) = true;
     %get CVs of interest
     aLocalCVs = aCVs(aPointsToPlot);
     aLocalCVVectors = aCVVectors(aPointsToPlot,:);
     aLocalCoords = aCoords(aPointsToPlot,:);
-    
-    % scatter(oAxes, aLocalCoords(:,1), aLocalCoords(:,2), 44,aLocalCVs,'filled');
-    %get coords of new points
-    % oFigure2 = figure();
-    % oAxes2 = axes();
-    
+            
     scatter(oCVSpaceAxes, aLocalCVs.*aLocalCVVectors(:,1), aLocalCVs.*aLocalCVVectors(:,2),6,sPlotColour, 'filled');
     hold(oCVSpaceAxes,'on');
     plot(oCVSpaceAxes,[-1.5 1.5],[0 0],'k');
@@ -178,5 +195,17 @@ for i = [1,2,3,4,5,22,23,24,25,26]
         set(get(oCVSpaceAxes,'ylabel'),'string','CV (m/s)');
         set(get(oCVSpaceAxes,'xlabel'),'string','CV (m/s)');
     end
+    
+    %plot onto summary axes
+    scatter(oSummaryAxes, aLocalCVs.*aLocalCVVectors(:,1), aLocalCVs.*aLocalCVVectors(:,2),6,sPlotColour, 'filled');
+    hold(oSummaryAxes,'on');
 end
-print(oFigure,'-dbmp','-r600',sFileSavePath)
+plot(oSummaryAxes,[-1.5 1.5],[0 0],'k');
+plot(oSummaryAxes,[0 0],[1.5 -1.5],'k');
+axis(oSummaryAxes,'equal');
+set(oSummaryAxes,'xlim',[-1.5 1.5],'ylim',[-1.5 1.5],'box','off');
+set(get(oSummaryAxes,'ylabel'),'string','CV (m/s)');
+set(get(oSummaryAxes,'xlabel'),'string','CV (m/s)');
+
+print(oFigure,'-dbmp','-r600',[sFileSavePath,'.bmp'])
+print(oFigure2,'-dbmp','-r600',[sFileSavePath,'_summary.bmp'])

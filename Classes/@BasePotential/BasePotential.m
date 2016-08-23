@@ -273,7 +273,7 @@ classdef BasePotential < BaseSignal
             % electrodes
             
             %initialise variables
-            if ~isfield(oBasePotential,'Beats')
+            if ~any(strcmp(properties(oBasePotential), 'Beats'))
                 oBasePotential.Beats.Indexes = oBasePotential.Electrodes(1).Processed.BeatIndexes;
             end
             dPeaks = zeros(size(oBasePotential.Beats.Indexes,1),length(oBasePotential.Electrodes));
