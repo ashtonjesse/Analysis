@@ -1,5 +1,3 @@
-%figure for HRS 2016 abstract
-
 %create layout
 %load data
 %plot data

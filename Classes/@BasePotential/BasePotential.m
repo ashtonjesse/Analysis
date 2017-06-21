@@ -20,6 +20,21 @@ classdef BasePotential < BaseSignal
     end
         
     methods (Access = public)
+        function GetBaseline(oBasePotential,iWaveletScale)
+            oWaitbar = waitbar(0,'Please wait...');
+            iTotal = numel(oBasePotential.Electrodes);
+            %Loop through the channels
+            for i=1:iTotal
+                %Update the waitbar
+                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Signal %d',i));
+                oBasePotential.Electrodes(i).Processed.Baseline = ...
+                            oBasePotential.ComputeWaveletBaseline(...
+                            oBasePotential.Electrodes(i).(oBasePotential.Electrodes(i).Status).Data,...
+                            iWaveletScale);
+            end
+            close(oWaitbar);
+        end
+        
         function OutData = RemoveLinearInterpolation(oBasePotential, aInData, iOrder)
             %       *RemoveInterpolation - Using linear
             %       interpolation between isoelectric points to remove this
@@ -65,6 +80,21 @@ classdef BasePotential < BaseSignal
                 %being the actual averages them selves.
                 OutData(:,j) = fInterpolate({aAverages(:,1),aAverages(:,j+1)},iOrder,x);
             end
+        end
+        
+        function ProcessArrayData(oBasePotential, aInOptions)
+            % Loops through all the electrodes in the array and makes calls
+            % to the inherited processing methods
+            
+            oWaitbar = waitbar(0,'Please wait...');
+            iTotal = numel(oBasePotential.Electrodes);
+            %Loop through the channels
+            for i=1:iTotal
+                %Update the waitbar
+                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Signal %d',i));
+                oBasePotential.ProcessElectrodeData(i,aInOptions);
+            end
+            close(oWaitbar);
         end
         
         function ProcessElectrodeData(oBasePotential, iChannel, aInOptions)
@@ -494,6 +524,17 @@ classdef BasePotential < BaseSignal
             [C iElectrodeNumber] = min(aDistance);
         end
         
+        function aElectrodes = GetElectrodesWithinRadius(oBasePotential, Loc, dRadius)
+            %return logical array to select accepted electrodes within radius of specified location
+            %get accepted electrodes
+            aCoords = [oBasePotential.Electrodes(:).Coords]';
+            RelativeDistVectors = aCoords-repmat(Loc,[size(aCoords,1),1]);
+            [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
+            aLocalRegion = SupportPoints(Dist <= dRadius);
+            aElectrodes = false(1,numel(oBasePotential.Electrodes));
+            aElectrodes(aLocalRegion) = true;
+        end
+        
         function [oElectrode, iIndex] = GetElectrodeByName(oBasePotential,sChannelName)
             %Return the electrode that matches the input name
             %This is a hacky way to do it but IDGF
@@ -540,6 +581,30 @@ classdef BasePotential < BaseSignal
             aNormalisedData = (aData+sign(dBaseLine)*(-1)*abs(dBaseLine));
             dPeak = max(aNormalisedData);
             aNormalisedData = aNormalisedData./dPeak;
+        end
+        
+        function TruncateData(oBasePotential, bIndexesToKeep)
+            %This performs a truncation on potential data and processed
+            %data as well if there is some
+            
+            %Truncate the time series
+            oBasePotential.TimeSeries = oBasePotential.TimeSeries(bIndexesToKeep);
+            
+            %Get an array of columns with the potential data from each
+            %electrode
+            aPotentialData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Potential','Data');
+            %Select the indexes to keep
+            aPotentialData = aPotentialData(bIndexesToKeep,:);
+            %Truncate the potential data
+            oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Potential','Data',aPotentialData);
+            
+            if strcmp(oBasePotential.Electrodes(1).Status,'Processed')
+                %perform on existing potential data as well
+                aProcessedData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
+                aProcessedData = aProcessedData(bIndexesToKeep,:);
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data',aProcessedData);
+            end
+            
         end
         
         %% Event related functions

@@ -5,7 +5,6 @@
 % clear all;
 
 % },{
-%     'G:\PhD\Experiments\Bordeaux\Data\20131129\20131129baro003\Pressure.mat'...
 sSavePath = 'C:\Users\jash042.UOA\Dropbox\Publications\2015\Paper1\Figures\ChemoCLVsLocation_postIVB.png';
 % %set up figure
 % dWidth = 9;

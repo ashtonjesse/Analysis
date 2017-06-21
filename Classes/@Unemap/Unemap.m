@@ -150,22 +150,6 @@ classdef Unemap < BasePotential
             [~, ~, ~] = oUnemap.CalculateSinusRateFromRMS();
         end
         
-        function ProcessArrayData(oUnemap, aInOptions)
-            % Loops through all the electrodes in the array and makes calls
-            % to the inherited processing methods
-            
-            oWaitbar = waitbar(0,'Please wait...');
-            iTotal = oUnemap.oExperiment.Unemap.NumberOfChannels;
-            %Loop through the channels
-            for i=1:iTotal
-                %Update the waitbar
-                waitbar(i/iTotal,oWaitbar,sprintf('Please wait... Processing Signal %d',i));
-                oUnemap.ProcessElectrodeData(i,aInOptions);
-            end
-            close(oWaitbar);
-            
-        end
-       
         function TruncateArrayData(oUnemap, bIndexesToKeep)
             %This performs a truncation on potential data and processed
             %data as well if there is some

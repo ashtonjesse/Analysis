@@ -465,7 +465,10 @@ classdef BeatPlot < SubFigure
                      line(aTime,aEnvelope,'color','b','parent',oEnvelopePlot);
                      axis(oEnvelopePlot,[TimeMin, TimeMax, (1-sign(aEnvelopeLimits(1))*0.1)*aEnvelopeLimits(1), (1+sign(aEnvelopeLimits(2))*0.1)*aEnvelopeLimits(2)]);
                  end
-                 
+                 hold(oSignalPlot,'on');
+                 %plot baseline estimate
+                 plot(oSignalPlot,aTime(1:10),mean(aData(1:10))*ones(1,10),'k--','linewidth',2);
+                 hold(oSignalPlot,'off');
                  %Plot the slope data
                  plot(aTime,aSlope,'color','r','parent',oSlopePlot);
                  %Loop through events

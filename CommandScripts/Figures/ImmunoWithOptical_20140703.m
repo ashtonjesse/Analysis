@@ -37,7 +37,7 @@ oSubplotPanel.de.margin = [0 0 0 0];%[left bottom right top]
 oSubplotPanel(1).margin = [0 5 0 0];
 
 %set parameters
-iBeats = [4,50];
+iBeats = [4,50];58
 aContourRange = [0 12];
 aContours = aContourRange(1):1.2:aContourRange(2);
 dTextXAlign = 0;

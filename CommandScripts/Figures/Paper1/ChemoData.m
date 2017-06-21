@@ -5,18 +5,18 @@
 %this figure needs to have a CI plot added to it called CChPhase
 
 close all;
-% clear all;
-% % % % %Read in the file containing all the optical data
-% sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140826\';
-% sSubDir = [sBaseDir,'20140826chemo001\'];
-% 
-% %% read in the optical entities
-% sAvOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-wave.mat'];
-% oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
-% sOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-waveEach-forpaper.mat'];
-% oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
-% % % read in the pressure entity
-% oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
+clear all;
+% % % %Read in the file containing all the optical data
+sBaseDir = 'G:\PhD\Experiments\Auckland\InSituPrep\20140826\';
+sSubDir = [sBaseDir,'20140826chemo001\'];
+
+%% read in the optical entities
+sAvOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-wave.mat'];
+oAvOptical = GetOpticalFromMATFile(Optical,sAvOpticalFileName);
+sOpticalFileName = [sSubDir,'chemo001a_3x3_1ms_g10_LP100Hz-waveEach-forpaper.mat'];
+oOptical = GetOpticalFromMATFile(Optical,sOpticalFileName);
+% % read in the pressure entity
+oThisPressure = GetPressureFromMATFile(Pressure,[sSubDir,'Pressure.mat'],'Optical');
 
 %set variables
 dWidth = 16;
@@ -185,7 +185,7 @@ iCount = 0;
 for i = 1:yrange
     for j = 1:xrange
         iCount = iCount + 1;
-        oActivation = oOptical.PrepareActivationMap(100, 'Contour', 'arsps', 24, iBeats(iCount), []);
+        oActivation = oOptical.PrepareActivationMap(100, 'Contour', 'arsps', 24, iBeats(iCount), [],[]);
         oAxes = oSubplotPanel(1,2,2,i,j).select();
              %plot the schematic
         oOverlay = axes('position',get(oAxes,'position'));

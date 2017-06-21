@@ -13,6 +13,7 @@ classdef OpticalBeatDetection < BaseFigure
         SelectedTimePoint = 25;
         CurrentZoomLimits = [];
         DefaultDirectory;
+        FilteredSignals;
     end
     
     events
@@ -52,6 +53,9 @@ classdef OpticalBeatDetection < BaseFigure
             set(oFigure.oGuiHandle.oAcceptAllMenu, 'callback', @(src, event) oAcceptAllMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oDeleteMenu, 'callback', @(src, event) oDeleteMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oLoadRefPointsMenu, 'callback', @(src, event) oLoadRefPointsMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oWaveletMenu, 'callback', @(src, event) oWaveletMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oTruncateMenu, 'callback', @(src, event) oTruncateMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oBaselineMenu, 'callback', @(src, event) oBaselineMenu_Callback(oFigure, src, event));
             
             %set up axes
             oFigure.oGuiHandle.oPanel = panel(oFigure.oGuiHandle.uipanel);
@@ -267,6 +271,34 @@ classdef OpticalBeatDetection < BaseFigure
         function oLoadRefPointsMenu_Callback(oFigure, src, event)
         
         end
+        
+        function oWaveletMenu_Callback(oFigure, src, event)
+            WaveletAnalysis(oFigure,oFigure,'oOptical');
+        end
+        
+        function oTruncateMenu_Callback(oFigure, src, event)
+            %Open the SelectData figure to select the data to truncate
+            oOptical = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile);
+            oElectrode = oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).Electrodes(oFigure.SelectedChannel);
+            %Get the currently selected electrode
+            oSelectDataFigure = SelectData(oFigure,'SelectData',oOptical.TimeSeries,...
+                oElectrode.(oElectrode.Status).Data,...
+                {{'oInstructionText','string','Select a range of data to truncate.'} ; ...
+                {'oBottomText','visible','off'} ; ...
+                {'oBottomPopUp','visible','off'} ; ...
+                {'oReturnButton','string','Done'} ; ...
+                {'oAxes','title',sprintf('Channel %s Potential Data',num2str(oFigure.SelectedChannel))}});
+            %Add a listener so that the figure knows when a user has
+            %selected the data to truncate            
+            addlistener(oSelectDataFigure,'DataSelected',@(src,event) oFigure.TruncateData(src, event));
+        end
+        
+        function oBaselineMenu_Callback(oFigure, src, event)
+            %apply wavelet transform to remove baseline drift
+            oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).GetBaseline(9);
+            oFigure.Replot(oFigure.SelectedChannel);
+        end
+        
     end
     
     methods (Access = private)
@@ -370,8 +402,17 @@ classdef OpticalBeatDetection < BaseFigure
              oFigure.SelectedChannels = event.ArrayData;
              %Fill plots
              oFigure.Replot(oFigure.SelectedChannel);
-          end
+         end
   
+          function TruncateData(oFigure, src, event)
+            %Get the boolean time indexes of the data that has been selected
+            bIndexes = event.Indexes;
+            %Negate this so that we can select the potential data we want
+            %to keep.
+            bIndexes = ~bIndexes;
+            %Truncate data that is not selected
+            oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TruncateData(bIndexes);
+        end
     end
     
     methods (Access = public);
@@ -397,7 +438,7 @@ classdef OpticalBeatDetection < BaseFigure
                         if oElectrode.Accepted
                             plot(oDataAxes,oOptical.TimeSeries,oElectrode.(oElectrode.Status).Data,'k');
                             hold(oDataAxes,'on');
-                            plot(oDataAxes,oOptical.TimeSeries,oElectrode.Processed.Beats,'-g');
+%                             plot(oDataAxes,oOptical.TimeSeries,oElectrode.Processed.Beats,'-k');
                             plot(oDataAxes,oOptical.TimeSeries(...
                                 oOptical.Beats.Indexes(oFigure.SelectedBeat,1):...
                                 oOptical.Beats.Indexes(oFigure.SelectedBeat,2)),...

@@ -173,6 +173,10 @@ classdef BaseSignal < BaseEntity
                 OutData(i) = dIntegrand;
             end
         end
+        
+        function OutData = ComputeWaveletBaseline(oBaseSignal,aInData,iScale)
+            OutData = DWTFilterRemoveScales(aInData, iScale);
+        end
     end
 end
 

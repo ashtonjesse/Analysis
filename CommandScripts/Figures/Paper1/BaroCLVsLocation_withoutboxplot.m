@@ -27,7 +27,6 @@ aSubplotPanel.pack('v',3);
 aSubplotPanel(1).pack('h',2);
 aSubplotPanel(2).pack('h',2);
 aSubplotPanel(3).pack('h',{0.08 0.5});
-aSubplotPanel(1,1).pack('v',{0.1 0.9});
 aSubplotPanel.margin = [15 13 2 8];
 % aSubplotPanel.de.margin = [8 10 0 0];
 aSubplotPanel.de.margin = [15 20 0 0];
@@ -59,7 +58,7 @@ aControlFiles = {{...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro002\Pressure.mat' ...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro003\Pressure.mat' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro003\Pressure.mat' ...%4-9 rejected due to change in baseline rate
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001\Pressure.mat' ...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro002\Pressure.mat' ...
@@ -125,7 +124,7 @@ aInitialPreLocGroups = cell(1,3);
 aMaxLocs = cell(numel(aControlFiles),1);
 aCombinedLocs = cell(numel(aControlFiles),1);
 %select the axes to plot the steady state data
-oSSAxes = aSubplotPanel(1,1,2).select();
+oSSAxes = aSubplotPanel(1,1).select();
 oOnsetAxes = aSubplotPanel(2,1).select();
 oRecoveryAxes = aSubplotPanel(2,2).select();
 aRsq = cell(1,numel(aControlFiles));
@@ -262,10 +261,10 @@ for i = 1:numel(aControlFiles)
     ThisPressure = aPlateauPressures{i};%-aBaselinePressures{i}
     ThisCL = aPlateauCouplingIntervals{i};%-aBaselineCouplingIntervals{i}
     switch i
-        case {1,2,3,4,5}
-            scatter(oSSAxes,ThisPressure,ThisCL,9,aMaxLocs{i},'filled');%
-            cmap = colormap(oSSAxes, jet(aCRange(2)-aCRange(1)));
-            caxis(oSSAxes, aCRange);
+        case {1,2,3,4,5} %only in cases where pressure was varied systematically
+            scatter(oSSAxes,ThisPressure,ThisCL,9,'k','filled');%aMaxLocs{i} for colour
+            %             cmap = colormap(oSSAxes, jet(aCRange(2)-aCRange(1)));
+            %             caxis(oSSAxes, aCRange);
     end
     hold(oSSAxes,'on');
     
@@ -295,8 +294,8 @@ oLine = plot(oSSAxes,StackedPressures,yCalc,'-','color','k');
 %      'parent',oSSAxes,'horizontalalignment','left','fontsize',8);
 set(oSSAxes,'ylim',[0 800]);
 set(oSSAxes,'xlim',[80 150]);
-set(oSSAxes,'ytick',[0 400 800]);
-set(oSSAxes,'yticklabel',[0 400 800]);
+set(oSSAxes,'ytick',[0 200 400 600 800]);
+set(oSSAxes,'yticklabel',[0 200 400 600 800]);
 hold(oSSAxes,'off');
 hold(oOnsetAxes, 'off'); 
 hold(oRecoveryAxes, 'off'); 
@@ -311,13 +310,13 @@ set(oLabelAxes,'ylim',aylim);
 axis(oLabelAxes,'off');
 
 %create scalebar
-oBarAxes = aSubplotPanel(1,1,1).select();
-aCRange = [aCRange(1) aCRange(2)-1];
-aContours = aCRange(1):1:aCRange(2);
-cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance',8);
-aCRange = [aCRange(1) aCRange(2)+1];
-oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),2,'DP site (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
-set(oXlabel,'fontsize',8);
+% oBarAxes = aSubplotPanel(1,1,1).select();
+% aCRange = [aCRange(1) aCRange(2)-1];
+% aContours = aCRange(1):1:aCRange(2);
+% cbarf_edit(aCRange, aContours,'horiz','linear',oBarAxes,'Distance',8);
+% aCRange = [aCRange(1) aCRange(2)+1];
+% oXlabel = text(((aCRange(2)-aCRange(1))/2)+abs(aCRange(1)),2,'DP site (mm)','parent',oBarAxes,'fontunits','points','horizontalalignment','center');
+% set(oXlabel,'fontsize',8);
 
 %plot histogram of locations
 StackedLocs = vertcat(aCombinedLocs{:});
@@ -401,5 +400,5 @@ set(get(oAxes,'ylabel'),'string','\DeltaCL (ms)');
 %print
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-% export_fig(sPaperSavePath,'-png','-r600','-nocrop');
-export_fig(sThesisSavePath,'-dbmp','-r600','-nocrop');
+% export_fig(sPaperSavePath,'-png','-r300','-nocrop');
+% export_fig(sThesisSavePath,'-dbmp','-r300','-nocrop');

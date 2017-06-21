@@ -52,7 +52,8 @@ classdef MapElectrodes < SubFigure
             set(oFigure.oGuiHandle.oOverlayMenu, 'callback', @(src, event) oOverlayMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oSaveMapMenu, 'callback', @(src, event) oSaveMapMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oExportToTextMenu, 'callback', @(src, event) oExportToTextMenu_Callback(oFigure, src, event));
-             set(oFigure.oGuiHandle.oDeltaVmContourMenu, 'callback', @(src, event) oDeltaVmContourMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oDeltaVmContourMenu, 'callback', @(src, event) oDeltaVmContourMenu_Callback(oFigure, src, event));
+            set(oFigure.oGuiHandle.oAPAContourMenu, 'callback', @(src, event) oAPAContourMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oPotContourMenu, 'callback', @(src, event) oPotContourMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oCVScatterMenu, 'callback', @(src, event) oCVScatterMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oRefreshEventMenu, 'callback', @(src, event) oRefreshEventMenu_Callback(oFigure, src, event));
@@ -350,7 +351,7 @@ classdef MapElectrodes < SubFigure
             end
             sFileNames = cell(1,13);
             iCount = 0;
-            for i = oFigure.oParentFigure.SelectedTimePoint:oFigure.oParentFigure.SelectedTimePoint+15;
+            for i = oFigure.oParentFigure.SelectedTimePoint:oFigure.oParentFigure.SelectedTimePoint+10;
                 iCount = iCount + 1;
                 %Get the full file name and save it to string attribute
                 sFileNames{iCount}=strcat(sDirectory,'\',oFigure.PlotType,sprintf('_%d',i),'.bmp');
@@ -462,7 +463,14 @@ classdef MapElectrodes < SubFigure
         
         function oRefreshEventMenu_Callback(oFigure, src, event)
             %Refresh the data
-            oFigure.RefreshActivationData();
+            switch (oFigure.PlotType)
+                case 'Potential2DContour'
+                    oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[],[]);
+                    oFigure.PlotData(1);
+                case {'Activation2DContour','DeltaVm2DContour','APA2DContour'}
+                    oFigure.RefreshActivationData(true);
+            end
+            
         end
         
         function oRefreshBeatEventMenu_Callback(oFigure, src, event)
@@ -561,9 +569,9 @@ classdef MapElectrodes < SubFigure
             
             %Check if the potential data needs to be prepared
             if isempty(oFigure.Potential)
-                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[]);
+                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[],[]);
             elseif isempty(oFigure.Potential.Beats(oFigure.oParentFigure.SelectedBeat).Fields)
-                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,oFigure.Potential);
+                oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,oFigure.Potential,[]);
             end
             
             %Update the plot type
@@ -582,28 +590,7 @@ classdef MapElectrodes < SubFigure
             %Generate activation map for the current beat
             
             %Check if the activation data needs to be prepared
-            if isempty(oFigure.oParentFigure.SelectedEventID)
-                oFigure.oParentFigure.SelectedEventID = 'arsps';
-            end
-            iEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
-            if isempty(oFigure.Activation)
-                if iEvent > 1
-                    for i = 1:iEvent
-                        sEventID = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).SignalEvents{i};
-                        oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', sEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
-                        oFigure.Activation = [oFigure.Activation oActivation];
-                    end
-                else
-                    oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
-                end
-            elseif iEvent > numel(oFigure.Activation)
-                %need to add another Activation struct as there is more
-                %than one event
-                oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
-                oFigure.Activation = [oFigure.Activation oActivation];
-            elseif isempty(oFigure.Activation(iEvent).Beats(oFigure.oParentFigure.SelectedBeat).ActivationTimes)
-                oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, oFigure.Activation(iEvent));
-            end
+            oFigure.CheckActivationData();
             
             %Update the plot type
             if strcmp(oFigure.PlotType,'Activation2DContour')
@@ -616,32 +603,10 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotData(bUpdateColorBar);
         end
        
-         function oDeltaVmContourMenu_Callback(oFigure, src, event)
+        function oDeltaVmContourMenu_Callback(oFigure, src, event)
             %Generate activation map for the current beat
             
-            %Check if the activation data needs to be prepared
-            if isempty(oFigure.oParentFigure.SelectedEventID)
-                oFigure.oParentFigure.SelectedEventID = 'arsps';
-            end
-            iEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
-            if isempty(oFigure.Activation)
-                if iEvent > 1
-                    for i = 1:iEvent
-                        sEventID = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).SignalEvents{i};
-                        oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', sEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
-                        oFigure.Activation = [oFigure.Activation oActivation];
-                    end
-                else
-                    oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
-                end
-            elseif iEvent > numel(oFigure.Activation)
-                %need to add another Activation struct as there is more
-                %than one event
-                oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
-                oFigure.Activation = [oFigure.Activation oActivation];
-            elseif isempty(oFigure.Activation(iEvent).Beats(oFigure.oParentFigure.SelectedBeat).ActivationTimes)
-                oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, oFigure.Activation(iEvent));
-            end
+            oFigure.CheckActivationData();
             
             %Update the plot type
             if strcmp(oFigure.PlotType,'DeltaVm2DContour')
@@ -654,12 +619,28 @@ classdef MapElectrodes < SubFigure
             oFigure.PlotData(bUpdateColorBar);
         end
         
+        function oAPAContourMenu_Callback(oFigure, src, event)
+            %Generate activation map for the current beat
+            
+            oFigure.CheckActivationData();
+            
+            %Update the plot type
+            if strcmp(oFigure.PlotType,'APA2DContour')
+                bUpdateColorBar = 0;
+            else
+                oFigure.PlotType = 'APA2DContour';
+                bUpdateColorBar = 1;
+            end
+            %Plot a 2D activation map
+            oFigure.PlotData(bUpdateColorBar);
+        end
+        
         function oCVScatterMenu_Callback(oFigure, src, event)
             %Generate conduction velocity map for the current beat
             
             %Check if the conduction velocity data needs to be prepared
             if isempty(oFigure.Activation)
-                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID,24,oFigure.oParentFigure.SelectedBeat,[]);
+                oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Scatter',oFigure.oParentFigure.SelectedEventID,24,oFigure.oParentFigure.SelectedBeat,[], []);
             end
             
             %Update the plot type
@@ -679,13 +660,13 @@ classdef MapElectrodes < SubFigure
             %Is called when the user selects a new beat using the electrode
             %plot in AnalyseSignals
             switch (oFigure.PlotType)
-                case { 'Activation2DContour','CV2DScatter','DeltaVm2DContour'}
+                case { 'Activation2DContour','CV2DScatter','DeltaVm2DContour','APA2DContour'}
                     oFigure.RefreshActivationData();
                 case 'Potential2DContour'
                     if isempty(oFigure.Potential)
-                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[]);
+                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,[],[]);
                     elseif isempty(oFigure.Potential.Beats(oFigure.oParentFigure.SelectedBeat).Fields)
-                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,oFigure.Potential);
+                        oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.oParentFigure.SelectedEventID,oFigure.Potential,[]);
                     end
                     oFigure.PlotData(0);
             end
@@ -715,13 +696,13 @@ classdef MapElectrodes < SubFigure
            switch (oFigure.PlotType)
                 case 'JustElectrodes'
                     oFigure.ReplotElectrodes();
-                case {'Activation2DContour','DeltaVm2DContour'}
+                case {'Activation2DContour','DeltaVm2DContour','APA2DContour'}
                     oFigure.RefreshActivationData();
                case 'Potential2DContour'
                    if isempty(oFigure.Potential)
-                       oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,[]);
+                       oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,[],[]);
                    elseif isempty(oFigure.Potential.Beats(oFigure.oParentFigure.SelectedBeat).Fields)
-                       oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.Potential);
+                       oFigure.Potential = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PreparePotentialMap(100,oFigure.oParentFigure.SelectedBeat,oFigure.Potential,[]);
                    end
                    oFigure.PlotData(0);
             end
@@ -743,6 +724,7 @@ classdef MapElectrodes < SubFigure
             xLoc = oPoint(1,1);
             yLoc = oPoint(1,2);
             iChannel = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).GetNearestElectrodeID(xLoc, yLoc);
+            fprintf('[%4.1f;%4.1f] %3.0f\n',oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Coords,iChannel);
             %Notify listeners about the new electrode selection
             notify(oFigure, 'ElectrodeSelected', DataPassingEvent([],iChannel));
         end
@@ -825,6 +807,32 @@ classdef MapElectrodes < SubFigure
      end
      
      methods (Access = private)
+         function CheckActivationData(oFigure)
+             %Check if the activation data needs to be prepared
+             if isempty(oFigure.oParentFigure.SelectedEventID)
+                 oFigure.oParentFigure.SelectedEventID = 'arsps';
+             end
+             iEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
+             if isempty(oFigure.Activation)
+                 if iEvent > 1
+                     for i = 1:iEvent
+                         sEventID = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(1).SignalEvents{i};
+                         oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', sEventID, 24, oFigure.oParentFigure.SelectedBeat, [], []);
+                         oFigure.Activation = [oFigure.Activation oActivation];
+                     end
+                 else
+                     oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, [], []);
+                 end
+             elseif iEvent > numel(oFigure.Activation)
+                 %need to add another Activation struct as there is more
+                 %than one event
+                 oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, [], []);
+                 oFigure.Activation = [oFigure.Activation oActivation];
+             elseif isempty(oFigure.Activation(iEvent).Beats(oFigure.oParentFigure.SelectedBeat).ActivationTimes)
+                 oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, oFigure.Activation(iEvent), []);
+             end
+         end
+         
          function MapChannels(oFigure,src,event)
              oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).MapChannel(oFigure.oParentFigure.SelectedChannels,...
                  oFigure.oParentFigure.SelectedEventID,event.Values(1):event.Values(2));
@@ -944,6 +952,13 @@ classdef MapElectrodes < SubFigure
                      end
                      oTitle = get(oMapPlot,'Title');
                      set(oTitle,'String','');
+                 case 'APA2DContour'
+                     oFigure.PlotAPA(oMapPlot,oPointsPlot,bUpdateColorBar);
+                     if oFigure.Overlay
+                         oFigure.PlotElectrodes(oPointsPlot);
+                     end
+                     oTitle = get(oMapPlot,'Title');
+                     set(oTitle,'String','');
              end
              %Reset the hiddenplot and overlay position in case mapplot has moved
              set(oPointsPlot,'Position',get(oMapPlot,'Position'));
@@ -1004,18 +1019,16 @@ classdef MapElectrodes < SubFigure
              %Choose which routine to call.
              iEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
              if isempty(oFigure.Activation)
-                 oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
+                 oFigure.Activation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, [], []);
              elseif iEvent > numel(oFigure.Activation)
                  %need to add another Activation struct as there is more
                  %than one event
-                 oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
+                 oActivation = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, [], []);
                  oFigure.Activation = [oFigure.Activation oActivation];
-             elseif isempty(varargin)
-                 oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, []);
              elseif isempty(oFigure.Activation(iEvent).Beats(oFigure.oParentFigure.SelectedBeat).ActivationTimes)
-                 oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, oFigure.Activation(iEvent));
+                 oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, oFigure.Activation(iEvent), []);
              elseif ~isempty(varargin)
-                 oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, oFigure.Activation(iEvent));
+                 oFigure.Activation(iEvent) = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).PrepareActivationMap(100, 'Contour', oFigure.oParentFigure.SelectedEventID, 24, oFigure.oParentFigure.SelectedBeat, [], []);
              end
              %Plot a 2D activation map
              oFigure.PlotData(true);
@@ -1148,7 +1161,8 @@ classdef MapElectrodes < SubFigure
                  end
              end
              %              aEarlySites = find(oActivation.Beats(iBeat).FullActivationTimes == min(oActivation.Beats(iBeat).FullActivationTimes));
-             %              aEarlyCoords = [oElectrodes(aEarlySites).Coords];
+             %              aEarlyCoords =
+             %              [oElectrodes(aEarlySites).Coords];
              %              scatter(oPointAxes, aEarlyCoords(1,:), aEarlyCoords(2,:), ...
              %                  'sizedata',12,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','w');%size 6 for posters
              
@@ -1210,7 +1224,7 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
 
-             aContourRange = 0:10:150;
+             aContourRange = -150:10:150;%0:10:300;%
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).DeltaVm,aContourRange);
@@ -1274,6 +1288,90 @@ classdef MapElectrodes < SubFigure
                  end
              end
              hold(oMapAxes,'off');
+         end
+         
+         function PlotAPA(oFigure, oMapAxes, oPointAxes, bUpdateColorBar)
+             %Plots a map of non-intepolated activation times
+             %Make sure the current figure is MapElectrodes
+             set(0,'CurrentFigure',oFigure.oGuiHandle.(oFigure.sFigureTag));
+             %Get the beat number from the slide control
+             iBeat = oFigure.oParentFigure.SelectedBeat;
+             iEvent = oFigure.GetEventIndexFromID(oFigure.oParentFigure.SelectedEventID);
+             oActivation = oFigure.Activation(iEvent);
+             %check if there is an existing colour bar
+             %get figure children
+             oChildren = get(oFigure.oGuiHandle.(oFigure.sFigureTag),'children');
+             oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_vertical_linear');
+             if oHandle < 0
+                 %there might be a horizontal bar
+                 oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
+             end
+
+             aContourRange = -5:0.2:2;%0:50:1000;%
+             set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
+             %Assuming the potential field has been normalised.
+             [C, oContour] = contourf(oMapAxes,oActivation.x,oActivation.y,oActivation.Beats(iBeat).APA,aContourRange);
+             set(oContour,'linewidth',1.5);
+             caxis([aContourRange(1) aContourRange(end)]);
+             colormap(oMapAxes, colormap(jet));
+             if oHandle < 0 
+                 if oFigure.ColourBarVisible
+                     oColorBar = oFigure.MakeColorBar(aContourRange, oFigure.ColourBarOrientation);
+                 end
+             else
+                 if ~oFigure.ColourBarVisible
+                     % if the colour bar should not be visible then
+                     % delete the existing one
+                     delete(oHandle);
+                     set(oMapAxes,'userdata',[]);
+                     set(oMapAxes,'Position',oFigure.PlotPosition);
+                 elseif bUpdateColorBar
+                     delete(oHandle);
+                     set(oMapAxes,'userdata',[]);
+                     set(oMapAxes,'Position',oFigure.PlotPosition);
+                     oColorBar = oFigure.MakeColorBar(aContourRange, oFigure.ColourBarOrientation);
+                 else
+                     oTitle = get(oHandle, 'title');
+                     set(oTitle,'units','normalized');
+                     set(oTitle,'fontsize',12);
+                     set(oTitle,'string','APA (a.u)','position',[0.5 1.02]);
+                 end
+             end
+             
+             iChannel = oFigure.oParentFigure.SelectedChannel;
+             %Get the electrodes and plot the selected electrode
+             %and the electrode with the earliest activation
+             hold(oMapAxes,'on');
+             oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
+             if oFigure.ElectrodeMarkerVisible
+                 plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
+                     'MarkerSize',8,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
+             end
+
+             if isfield(oElectrodes(1).aghsm,'Origin')
+                 aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
+                     oElectrodes,'aghsm','Origin');
+                 
+                 aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
+                 if ~isempty(aCoords)
+                     scatter(oPointAxes, aCoords(1,:), aCoords(2,:), ...
+                         'sizedata',1000,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
+                 end
+             end
+             
+             if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Exit')
+                 %will have to change this if I have multiple signal
+                 %events...
+                 aExitData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
+                     oElectrodes,oFigure.oParentFigure.SelectedEventID,'Exit');
+                 aCoords = cell2mat({oElectrodes(aExitData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
+                 if ~isempty(aCoords)
+                     scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
+                         'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
+                 end
+             end
+             hold(oMapAxes,'off');
+             
          end
          
          function PlotCV(oFigure,oMapAxes,bUpdateColorBar)
@@ -1415,13 +1513,13 @@ classdef MapElectrodes < SubFigure
                              end
                          end
                          oFigure.cbarmax = round(oFigure.cbarmax); 
-                         oFigure.cbarmin = -20; %arbitrary
+                         oFigure.cbarmin = round(oFigure.cbarmin); %arbitrary
                      end
                      %Assuming the potential field has been normalised.
-                     oFigure.cbarmax = 1;
-                     oFigure.cbarmin = -0.1;
-                     Difference = 0.05;
-%                      Difference = round((oFigure.cbarmax - oFigure.cbarmin)/40);
+%                      oFigure.cbarmax = 6;
+%                      oFigure.cbarmin = -1;
+%                      Difference = 0.05;
+                     Difference = (oFigure.cbarmax - oFigure.cbarmin)/60;
                      aContourRange = oFigure.cbarmin:Difference:oFigure.cbarmax;
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
                      contourf(oMapAxes,oFigure.Potential.x(1,:),oFigure.Potential.y(:,1),oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,aContourRange);
@@ -1482,11 +1580,11 @@ classdef MapElectrodes < SubFigure
                          plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                              'MarkerSize',8,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');
                      end
-                     if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Origin')
+                     if isfield(oElectrodes(1).aghsm,'Origin')
                          %will have to change this if I have multiple signal
                          %events...
                          aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
-                             oElectrodes,oFigure.oParentFigure.SelectedEventID,'Origin');
+                             oElectrodes,'aghsm','Origin');%oFigure.oParentFigure.SelectedEventID
                          aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
                          if ~isempty(aCoords)
                              scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
@@ -1529,7 +1627,7 @@ classdef MapElectrodes < SubFigure
              %use schematic with guide
              sFilePath = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oExperiment.(oFigure.BasePotentialFile(2:end)).SchematicFilePath;
 %                           sGuideFile = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140703\20140703Schematic_noholes.bmp';
-                          sGuideFile = strrep(sFilePath, '.bmp', '_highres.bmp');
+                          sGuideFile = strrep(sFilePath, '.bmp', '_guide.bmp');
                           oImage = imshow(sGuideFile,'Parent', oAxes, 'Border', 'tight');
 %              oImage = imshow(sFilePath,'Parent', oAxes, 'Border', 'tight');
              %make it transparent in the right places
@@ -1555,6 +1653,8 @@ classdef MapElectrodes < SubFigure
                      sString = 'Time (ms)';
                  case 'DeltaVm2DContour'
                      sString = 'DeltaVm (Vs)';
+                 case 'APA2DContour'
+                     sString = 'APA (a.u)';
              end
              if strcmpi(oFigure.ColourBarOrientation, 'horiz')
                  set(oTitle,'units','normalized');

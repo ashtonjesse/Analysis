@@ -14,6 +14,8 @@ classdef WaveletAnalysis < SubFigure
         Coefficients = [];
         FilteredSignals = [];
         aCurrentLimits = [];
+        oRootFigure;
+        BasePotentialFile;
     end
     
     events
@@ -22,23 +24,26 @@ classdef WaveletAnalysis < SubFigure
     end
     
     methods
-        function oFigure = WaveletAnalysis(oParent)
+        function oFigure = WaveletAnalysis(oParent,oRootFigure,sBasePotentialFile)
             %% Constructor
             oFigure = oFigure@SubFigure(oParent,'WaveletAnalysis',@WaveletAnalysis_OpeningFcn);
-
+            oFigure.oRootFigure = oRootFigure;
+            oFigure.BasePotentialFile = sBasePotentialFile;
             %Initialise properties
-            oFigure.NumberOfScales = 8;
+            oFigure.NumberOfScales = 10;
             
             %Set up beat slider
-            oElectrodeSlider = SlideControl(oFigure,'Select Electrode',{'SlideSelectionChange'});
-            iNumElectrodes = length(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes);
-            set(oElectrodeSlider.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
-                iNumElectrodes, 'Value', 1 ,'SliderStep',[1/iNumElectrodes  0.02]);
-            set(oElectrodeSlider.oGuiHandle.oSliderTxtLeft,'string',1);
-            set(oElectrodeSlider.oGuiHandle.oSliderTxtRight,'string',iNumElectrodes);
-            set(oElectrodeSlider.oGuiHandle.oSliderEdit,'string',1);
-            addlistener(oElectrodeSlider,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
-            
+            %             oElectrodeSlider = SlideControl(oFigure,'Select Electrode',{'SlideSelectionChange'},[ 23.6667    1.0625  110.6667   10.2500]);
+            %             iNumElectrodes = length(oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes);
+            %             set(oElectrodeSlider.oGuiHandle.oSlider, 'Min', 1, 'Max', ...
+            %                 iNumElectrodes, 'Value', 1 ,'SliderStep',[1/iNumElectrodes  0.02]);
+            %             set(oElectrodeSlider.oGuiHandle.oSliderTxtLeft,'string',1);
+            %             set(oElectrodeSlider.oGuiHandle.oSliderTxtRight,'string',iNumElectrodes);
+            %             set(oElectrodeSlider.oGuiHandle.oSliderEdit,'string',1);
+            %             addlistener(oElectrodeSlider,'SlideValueChanged',@(src,event) oFigure.SlideValueListener(src, event));
+            addlistener(oFigure.oParentFigure,'ChannelSelected',@(src,event) oFigure.SlideValueListener(src, event));
+            addlistener(oFigure.oParentFigure,'FigureDeleted',@(src,event) ParentFigureDeleted(oFigure,src, event));
+
             %Set the callback functions to the menu items 
             set(oFigure.oGuiHandle.oFileMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oEditMenu, 'callback', @(src, event) oFileMenu_Callback(oFigure, src, event));
@@ -54,11 +59,11 @@ classdef WaveletAnalysis < SubFigure
             set(oFigure.oZoom,'ActionPostCallback',@(src, event) PostZoom_Callback(oFigure, src, event));
             %Plot the Potential and processed data of the first signal
             oFigure.CreateSubPlot();
-            oFigure.PlotPotential(1);
+            oFigure.PlotPotential(oFigure.oParentFigure.SelectedChannel);
             %ComputeDWTFilteredSignalsRemovingScales
-            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsRemovingScales(...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(1).Potential.Data, 1:oFigure.NumberOfScales);
-            oFigure.PlotScalogram(1);
+            oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).ComputeDWTFilteredSignalsKeepingScales(...
+                oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(oFigure.oParentFigure.SelectedChannel).Potential.Data, 1:oFigure.NumberOfScales);
+            oFigure.PlotScalogram(oFigure.oParentFigure.SelectedChannel);
             % --- Executes just before Figure is made visible.
             function WaveletAnalysis_OpeningFcn(hObject, eventdata, handles, varargin)
                 % This function has no output args, see OutputFcn.
@@ -78,7 +83,7 @@ classdef WaveletAnalysis < SubFigure
         end
     end
     
-    
+       
     methods (Access = protected)
          %% Protected methods inherited from superclass
         function deleteme(oFigure)
@@ -92,6 +97,14 @@ classdef WaveletAnalysis < SubFigure
         
         function nValue = GetSliderIntegerValue(oFigure,sSliderTag)
             nValue = GetSliderIntegerValue@BaseFigure(oFigure,sSliderTag);
+        end
+    end
+    
+    methods
+        %% Property set methods
+        function set.FilteredSignals(oFigure,Value)
+            oFigure.FilteredSignals = Value;
+            oFigure.oParentFigure.FilteredSignals = Value;
         end
     end
     
@@ -114,13 +127,14 @@ classdef WaveletAnalysis < SubFigure
         
         % --------------------------------------------------------------------
         function SlideValueListener(oFigure, src, event)
-           % Plot the data associated with this channel
-           iChannel = event.Value;
+            % Plot the data associated with this channel
+            %            iChannel = event.Value;
+            iChannel = oFigure.oParentFigure.SelectedChannel;
            oFigure.PlotPotential(iChannel);
             
-           oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.oUnemap.ComputeDWTFilteredSignalsRemovingScales(...
-               oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data, 1:oFigure.NumberOfScales); 
-           %            oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Processed.Slope,...
+           oFigure.FilteredSignals = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).ComputeDWTFilteredSignalsKeepingScales(...
+               oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Potential.Data, 1:oFigure.NumberOfScales); 
+           %            oFigure.Coefficients = cwt9(oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Processed.Slope,...
            %                 1:oFigure.NumberOfScales,'gaus1');
            
             oFigure.PlotScalogram(iChannel);
@@ -139,7 +153,9 @@ classdef WaveletAnalysis < SubFigure
         function oFigure = Close_fcn(oFigure, src, event)
            deleteme(oFigure);
         end
-        
+        function ParentFigureDeleted(oFigure,src, event)
+            deleteme(oFigure);
+        end
         function CreateSubPlot(oFigure)
              %Create the space for the subplot that will contain all the
              %graphs
@@ -174,16 +190,27 @@ classdef WaveletAnalysis < SubFigure
                  subplot('Position',aPosition,'parent', oFigure.oGuiHandle.oAxesPanel, 'Tag', ...
                      sprintf('ScaleAxes%d',i));
              end
+             
         end
          
         function PlotPotential(oFigure, iChannel)
             %Get the array of handles to the plot objects
             aPlotObjects = get(oFigure.oGuiHandle.oAxesPanel,'children');
             oSignalPlot = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, 'SignalAxes');
+            iBeat = oFigure.oParentFigure.SelectedBeat;
             set(oSignalPlot,'NextPlot','replacechildren');
             %Plot the signal data for the currently selected channels
-            plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, ...
-                oFigure.oParentFigure.oGuiHandle.oUnemap.Electrodes(iChannel).Potential.Data,'k');
+            plot(oSignalPlot, oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries, ...
+                oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Potential.Data,'k');
+            %plot the selected beat
+            aSelectedBeat = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Processed.Data(...
+                oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1):...
+                oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2));
+            aSelectedTime = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(...
+                oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1):...
+                oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2));
+            hold(oSignalPlot,'on');
+            plot(oSignalPlot,aSelectedTime,aSelectedBeat,'g-','linewidth',1.5);
             if ~isempty(oFigure.aCurrentLimits)
                 set(oSignalPlot,'XLim',oFigure.aCurrentLimits);
             else
@@ -202,28 +229,42 @@ classdef WaveletAnalysis < SubFigure
                 set(oFigure.oGuiHandle.(oFigure.sFigureTag),'CurrentAxes',oAxes);
                 set(oAxes,'NextPlot','replacechildren');
                 if ismember(i,[3 4])
-                    %                     [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),3*std(oFigure.FilteredSignals(:,i)));
-                    %                     plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
+                    %                     [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).GetPeaks(oFigure.FilteredSignals(:,i),3*std(oFigure.FilteredSignals(:,i)));
+                    %                     plot(oAxes,oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
                     %                     hold(oAxes,'on');
-                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries, oFigure.FilteredSignals(:,i),'-r');
                     %                     hold(oAxes,'off');
                 elseif i == 2
-                    %                     [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.oUnemap.GetPeaks(oFigure.FilteredSignals(:,i),2.5*std(oFigure.FilteredSignals(:,i)));
-                    %                     plot(oAxes,oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
+                    %                     [aPeaks,aPeakLocations] = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).GetPeaks(oFigure.FilteredSignals(:,i),2.5*std(oFigure.FilteredSignals(:,i)));
+                    %                     plot(oAxes,oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(aPeakLocations), oFigure.FilteredSignals(aPeakLocations,i),'+g');
                     %                     hold(oAxes,'on');
-                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries, oFigure.FilteredSignals(:,i),'-r');
                     %                     hold(oAxes,'off');
                 else
-                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.oUnemap.TimeSeries, oFigure.FilteredSignals(:,i),'-r');
+                    plot(oAxes, oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries, oFigure.FilteredSignals(:,i),'-r');
                 end
                 if ~isempty(oFigure.aCurrentLimits)
                     set(oAxes,'XLim',oFigure.aCurrentLimits);
                 else
                     axis(oAxes,'tight');
                 end
+                %plot lines to indicate which beat is selected
+                iBeat = oFigure.oParentFigure.SelectedBeat;
+                aSelectedTime = oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries(...
+                    oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,1):...
+                    oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Beats.Indexes(iBeat,2));
+                hold(oAxes,'on');
+                aYLim = get(oAxes,'ylim');
+                plot(oAxes,[aSelectedTime(1) aSelectedTime(1)],[aYLim(1) aYLim(2)],'g-','linewidth',1.5);
+                plot(oAxes,[aSelectedTime(end) aSelectedTime(end)],[aYLim(1) aYLim(2)],'g-','linewidth',1.5);
+                hold(oAxes,'off');
+                
                 
             end
-            
+            oSignalPlot = oFigure.oDAL.oHelper.GetHandle(aPlotObjects, 'SignalAxes');
+            hold(oSignalPlot,'on');
+            aBaseline = DWTFilterRemoveScales(oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes(iChannel).Potential.Data, oFigure.NumberOfScales);
+            plot(oSignalPlot,  oFigure.oParentFigure.oGuiHandle.(oFigure.BasePotentialFile).TimeSeries, aBaseline,'-r');
         end
     end
         
