@@ -1,18 +1,23 @@
+%this script calculates an average conduction velocity in a small
+%region around the origin and shift sites for each beat leading up to the
+%shift and 
+
 %this script compares the average action potential amplitude for 5 baseline
 %beats vs the beats preceding the shift in the central node DP
 %site
-% clear all;
+clear all;
+close all;
 %% barodata pre-ivb
 aControlFiles = {{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001' ...
     },{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003' ... %example of uncoupling
     },{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003' ... %lots of competition on the way down. worth fitting DD
     },{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001' ... %another good example of uncoupling
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro001' ...
     },{...
@@ -99,19 +104,19 @@ oFigure = figure();
 oAxes = axes('parent',oFigure);
 %get the APAs
 %initiate variables
-aOriginAPAData = cell(numel(aControlFiles),1);
-aShiftAPAData = cell(numel(aControlFiles),1);
-aCTAPAData= cell(numel(aControlFiles),1);
-dRadius = 1.0;
-
+aOriginCVData = cell(numel(aControlFiles),1);
+aShiftCVData = cell(numel(aControlFiles),1);
+aCTCVData= cell(numel(aControlFiles),1);
+aDistance = zeros(numel(aControlFiles),1);
+dRadius = 0.5;
 
 % 
 aColours = distinguishable_colors(numel(aControlFiles));
 for p = 1:numel(aControlFiles)
     aFolder = aControlFiles{p};
-    aOriginAPAData{p} = cell(1,numel(aFolder));
-    aShiftAPAData{p} = cell(1,numel(aFolder));
-    aCTAPAData{p} = cell(1,numel(aFolder));
+    aOriginCVData{p} = cell(1,numel(aFolder));
+    aShiftCVData{p} = cell(1,numel(aFolder));
+    aCTCVData{p} = cell(1,numel(aFolder));
     [pathstr, name, ext, versn] = fileparts(char(aFolder{1}));
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), '\');
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), splitStr{end-1});
@@ -149,6 +154,7 @@ for p = 1:numel(aControlFiles)
                 aOriginData = MultiLevelSubsRef(oOptical.oDAL.oHelper,...
                     oOptical.Electrodes,'aghsm','Origin');
                 aAvCoords = mean(cell2mat({oOptical.Electrodes(logical(sum(aOriginData(1:6,:),1))).Coords}),2);
+                
                 %get electrodes within neighbourhood
                 aElectrodes = oOptical.GetElectrodesWithinRadius(aAvCoords', dRadius);
                 if isfield(oOptical.Electrodes(1).arsps,'Map')
@@ -164,6 +170,7 @@ for p = 1:numel(aControlFiles)
                     [C I] = min(aCoords(2,:));
                     aCoords=aCoords(:,I);
                 end
+                aDistance(p) = norm(aAvCoords - aCoords);
                 %get electrodes within neighbourhood
                 aElectrodes = oOptical.GetElectrodesWithinRadius(aCoords', dRadius);
                 aShiftElectrodes = aElectrodes(logical(aAcceptedChannels));
@@ -174,29 +181,30 @@ for p = 1:numel(aControlFiles)
                 %get electrodes within neighbourhood
                 aElectrodes = oOptical.GetElectrodesWithinRadius(aCoords', dRadius);
                 aCTElectrodes = aElectrodes(logical(aAcceptedChannels));
-                %select average APA for these electrodes
-                aAPA =  cell2mat({aActivationData.Beats(aBeats).APAData});
-                aOriginAPAData{p}{j} = mean(aAPA(aOriginElectrodes,:),1);
-                %select average APA for these electrodes
-                aShiftAPAData{p}{j} = mean(aAPA(aShiftElectrodes,:),1);
-                %select average APA for these electrodes
-                aCTAPAData{p}{j} = mean(aAPA(aCTElectrodes,:),1);
-                plot(oAxes,aOriginAPAData{p}{j},'color',aColours(p,:),'linestyle','-');
+                %select average CV for these electrodes
+                %                 aCV =  cell2mat({aActivationData.Beats(aBeats).CVApprox});
+                aActTimes =  cell2mat({aActivationData.Beats(aBeats).ActivationTimes});
+                aOriginCVData{p}{j} = nanmean(aActTimes(aOriginElectrodes,:),1);
+                %select average CV for these electrodes
+                aShiftCVData{p}{j} = nanmean(aActTimes(aShiftElectrodes,:),1);
+                %select average CV for these electrodes
+                aCTCVData{p}{j} = nanmean(aActTimes(aCTElectrodes,:),1);
+                plot(oAxes,aOriginCVData{p}{j},'color',aColours(p,:),'linestyle','-');
                 hold(oAxes,'on');
-                plot(oAxes,aShiftAPAData{p}{j},'color',aColours(p,:),'linestyle','--');
-                plot(oAxes,aCTAPAData{p}{j},'color',aColours(p,:),'linestyle','--');
+                plot(oAxes,aShiftCVData{p}{j},'color',aColours(p,:),'linestyle','--');
+                plot(oAxes,aCTCVData{p}{j},'color',aColours(p,:),'linestyle','--');
             end
     end
 end
-aOriginAPAArray = vertcat(aOriginAPAData{:});
-aOriginAPAArray = vertcat(aOriginAPAArray{:});
-aOriginAPAArray = aOriginAPAArray';
+aOriginCVArray = vertcat(aOriginCVData{:});
+aOriginCVArray = vertcat(aOriginCVArray{:});
+aOriginCVArray = aOriginCVArray';
 
-aShiftAPAArray = vertcat(aShiftAPAData{:});
-aShiftAPAArray = vertcat(aShiftAPAArray{:});
-aShiftAPAArray = aShiftAPAArray';
+aShiftCVArray = vertcat(aShiftCVData{:});
+aShiftCVArray = vertcat(aShiftCVArray{:});
+aShiftCVArray = aShiftCVArray';
 
-aCTAPAArray = vertcat(aCTAPAData{:});
-aCTAPAArray = vertcat(aCTAPAArray{:});
-aCTAPAArray = aCTAPAArray';
+aCTCVArray = vertcat(aCTCVData{:});
+aCTCVArray = vertcat(aCTCVArray{:});
+aCTCVArray = aCTCVArray';
 % fprintf('%4.0f,%3.0f,%5.3f,%5.3f\n',iElectrode,iBeat,oActivation.AverageAPA(iElectrode),oActivation.Beats(iBeat).APAData(iElectrode)+oActivation.AverageAPA(iElectrode));

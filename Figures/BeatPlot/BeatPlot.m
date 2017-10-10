@@ -394,6 +394,8 @@ classdef BeatPlot < SubFigure
                  oBasePotential.Beats.Indexes(iBeat,2),:);
              aSlope = oElectrode.Processed.Slope(oBasePotential.Beats.Indexes(iBeat,1):...
                  oBasePotential.Beats.Indexes(iBeat,2),:);
+             aCurvature = oElectrode.Processed.Curvature(oBasePotential.Beats.Indexes(iBeat,1):...
+                 oBasePotential.Beats.Indexes(iBeat,2),:);
              aEnvelope = [];
              aEnvelopeLimits = [];
              if isfield(oElectrode.Processed,'CentralDifference')
@@ -401,6 +403,13 @@ classdef BeatPlot < SubFigure
                      oBasePotential.Beats.Indexes(iBeat,2),:));
                  aEnvelopeLimits = [min(aEnvelope), max(aEnvelope)];
              end
+             %get regional average
+             aRegion = GetElectrodesWithinRadius(oBasePotential,oElectrode.Coords',0.5);
+             aAllData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
+             aAverageData = aAllData(oBasePotential.Beats.Indexes(iBeat,1):...
+                 oBasePotential.Beats.Indexes(iBeat,2),aRegion);
+             aAverageData = mean(aAverageData,2);
+             
              aTime =  oBasePotential.TimeSeries(...
                  oBasePotential.Beats.Indexes(iBeat,1):...
                  oBasePotential.Beats.Indexes(iBeat,2));
@@ -410,10 +419,11 @@ classdef BeatPlot < SubFigure
              SignalYMin = min(min(aData));
              SlopeYMax = max(max(aSlope));
              SlopeYMin = min(min(aSlope));
-             
+             CurvatureYMax = max(max(aCurvature)); 
+             CurvatureYMin = min(min(aCurvature));
              %Get these values so that we can place text in the
              %right place
-             TimeMax = max(aTime);
+             TimeMax = min(aTime)+((max(aTime)-min(aTime))/2);
              TimeMin = min(aTime);
              dWidth = TimeMax-TimeMin;
              dHeight = SignalYMax - SignalYMin;
@@ -449,6 +459,7 @@ classdef BeatPlot < SubFigure
              axis(oSignalPlot,[TimeMin, TimeMax, (1-sign(SignalYMin)*0.1)*SignalYMin, (1+sign(SignalYMax)*0.1)*SignalYMax]);
              axis(oSlopePlot,[TimeMin, TimeMax, (1-sign(SlopeYMin)*0.1)*SlopeYMin, (1+sign(SlopeYMax)*0.1)*SlopeYMax]);
              axis(oSignalEventPlot,[TimeMin, TimeMax, (1-sign(SignalYMin)*0.1)*SignalYMin, (1+sign(SignalYMax)*0.1)*SignalYMax]);
+             axis(oEnvelopePlot,[TimeMin, TimeMax, (1-sign(CurvatureYMin)*0.1)*CurvatureYMin, (1+sign(CurvatureYMax)*0.1)*CurvatureYMax]);
              
              %Plot the data and slope
              if oElectrode.Accepted
@@ -471,6 +482,7 @@ classdef BeatPlot < SubFigure
                  hold(oSignalPlot,'off');
                  %Plot the slope data
                  plot(aTime,aSlope,'color','r','parent',oSlopePlot);
+                 plot(aTime,aCurvature,'color','m','parent',oEnvelopePlot );
                  %Loop through events
                  if isfield(oElectrode,'SignalEvents')
                      for j = 1:length(oElectrode.SignalEvents)

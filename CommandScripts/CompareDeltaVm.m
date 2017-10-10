@@ -1,7 +1,12 @@
+%this script calculates an average conduction velocity in a small
+%region around the origin and shift sites for each beat leading up to the
+%shift and 
+
 %this script compares the average action potential amplitude for 5 baseline
 %beats vs the beats preceding the shift in the central node DP
 %site
-% clear all;
+clear all;
+close all;
 %% barodata pre-ivb
 aControlFiles = {{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001' ...
@@ -99,19 +104,18 @@ oFigure = figure();
 oAxes = axes('parent',oFigure);
 %get the APAs
 %initiate variables
-aOriginAPAData = cell(numel(aControlFiles),1);
-aShiftAPAData = cell(numel(aControlFiles),1);
-aCTAPAData= cell(numel(aControlFiles),1);
-dRadius = 1.0;
-
+aOriginDeltaVmData = cell(numel(aControlFiles),1);
+aShiftDeltaVmData = cell(numel(aControlFiles),1);
+aCTDeltaVmData= cell(numel(aControlFiles),1);
+dRadius = 0.5;
 
 % 
 aColours = distinguishable_colors(numel(aControlFiles));
 for p = 1:numel(aControlFiles)
     aFolder = aControlFiles{p};
-    aOriginAPAData{p} = cell(1,numel(aFolder));
-    aShiftAPAData{p} = cell(1,numel(aFolder));
-    aCTAPAData{p} = cell(1,numel(aFolder));
+    aOriginDeltaVmData{p} = cell(1,numel(aFolder));
+    aShiftDeltaVmData{p} = cell(1,numel(aFolder));
+    aCTDeltaVmData{p} = cell(1,numel(aFolder));
     [pathstr, name, ext, versn] = fileparts(char(aFolder{1}));
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), '\');
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), splitStr{end-1});
@@ -174,29 +178,29 @@ for p = 1:numel(aControlFiles)
                 %get electrodes within neighbourhood
                 aElectrodes = oOptical.GetElectrodesWithinRadius(aCoords', dRadius);
                 aCTElectrodes = aElectrodes(logical(aAcceptedChannels));
-                %select average APA for these electrodes
-                aAPA =  cell2mat({aActivationData.Beats(aBeats).APAData});
-                aOriginAPAData{p}{j} = mean(aAPA(aOriginElectrodes,:),1);
-                %select average APA for these electrodes
-                aShiftAPAData{p}{j} = mean(aAPA(aShiftElectrodes,:),1);
-                %select average APA for these electrodes
-                aCTAPAData{p}{j} = mean(aAPA(aCTElectrodes,:),1);
-                plot(oAxes,aOriginAPAData{p}{j},'color',aColours(p,:),'linestyle','-');
+                %select average DeltaVm for these electrodes
+                aDeltaVm =  cell2mat({aActivationData.Beats(aBeats).DeltaVmData});
+                aOriginDeltaVmData{p}{j} = nanmean(aDeltaVm(aOriginElectrodes,:),1);
+                %select average DeltaVm for these electrodes
+                aShiftDeltaVmData{p}{j} = nanmean(aDeltaVm(aShiftElectrodes,:),1);
+                %select average DeltaVm for these electrodes
+                aCTDeltaVmData{p}{j} = nanmean(aDeltaVm(aCTElectrodes,:),1);
+                plot(oAxes,aOriginDeltaVmData{p}{j},'color',aColours(p,:),'linestyle','-');
                 hold(oAxes,'on');
-                plot(oAxes,aShiftAPAData{p}{j},'color',aColours(p,:),'linestyle','--');
-                plot(oAxes,aCTAPAData{p}{j},'color',aColours(p,:),'linestyle','--');
+                plot(oAxes,aShiftDeltaVmData{p}{j},'color',aColours(p,:),'linestyle','--');
+                plot(oAxes,aCTDeltaVmData{p}{j},'color',aColours(p,:),'linestyle','--');
             end
     end
 end
-aOriginAPAArray = vertcat(aOriginAPAData{:});
-aOriginAPAArray = vertcat(aOriginAPAArray{:});
-aOriginAPAArray = aOriginAPAArray';
+aOriginDeltaVmArray = vertcat(aOriginDeltaVmData{:});
+aOriginDeltaVmArray = vertcat(aOriginDeltaVmArray{:});
+aOriginDeltaVmArray = aOriginDeltaVmArray';
 
-aShiftAPAArray = vertcat(aShiftAPAData{:});
-aShiftAPAArray = vertcat(aShiftAPAArray{:});
-aShiftAPAArray = aShiftAPAArray';
+aShiftDeltaVmArray = vertcat(aShiftDeltaVmData{:});
+aShiftDeltaVmArray = vertcat(aShiftDeltaVmArray{:});
+aShiftDeltaVmArray = aShiftDeltaVmArray';
 
-aCTAPAArray = vertcat(aCTAPAData{:});
-aCTAPAArray = vertcat(aCTAPAArray{:});
-aCTAPAArray = aCTAPAArray';
+aCTDeltaVmArray = vertcat(aCTDeltaVmData{:});
+aCTDeltaVmArray = vertcat(aCTDeltaVmArray{:});
+aCTDeltaVmArray = aCTDeltaVmArray';
 % fprintf('%4.0f,%3.0f,%5.3f,%5.3f\n',iElectrode,iBeat,oActivation.AverageAPA(iElectrode),oActivation.Beats(iBeat).APAData(iElectrode)+oActivation.AverageAPA(iElectrode));

@@ -1074,6 +1074,10 @@ classdef MapElectrodes < SubFigure
                      end
                  end
              end
+             if ~isempty(oFigure.oParentFigure.SelectedChannels)
+                 scatter(oMapAxes, aCoords(1,oFigure.oParentFigure.SelectedChannels), aAcceptedCoords(2,oFigure.oParentFigure.SelectedChannels),'g.', ...
+                 'sizedata', 100);%1.5 for posters
+             end
              %Label the point with the channel name
              for i = 1:4:numel(oElectrodes)
                  oLabel = text(aCoords(1,i), aCoords(2,i) + 0.07, oElectrodes(i).Name);
@@ -1146,6 +1150,10 @@ classdef MapElectrodes < SubFigure
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                      'MarkerSize',8,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
+                 th = 0:pi/50:2*pi;
+                 xunit = 0.5 * cos(th) + oElectrodes(iChannel).Coords(1);
+                 yunit = 0.5 * sin(th) + oElectrodes(iChannel).Coords(2);
+                 plot(oMapAxes,xunit,yunit,'k','linewidth',1.5);
              end
              %              if isfield(oElectrodes(1).(oFigure.oParentFigure.SelectedEventID),'Origin')
              %                  %will have to change this if I have multiple signal
@@ -1384,7 +1392,7 @@ classdef MapElectrodes < SubFigure
              idxCV = find(~isnan(oFigure.Activation.Beats(iBeat).CVApprox));
              aCVdata = oFigure.Activation.Beats(iBeat).CVApprox(idxCV);
              aCVdata(aCVdata > 1) = 1;
-             scatter(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),44,aCVdata,'filled');
+             scatter(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),81,aCVdata,'filled');
              hold(oMapAxes, 'on');
              oQuivers = quiver(oMapAxes,oFigure.Activation.CVx(idxCV),oFigure.Activation.CVy(idxCV),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,1),oFigure.Activation.Beats(iBeat).CVVectors(idxCV,2),'color','k','linewidth',0.6);
              % %              set(oQuivers,'autoscale','on');
@@ -1516,10 +1524,10 @@ classdef MapElectrodes < SubFigure
                          oFigure.cbarmin = round(oFigure.cbarmin); %arbitrary
                      end
                      %Assuming the potential field has been normalised.
-%                      oFigure.cbarmax = 6;
-%                      oFigure.cbarmin = -1;
-%                      Difference = 0.05;
-                     Difference = (oFigure.cbarmax - oFigure.cbarmin)/60;
+                     oFigure.cbarmax = 1;
+                     oFigure.cbarmin = -0.1;
+                     Difference = 0.05;
+%                      Difference = (oFigure.cbarmax - oFigure.cbarmin)/60;
                      aContourRange = oFigure.cbarmin:Difference:oFigure.cbarmax;
                      set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
                      contourf(oMapAxes,oFigure.Potential.x(1,:),oFigure.Potential.y(:,1),oFigure.Potential.Beats(iBeat).Fields(iTimeIndex).z,aContourRange);
