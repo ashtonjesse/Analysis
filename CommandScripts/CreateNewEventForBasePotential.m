@@ -1,0 +1,56 @@
+%this script adds a new event to each optical file in the list
+aControlFiles = {{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro001' ...
+    }};
+
+for p = 1:numel(aControlFiles)
+    aFolder = aControlFiles{p};
+    [pathstr, name, ext, versn] = fileparts(char(aFolder{1}));
+    [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), '\');
+    [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), splitStr{end-1});
+    sStimulationType = splitStr{end}(1:end-3);
+    switch (sStimulationType)
+        case {'baro','chemo'}
+            for j = 1:numel(aFolder)
+                %load the optical file
+                listing = dir(aFolder{j}); %names of files vary so just get all the files in dir
+                aFilesInFolder = {listing(:).name}; %convert to cell array
+                aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*a?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
+                aOpticalFileName = [aFolder{j},'\',aFilesInFolder{find(~cellfun('isempty', aFileIndex))}]; %build file name
+                oOptical = GetOpticalFromMATFile(Optical,char(aOpticalFileName)); %get optical file
+                fprintf('Loaded %s\n', aOpticalFileName);
+                %                 %create the new event
+                %                 oOptical.CreateNewEvent(1:1:length(oOptical.Electrodes), 1:1:size(oOptical.Beats.Indexes,1), ...
+                %                     'm', 'Activation', 'SteepestPositiveSlope');
+                %change area of map to match arsps
+                aMap = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'arsps','Map');
+                oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','Map',aMap);
+                
+                %                 %adjust the range
+                %                 aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'abhsm','RangeStart');
+                %                 aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'abhsm','RangeEnd');
+                %                 oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','RangeStart',aRangeStart);
+                %                 oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','RangeEnd',aRangeEnd);
+                %                 %update the event mark
+                %                 oOptical.MarkEvent('amsps');
+                
+                %save the file
+                oOptical.Save(aOpticalFileName);
+                fprintf('Saved %s\n', aOpticalFileName);
+            end
+    end
+end

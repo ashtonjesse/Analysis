@@ -442,7 +442,7 @@ classdef BeatPlot < SubFigure
              
              %Get the handle to current envelope plot
              oEnvelopePlot = oFigure.oDAL.oHelper.GetHandle(aSubPlots, 'EnvelopePlot');
-             set(oEnvelopePlot,'XTick',[],'YTick',[],'Tag', 'EnvelopePlot', 'NextPlot', 'replacechildren');
+             set(oEnvelopePlot,'XTick',[],'YColor','c','Tag', 'EnvelopePlot', 'NextPlot', 'replacechildren');
              cla(oEnvelopePlot);
              
              %Get the handle to current slope plot
@@ -482,7 +482,7 @@ classdef BeatPlot < SubFigure
                  hold(oSignalPlot,'off');
                  %Plot the slope data
                  plot(aTime,aSlope,'color','r','parent',oSlopePlot);
-                 plot(aTime,aCurvature,'color','m','parent',oEnvelopePlot );
+                                  plot(aTime,aCurvature,'color','c','parent',oEnvelopePlot );
                  %Loop through events
                  if isfield(oElectrode,'SignalEvents')
                      for j = 1:length(oElectrode.SignalEvents)
@@ -524,6 +524,7 @@ classdef BeatPlot < SubFigure
                          set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'string',oElectrode.SignalEvents{j});
                          set(oFigure.oGuiHandle.(sprintf('rbtnEvent%d',j)),'visible','on');
                          set(oSlopePlot,'yaxislocation','right');
+                         set(oEnvelopePlot,'yaxislocation','right');
                      end
                      if isempty(oFigure.SelectedEventID) && ~isempty(oElectrode.SignalEvents)
                          set(oFigure.oGuiHandle.oEventButtonGroup,'SelectedObject',oFigure.oGuiHandle.rbtnEvent1);

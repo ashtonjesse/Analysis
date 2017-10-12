@@ -1,6 +1,5 @@
-%this script calculates an average conduction velocity in a small
-%region around the origin and shift sites for each beat leading up to the
-%shift
+%this script calculates an average conduction time from DP site
+%to shift sites for each beat leading up to the shift and 5 after
 
 clear all;
 close all;
@@ -112,7 +111,7 @@ aCTAMSPSData = cell(numel(aControlFiles),1);
 aDPAGHSMData = cell(numel(aControlFiles),1);
 
 aDistance = zeros(numel(aControlFiles),3);
-dRadius = 1;
+dRadius = 0.5;
 
 % 
 aColours = distinguishable_colors(numel(aControlFiles));
@@ -139,7 +138,16 @@ for p = 1:numel(aControlFiles)
                 aOpticalFileName = [aFolder{j},'\',aFilesInFolder{find(~cellfun('isempty', aFileIndex))}]; %build file name
                 oOptical = GetOpticalFromMATFile(Optical,char(aOpticalFileName)); %get optical file
                 fprintf('Loaded %s\n', aOpticalFileName);
-
+                %                 %load the pressure file
+                %                 aFileIndex = regexp(aFilesInFolder, 'Pressure.mat'); %find index of right file
+                %                 sPressureFileName = [aFolder{j},'\',aFilesInFolder{find(~cellfun('isempty', aFileIndex))}]; %build file name
+                %                 oPressure = GetPressureFromMATFile(Pressure,char(sPressureFileName),'Optical');
+                %                 fprintf('Loaded %s\n', sPressureFileName);
+                %                 %get the beats that lead up to the shift
+                %                 aTimes = oPressure.oRecording(1).Electrodes.Processed.BeatRateTimes;
+                %                 aBeats = aTimes > oPressure.TimeSeries.Original(oPressure.HeartRate.Decrease.Range(1)) & ...
+                %                     aTimes < oPressure.TimeSeries.Original(oPressure.HeartRate.Decrease.Range(2));
+                
                 aBeats = false(size(oOptical.Beats.Indexes,1),1);
                 aBeats(aShiftIndexes{p}{j}-15:aShiftIndexes{p}{j}+5) = true;
                 aBeatIndexes = find(aBeats);
@@ -185,44 +193,50 @@ for p = 1:numel(aControlFiles)
                 aElectrodes = oOptical.GetElectrodesWithinRadius(aCoords', dRadius);
                 aCTElectrodes = aElectrodes & aAcceptedChannels;
                 %select average CV for these electrodes
-                aAMSPSCV =  cell2mat({aAMSPSData.Beats(aBeats).CVApprox});
-                aOriginAMSPSData{p}{j} = nanmean(aAMSPSCV(aOriginElectrodes,:),1);
-                aShiftAMSPSData{p}{j} = nanmean(aAMSPSCV(aShiftElectrodes,:),1);
-%                 aDPAGHSMData{p}{j} = aAGHSMTimes(aOriginData(aBeats,:)');
-%                 if p == 3
-%                     aDPAGHSMData{p}{j} = aDPAGHSMData{p}{j}([1:14,16:end]);
-%                 end
+                %                 aCV =  cell2mat({aActivationData.Beats(aBeats).CVApprox});
+                aAMSPSTimes =  cell2mat({aAMSPSData.Beats(aBeats).NonZeroedActivationTimes});
+                aAGHSMTimes = cell2mat({aAGHSMData.Beats(aBeats).NonZeroedActivationTimes});
+                aOriginAMSPSData{p}{j} = nanmean(aAMSPSTimes(aOriginElectrodes,:),1);
+                aOriginAGHSMData{p}{j} = nanmean(aAGHSMTimes(aOriginElectrodes,:),1);
+                aShiftAMSPSData{p}{j} = nanmean(aAMSPSTimes(aShiftElectrodes,:),1);
+                aShiftAGHSMData{p}{j} = nanmean(aAGHSMTimes(aShiftElectrodes,:),1);
+                aCTAMSPSData{p}{j} = nanmean(aAMSPSTimes(aCTElectrodes,:),1);
+                aDPAGHSMData{p}{j} = aAGHSMTimes(aOriginData(aBeats,:)');
+                if p == 3
+                    aDPAGHSMData{p}{j} = aDPAGHSMData{p}{j}([1:14,16:end]);
+                end
+%                 plot(oAxes,aOriginCVData{p}{j},'color',aColours(p,:),'linestyle','-');
+%                 hold(oAxes,'on');
+%                 plot(oAxes,aShiftCVData{p}{j},'color',aColours(p,:),'linestyle','--');
+%                 plot(oAxes,aCTCVData{p}{j},'color',aColours(p,:),'linestyle','--');
             end
     end
 end
 aOriginAMSPS = vertcat(aOriginAMSPSData{:});
 aOriginAMSPS = vertcat(aOriginAMSPS{:});
 aOriginAMSPS = aOriginAMSPS';
-errorbar(mean(aOriginAMSPS,2),std(aOriginAMSPS,0,2)/sqrt(size(aOriginAMSPS,2)));
-% aOriginAGHSM = vertcat(aOriginAGHSMData{:});
-% aOriginAGHSM = vertcat(aOriginAGHSM{:});
-% aOriginAGHSM = aOriginAGHSM';
+aOriginAGHSM = vertcat(aOriginAGHSMData{:});
+aOriginAGHSM = vertcat(aOriginAGHSM{:});
+aOriginAGHSM = aOriginAGHSM';
 
 aShiftAMSPS = vertcat(aShiftAMSPSData{:});
 aShiftAMSPS = vertcat(aShiftAMSPS{:});
 aShiftAMSPS = aShiftAMSPS';
-hold on;
-errorbar(mean(aShiftAMSPS,2),std(aShiftAMSPS,0,2)/sqrt(size(aShiftAMSPS,2)),'r-');
-% aShiftAGHSM = vertcat(aShiftAGHSMData{:});
-% aShiftAGHSM = vertcat(aShiftAGHSM{:});
-% aShiftAGHSM = aShiftAGHSM';
-% 
-% aCTAMSPS = vertcat(aCTAMSPSData{:});
-% aCTAMSPS = vertcat(aCTAMSPS{:});
-% aCTAMSPS = aCTAMSPS';
-% 
-% aDPAGHSM = vertcat(aDPAGHSMData{:});
-% aDPAGHSM = vertcat(aDPAGHSM{:});
-% aDPAGHSM = aDPAGHSM';
-% 
-% aDPVsShift = 1000*(aShiftAMSPS - aDPAGHSM) ./ repmat(aDistance(:,1)', [size(aDPAGHSM,1), 1]);
-% aDPVsShift(16:end,:) = 1000*(aOriginAMSPS(16:end,:) - aDPAGHSM(16:end,:)) ./ repmat(aDistance(:,1)', [size(aDPAGHSM(16:end,:),1), 1]);
-% aDPVsCT = 1000*(aCTAMSPS - aDPAGHSM) ./ repmat(aDistance(:,2)', [size(aDPAGHSM,1), 1]);
-csvwrite('V:\aOriginAMSPS.csv',aOriginAMSPS);
-csvwrite('V:\aShiftAMSPS.csv',aShiftAMSPS);
+aShiftAGHSM = vertcat(aShiftAGHSMData{:});
+aShiftAGHSM = vertcat(aShiftAGHSM{:});
+aShiftAGHSM = aShiftAGHSM';
+
+aCTAMSPS = vertcat(aCTAMSPSData{:});
+aCTAMSPS = vertcat(aCTAMSPS{:});
+aCTAMSPS = aCTAMSPS';
+
+aDPAGHSM = vertcat(aDPAGHSMData{:});
+aDPAGHSM = vertcat(aDPAGHSM{:});
+aDPAGHSM = aDPAGHSM';
+
+aDPVsShift = 1000*(aShiftAMSPS - aDPAGHSM) ./ repmat(aDistance(:,1)', [size(aDPAGHSM,1), 1]);
+aDPVsShift(16:end,:) = 1000*(aOriginAMSPS(16:end,:) - aDPAGHSM(16:end,:)) ./ repmat(aDistance(:,1)', [size(aDPAGHSM(16:end,:),1), 1]);
+aDPVsCT = 1000*(aCTAMSPS - aDPAGHSM) ./ repmat(aDistance(:,2)', [size(aDPAGHSM,1), 1]);
+csvwrite('V:\CVDPVsShift.csv',aDPVsShift);
+csvwrite('V:\CVDPVsCT.csv',aDPVsCT);
 % fprintf('%4.0f,%3.0f,%5.3f,%5.3f\n',iElectrode,iBeat,oActivation.AverageAPA(iElectrode),oActivation.Beats(iBeat).APAData(iElectrode)+oActivation.AverageAPA(iElectrode));
