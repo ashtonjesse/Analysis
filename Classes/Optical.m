@@ -178,12 +178,13 @@ classdef Optical < BasePotential
                                 %get APA
                                 aBeatData = aProcessedData(aRangeStart(nn,1):aRangeEnd(nn,1),:);
                                 aBaselineData = aProcessedData(oOptical.Beats.Indexes(nn,1):oOptical.Beats.Indexes(nn,1)+10,:);
-                                aAPAmplitudesToAverage(nn,:) = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0; %not df because of large baseline differences
+                                if max(max(aBeatData,[],1)) > 50
+                                    aAPAmplitudesToAverage(nn,:) = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0; %not df because of large baseline differences
+                                else
+                                    aAPAmplitudesToAverage(nn,:) = max(aBeatData,[],1) - mean(aBaselineData,1);
+                                end
                                 %get deltavm peak
                                 aSteepestIndexForBeat = aSteepestIndex(nn,:) - 1 + oOptical.Beats.Indexes(nn,1);
-                                %                             aSteepestIndexForBeat =  fSteepestSlope(oOptical.TimeSeries, aDeltaVm, aRangeStart(nn,:), aRangeEnd(nn,:));
-                                %                             [C ] = max(aDeltaVm(aRangeStart(nn,1):aRangeEnd(nn,1),:),[],1);
-                                aSteepestIndexForBeat = aSteepestIndexForBeat - 1 + oOptical.Beats.Indexes(nn,1);
                                 aIndex = sub2ind(size(aDeltaVm),aSteepestIndexForBeat,1:1:numel(aSteepestIndexForBeat));
                                 aMaxDeltaVm = aDeltaVm(aIndex);
                                 aDeltaVmToAverage(nn,:) = aMaxDeltaVm(1,:);
@@ -237,12 +238,16 @@ classdef Optical < BasePotential
                         aMaxDeltaVm = aMaxDeltaVm(1,:) - oMapData.AverageDeltaVm;
                         %get APA
                         aProcessedData = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Data');
-                        aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'abhsm','RangeStart');
-                        aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'abhsm','RangeEnd');
+                        aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','RangeStart');
+                        aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','RangeEnd');
                         aBeatData = aProcessedData(aRangeStart(iBeatIndex,1):aRangeEnd(iBeatIndex,1),:);
                         aBaselineData = aProcessedData(oOptical.Beats.Indexes(iBeatIndex,1):oOptical.Beats.Indexes(iBeatIndex,1)+10,:);
-                        aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
-                        aAPAmplitude = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0 - oMapData.AverageAPA;%
+                        if max(max(aBeatData,[],1)) > 50
+                            aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
+                            aAPAmplitude = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0 - oMapData.AverageAPA;%
+                        else
+                            aAPAmplitude = max(aBeatData,[],1) - mean(aBaselineData,1) - oMapData.AverageAPA;%
+                        end
                         
                         %do interpolation for DeltaVm
                         oInterpolant = TriScatteredInterp(oMapData.DT,aMaxDeltaVm');

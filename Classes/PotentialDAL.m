@@ -259,6 +259,38 @@ classdef PotentialDAL < BaseDAL
              oOptical.TimeSeries = [0:1:size(aData,1)-1]*(1/oOptical.oExperiment.Optical.SamplingRate);
         end
         
+        function GetBackgroundValuesFromCSV(oPotentialDAL, oBasePotential, sFilePath)
+            %Find the background values from a CSV file and add them to
+            %each electrode in the oOptical entity
+             fid = fopen(sFilePath,'r');
+             %scan the header information in
+             bStillHeader = true;
+             iLineCount = 0;
+             while bStillHeader
+                 tline = fgets(fid);
+                 iLineCount = iLineCount + 1;
+                 [~,~,~,~,~,~,splitstring] = regexpi(tline,',');
+                 if isnan(str2double(splitstring{1}))
+                     %splitstring is not a number 
+                     switch (splitstring{1})
+                         case 'back'
+                             if (numel(splitstring)-2) ~= numel(oBasePotential.Electrodes)
+                                 error('PotentialDAL.GetBackgroundValuesFromCSV.VerifyInput:LengthsDoNotMatch', 'There is a problem with the number of background values');
+                             else
+                                 for i = 2:numel(splitstring)-1
+                                     oBasePotential.Electrodes(i-1).Background = str2double(splitstring{i});
+                                 end
+                             end
+                     end
+                 else
+                     %splitstring is a number so stop looping
+                     bStillHeader = false;
+                 end
+             end
+             %close the file
+             fclose(fid);
+        end
+        
         function GetSignalEventInformationFromTextFile(oPotentialDAL, oBasePotential, iSignalEventID, sFilePath)
             %Read the data from the specified file and put in the
             %appropriate places for signal event indexes and range

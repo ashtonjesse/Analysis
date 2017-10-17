@@ -56,7 +56,7 @@ classdef OpticalBeatDetection < BaseFigure
             set(oFigure.oGuiHandle.oWaveletMenu, 'callback', @(src, event) oWaveletMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oTruncateMenu, 'callback', @(src, event) oTruncateMenu_Callback(oFigure, src, event));
             set(oFigure.oGuiHandle.oBaselineMenu, 'callback', @(src, event) oBaselineMenu_Callback(oFigure, src, event));
-            
+            set(oFigure.oGuiHandle.oDFF0Menu,'callback', @(src, event) oDFF0_Callback(oFigure, src, event));
             %set up axes
             oFigure.oGuiHandle.oPanel = panel(oFigure.oGuiHandle.uipanel);
             oFigure.oGuiHandle.oPanel.pack(1,1);
@@ -299,6 +299,11 @@ classdef OpticalBeatDetection < BaseFigure
             oFigure.Replot(oFigure.SelectedChannel);
         end
         
+        function oDFF0_Callback(oFigure, src, event)
+            aInOptions = struct('Procedure','','Inputs',cell(1,1));
+            aInOptions.Procedure = 'dFF0';
+            oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).ProcessArrayData(aInOptions);
+        end
     end
     
     methods (Access = private)
@@ -412,6 +417,7 @@ classdef OpticalBeatDetection < BaseFigure
             bIndexes = ~bIndexes;
             %Truncate data that is not selected
             oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TruncateData(bIndexes);
+            oFigure.Replot(oFigure.SelectedChannel);
         end
     end
     

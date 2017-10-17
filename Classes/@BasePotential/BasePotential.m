@@ -105,6 +105,10 @@ classdef BasePotential < BaseSignal
                 %struct that contains processing procedures to run and
                 %and their inputs
                 switch(aInOptions(j).Procedure)
+                    case 'dFF0'
+                        oBasePotential.Electrodes(iChannel).Processed.Data = ...
+                            oBasePotential.dFF0(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,oBasePotential.Beats.Indexes);
+                        oBasePotential.FinishProcessing(iChannel);
                     case 'RemoveMedianAndFitPolynomial'
                         iOrder = aInOptions(j).Inputs;
                         [aOutData, aBaselinePolynomial] = ...
@@ -600,9 +604,48 @@ classdef BasePotential < BaseSignal
             
             if strcmp(oBasePotential.Electrodes(1).Status,'Processed')
                 %perform on existing potential data as well
+                %processed data
                 aProcessedData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
                 aProcessedData = aProcessedData(bIndexesToKeep,:);
                 oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data',aProcessedData);
+                %slope data
+                aProcessedData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Slope');
+                aProcessedData = aProcessedData(bIndexesToKeep,:);
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Slope',aProcessedData);
+                %curvature data
+                aProcessedData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Curvature');
+                aProcessedData = aProcessedData(bIndexesToKeep,:);
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Curvature',aProcessedData);
+                %beats data
+                aProcessedData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Beats');
+                aProcessedData = aProcessedData(bIndexesToKeep,:);
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Beats',aProcessedData);
+                %adjust beat indexes
+                aIndices = find(~bIndexesToKeep(1:end/2));
+                aProcessedData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRateIndexes');
+                aProcessedData = aProcessedData - (ones(size(aProcessedData))*max(aIndices));
+                if aProcessedData(1,1) < 1
+                    aProcessedData(1,:) = deal(1);
+                end
+                oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','BeatRateIndexes',aProcessedData);
+                aBeatIndexes = oBasePotential.Beats.Indexes - (ones(size(oBasePotential.Beats.Indexes))*max(aIndices));
+                if aBeatIndexes(1,1) < 1
+                    aBeatIndexes(1,1) = 1;
+                end
+                oBasePotential.Beats.Indexes = aBeatIndexes;
+                %adjust event ranges
+                for ii = 1:size(oBasePotential.Electrodes(1).SignalEvents,1)
+                    aRangeStart = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes, [oBasePotential.Electrodes(1).SignalEvents{ii}],'RangeStart');
+                    aNewRangeStart = aRangeStart - ones(size(aRangeStart))*max(aIndices);
+                    if aNewRangeStart(1,1) < 1
+                        aNewRangeStart(1,:) = deal(1);
+                    end
+                    oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,[oBasePotential.Electrodes(1).SignalEvents{ii}],'RangeStart',aNewRangeStart);
+                    %repeat for rangeend
+                    aRangeEnd = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes, [oBasePotential.Electrodes(1).SignalEvents{ii}],'RangeEnd');
+                    aNewRangeEnd = aRangeEnd - ones(size(aRangeEnd))*max(aIndices);
+                    oBasePotential.Electrodes = MultiLevelSubsAsgn(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,[oBasePotential.Electrodes(1).SignalEvents{ii}],'RangeEnd',aNewRangeEnd);
+                end
             end
             
         end

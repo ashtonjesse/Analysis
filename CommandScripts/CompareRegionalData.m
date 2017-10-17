@@ -106,10 +106,13 @@ end
 %initiate variables
 dRadius = 1;
 aCVData = cell(numel(aControlFiles),1);
-
+aDelVmData = cell(numel(aControlFiles),1);
+aAPAData = cell(numel(aControlFiles),1);
 for p = 1:numel(aControlFiles)
     aFolder = aControlFiles{p};
     aCVData{p} = cell(1,numel(aFolder));
+    aDelVmData{p} = cell(1,numel(aFolder));
+    aAPAData{p} = cell(1,numel(aFolder));
     
     [pathstr, name, ext, versn] = fileparts(char(aFolder{1}));
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), '\');
@@ -130,9 +133,9 @@ for p = 1:numel(aControlFiles)
                 aBeats(aShiftIndexes{p}{j}-15:aShiftIndexes{p}{j}+5) = true;
                 aBeatIndexes = find(aBeats);
                 %load activation data
-                aAMSPSData = oOptical.PrepareActivationMap(100, 'Contour', 'amsps', 24, aBeatIndexes(1), [], [], false);
+                aAMSPSData = oOptical.PrepareActivationMap(100, 'Contour', 'amsps', 24, aBeatIndexes(1), [], [], true);
                 for m = 2:length(aBeatIndexes)
-                    aAMSPSData = oOptical.PrepareActivationMap(100, 'Contour', 'amsps', 24, aBeatIndexes(m), aAMSPSData, [], false);
+                    aAMSPSData = oOptical.PrepareActivationMap(100, 'Contour', 'amsps', 24, aBeatIndexes(m), aAMSPSData, [], true);
                 end
                 disp('Collected activation data');
                 %get accepted electrodes
@@ -147,9 +150,14 @@ for p = 1:numel(aControlFiles)
                 oAxesElectrodes = oOptical.Electrodes(aAxisData);
                 aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
                 %loop through sections of axis and get average CV for each
-                aCVData{p}{j} = zeros(5,numel(aBeatIndexes));
-                %get CV data for all beats
+                aCVData{p}{j} = zeros(6,numel(aBeatIndexes));
+                aDelVmData{p}{j} = zeros(6,numel(aBeatIndexes));
+                aAPAData{p}{j} = zeros(6,numel(aBeatIndexes));
+                %get data for all beats
                 aAMSPSCV =  cell2mat({aAMSPSData.Beats(aBeats).CVApprox});
+                aAMSPSDelVm = cell2mat({aAMSPSData.Beats(aBeats).DeltaVmData});
+                aAMSPSAPA = cell2mat({aAMSPSData.Beats(aBeats).APAData});
+                %save data for each region
                 for ii = 1:5 %mm along SVCIVC axis
                     %convert axis point location to coords of centre point
                     aCentrePoint = [((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*ii+aAxesCoords(1,2),...
@@ -159,19 +167,47 @@ for p = 1:numel(aControlFiles)
                     %convert logical arrays to indexes and select the
                     %indexes that appear in both accepted and ROI
                     [c ia ib] = intersect(find(aAcceptedChannels),find(aElectrodes));
-                    %need to now compute average CV for these electrodes
+                    %need to now average data for these electrodes
                     %and put into an array which is recording, 5 points x #beats
                     aCVData{p}{j}(ii,:) = nanmean(aAMSPSCV(ia,:),1);
+                    aDelVmData{p}{j}(ii,:) = nanmean(aAMSPSDelVm(ia,:),1);
+                    aAPAData{p}{j}(ii,:) = nanmean(aAMSPSAPA(ia,:),1);
                 end
+                %and add right atrial appendage
+                aRAALoc = MultiLevelSubsRef(oOptical.oDAL.oHelper,...
+                    oOptical.Electrodes,'arsps','Exit');
+                aCentrePoint = cell2mat({oOptical.Electrodes(logical(aRAALoc(1,:))).Coords})';
+                %get electrodes in the ROI
+                aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, dRadius);
+                %convert logical arrays to indexes and select the
+                %indexes that appear in both accepted and ROI
+                [c ia ib] = intersect(find(aAcceptedChannels),find(aElectrodes));
+                %need to now average data for these electrodes
+                %and put into an array which is recording, 5 points x #beats
+                aCVData{p}{j}(ii+1,:) = nanmean(aAMSPSCV(ia,:),1);
+                aDelVmData{p}{j}(ii+1,:) = nanmean(aAMSPSDelVm(ia,:),1);
+                aAPAData{p}{j}(ii+1,:) = nanmean(aAMSPSAPA(ia,:),1);
             end
     end
 end
 aCVDataStacked = vertcat(aCVData{:});
-aCVDataCombined = vertcat(aCVDataStacked{:});
-aDataToWrite = zeros(size(aCVDataCombined,2)*5,size(aCVDataStacked,1));
-iRowsPerExperiment = size(aCVDataCombined,2);
-for ii = 1:5
-    iStartRow = (ii-1)*iRowsPerExperiment+1;
-    aDataToWrite(iStartRow:(iStartRow+iRowsPerExperiment-1),:) = aCVDataCombined(ii:5:end,:)';
+aCVDataCombined = vertcat(aCVDataStacked{:})';
+aCVDataToWrite = zeros(size(aCVDataCombined));
+aDelVmDataStacked = vertcat(aDelVmData{:});
+aDelVmDataCombined = vertcat(aDelVmDataStacked{:})';
+aDelVmDataToWrite = zeros(size(aCVDataCombined));
+aAPADataStacked = vertcat(aAPAData{:});
+aAPADataCombined = vertcat(aAPADataStacked{:})';
+aAPADataToWrite = zeros(size(aCVDataCombined));
+
+iColsPerRegion = size(aCVDataStacked,1);
+for ii = 1:6
+    iStartCol = (ii-1)*iColsPerRegion+1;
+    aCVDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aCVDataCombined(:,ii:6:end);
+    aDelVmDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aDelVmDataCombined(:,ii:6:end);
+    aAPADataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aAPADataCombined(:,ii:6:end);
 end
-csvwrite('V:\aCVDataStacked.csv',aDataToWrite);
+csvwrite('V:\aCVDataStacked.csv',aCVDataToWrite);
+csvwrite('V:\aAPADataStacked.csv',aAPADataToWrite);
+csvwrite('V:\aDelVmDataStacked.csv',aDelVmDataToWrite);
+
