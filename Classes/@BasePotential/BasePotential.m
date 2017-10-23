@@ -107,7 +107,7 @@ classdef BasePotential < BaseSignal
                 switch(aInOptions(j).Procedure)
                     case 'dFF0'
                         oBasePotential.Electrodes(iChannel).Processed.Data = ...
-                            oBasePotential.dFF0(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,oBasePotential.Beats.Indexes);
+                            oBasePotential.dFF0(oBasePotential.Electrodes(iChannel).(oBasePotential.Electrodes(iChannel).Status).Data,oBasePotential.Electrodes(iChannel).Background);
                         oBasePotential.FinishProcessing(iChannel);
                     case 'RemoveMedianAndFitPolynomial'
                         iOrder = aInOptions(j).Inputs;
@@ -798,10 +798,11 @@ classdef BasePotential < BaseSignal
                     aData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
                     %assume ranges are the same for all electrodes for now
                     for i = 1:size(aBeats,2)
+                        aThisBeatStart = ones(1,numel(aElectrodes))*oBasePotential.Beats.Indexes(aBeats(i),1);
                         aThisRangeStart = aTheseRangeStart(i,aElectrodes);
                         aThisRangeEnd = aTheseRangeEnd(i,aElectrodes);
                         iBase = 15;
-                        aLocs = vertcat(aThisRangeStart-iBase,aThisRangeStart)';
+                        aLocs = vertcat(aThisBeatStart,aThisBeatStart+iBase)';
                         BaselineIndexes = (bsxfun(@le,aLocs(:,1),1:size(aData,1)) & bsxfun(@ge,aLocs(:,2),1:size(aData,1))).';
                         aLocs = vertcat(aThisRangeStart,aThisRangeEnd)';
                         PeakIndexes = (bsxfun(@le,aLocs(:,1),1:size(aData,1)) & bsxfun(@ge,aLocs(:,2),1:size(aData,1))).';

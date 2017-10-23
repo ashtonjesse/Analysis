@@ -225,7 +225,7 @@ classdef Optical < BasePotential
                     aActivationTimes = oOptical.TimeSeries(aActivationIndexes)';
                     %                     aFullActivationTimes = aFullActivationTimes';
                     %convert to ms
-                    oMapData.Beats(iBeatIndex).NonZeroedActivationTimes = aFullActivationTimes;
+                    oMapData.Beats(iBeatIndex).NonZeroedActivationTimes = aActivationTimes;
                     oMapData.Beats(iBeatIndex).ActivationTimes = 1000*(aActivationTimes-min(aActivationTimes));                    
                     oMapData.Beats(iBeatIndex).FullActivationTimes = 1000*(aFullActivationTimes - min(aFullActivationTimes));                    
                     if bAllMapsMode

@@ -421,9 +421,10 @@ classdef BeatPlot < SubFigure
              SlopeYMin = min(min(aSlope));
              CurvatureYMax = max(max(aCurvature)); 
              CurvatureYMin = min(min(aCurvature));
-             %Get these values so that we can place text in the
-             %right place
-             TimeMax = min(aTime)+((max(aTime)-min(aTime))/2);
+             %              %Get these values so that we can place text in the
+             %              %right place
+             %              TimeMax = min(aTime)+((max(aTime)-min(aTime))/2);
+             TimeMax = max(aTime);
              TimeMin = min(aTime);
              dWidth = TimeMax-TimeMin;
              dHeight = SignalYMax - SignalYMin;

@@ -278,7 +278,7 @@ classdef PotentialDAL < BaseDAL
                                  error('PotentialDAL.GetBackgroundValuesFromCSV.VerifyInput:LengthsDoNotMatch', 'There is a problem with the number of background values');
                              else
                                  for i = 2:numel(splitstring)-1
-                                     oBasePotential.Electrodes(i-1).Background = str2double(splitstring{i});
+                                     oBasePotential.Electrodes(i-1).Background = abs(str2double(splitstring{i}));
                                  end
                              end
                      end

@@ -178,27 +178,9 @@ classdef BaseSignal < BaseEntity
             OutData = DWTFilterRemoveScales(aInData, iScale);
         end
         
-        function OutData = dFF0(oBaseSignal,aInData,aBaselineIndexes)
-            %this function computes (Fmax-F0(n))/F0(1) aka dF/F0 where n is
-            %index to an epoch of a periodic signal (input
-            %aBaselineIndexes)
-            
-            %initiate loop variables
-            OutData = zeros(size(aInData));
-            iStartIndex = 1;
-            %calculate F0(1)
-            F0 = mean(aInData(aBaselineIndexes(1,1):aBaselineIndexes(1,1)+10));
-            %loop through the epochs
-            for ii = 1:size(aBaselineIndexes,1)
-                aBaseline = mean(aInData(aBaselineIndexes(ii,1):aBaselineIndexes(ii,1)+10));
-                %process portion of array between start and first index
-                OutData(iStartIndex:aBaselineIndexes(ii,1)) = (aInData(iStartIndex:aBaselineIndexes(ii,1)) - aBaseline) / F0;%
-                OutData(aBaselineIndexes(ii,1):aBaselineIndexes(ii,2)) = (aInData(aBaselineIndexes(ii,1):aBaselineIndexes(ii,2)) - aBaseline) / F0;%
-                iStartIndex = aBaselineIndexes(ii,2)+1;
-            end
-            %process the end
-            OutData(iStartIndex:end) = (aInData(iStartIndex:end) - aBaseline) / F0;%
-            
+        function OutData = dFF0(oBaseSignal,aInData, F0)
+            %this function computes dF/F0 as a percentage
+            OutData = (aInData/F0)*100;
         end
     end
 end
