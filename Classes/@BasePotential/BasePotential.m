@@ -20,7 +20,7 @@ classdef BasePotential < BaseSignal
     end
         
     methods (Access = public)
-        function GetBaseline(oBasePotential,iWaveletScale)
+        function GetWaveletBaseline(oBasePotential,iWaveletScale)
             oWaitbar = waitbar(0,'Please wait...');
             iTotal = numel(oBasePotential.Electrodes);
             %Loop through the channels
@@ -35,50 +35,42 @@ classdef BasePotential < BaseSignal
             close(oWaitbar);
         end
         
-        function OutData = RemoveLinearInterpolation(oBasePotential, aInData, iOrder)
+        function OutData = RemoveLinearInterpolation(oBasePotential, aInData)
             %       *RemoveInterpolation - Using linear
             %       interpolation between isoelectric points to remove this
             %       variation between beats
             
             %Split the input cell array into data and beats
-            aElectrodeData = cell2mat(aInData(1,1));
+            aData = cell2mat(aInData(1,1));
             aBeats = cell2mat(aInData(1,2));
-            %Loop through each row find the first non-NaN numbers in
-            %aBeats.
-            [x y] = size(aBeats);
-            aAverages = zeros(1,y+1);
-            OutData = zeros(x,y);
-            iBeatFound = 0;
-            for i = 1:x;
-                if ~isnan(aBeats(i,1)) && ~iBeatFound && i>30
-                    %Take the previous 30 values of
-                    %ElectrodeData before the current beat
-                    aAverages = [aAverages ; i, mean(aElectrodeData((i-30):i,:))];
-                    iBeatFound = 1;
-                    %Could get an error if the first beat is within
-                    %10 values of the start of the recording
-                    %elseif ~isnan(aBeats(i,1)) && i <= 10
-                    %%If the beat is within 10 of the beginning
-                    %%of the data then take average of as many values as
-                    %%there are before the current record.
-                    %Averages = [aAverages ; mean(aElectrodeData(1:i,:))];
-                elseif isnan(aBeats(i,1))
-                    iBeatFound = 0;
+
+            %create baseline array from isoelectric data between beats
+            aBaseline = NaN(size(aData));
+            for ii = 1:size(aBeats,1)-1
+                aBaseline(aBeats(ii,2):aBeats(ii+1,1),:) = ...
+                    aData(aBeats(ii,2):aBeats(ii+1,1),:);
+            end
+            
+            %loop through electrodes
+            %initialise loop variables
+            aDrift = zeros(size(aBaseline));
+            OutData = zeros(size(aBaseline));
+            for ii = 1:size(aBaseline,2);
+                %interpolate over nans
+                x = inpaint_nans(aBaseline,4);
+                %run detrend code
+                N = size(x,1);
+                bp = aBeats(:,1);
+                bp = unique([0;double(bp(:));N-1]);	% Include both endpoints
+                lb = length(bp)-1;
+                % Build regressor with linear pieces + DC
+                a  = [zeros(N,lb,class(x)) ones(N,1,class(x))];
+                for kb = 1:lb
+                    M = N - bp(kb);
+                    a((1:M)+bp(kb),kb) = (1:M)'/M;
                 end
-            end
-            if ~iBeatFound
-                aAverages = [aAverages ; i, aElectrodeData(i,:)];
-            end
-            %Remove zero in first place
-            %aAverages(1,:) = aAverages(size(aAverages,1),:);
-            aAverages = aAverages(2:size(aAverages,1),:);
-            %Initialise the output array and Loop through channels
-            OutData = zeros(size(aInData,1),size(aInData,2));
-            for j = 1:y;
-                %Pass in a cell array with the first element being
-                %an array of the indexes of averages and the second
-                %being the actual averages them selves.
-                OutData(:,j) = fInterpolate({aAverages(:,1),aAverages(:,j+1)},iOrder,x);
+                aDrift(:,ii) = a*(a\x);
+                OutData(:,ii) = aData - aDrift;		% Remove best fit
             end
         end
         
@@ -770,6 +762,7 @@ classdef BasePotential < BaseSignal
             aAllIndexes = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,sEventID,'Index');
             %Choose the method to apply
             sMethod = sEventID(3:5);
+            sEventType = sEventID(1);
             switch (sMethod)
                 case 'sps'
                     %get slope data
@@ -810,12 +803,19 @@ classdef BasePotential < BaseSignal
                         aBaseLine = mean(aBaseLineData,1);
                         aBaseLine = aBaseLine(aElectrodes);
                         aPeakData = reshape(aData(PeakIndexes),[aThisRangeEnd(1)-aThisRangeStart(1)+1,size(PeakIndexes,2)]);
-                        aPeak = max(aPeakData,[],1);
+                        [aPeak aThisPeak] = max(aPeakData,[],1);
                         aPeak = aPeak(aElectrodes);
                         aSignedBaseLine = sign(aBaseLine)*(-1).*abs(aBaseLine);
                         aMagnitude = (aPeak+aSignedBaseLine)./2;
                         aHalfData = aPeakData(:,aElectrodes) - repmat(aMagnitude+aBaseLine,size(aPeakData(:,aElectrodes),1),1);
-                        [val aTheseIndexes] = min(abs(aHalfData),[],1);
+                        dAveragePeakIndex = round(mean(aThisPeak));
+                        switch (sEventType)
+                            case 'a'
+                                [val aTheseIndexes] = min(abs(aHalfData(1:dAveragePeakIndex,:)),[],1);
+                            case 'r'
+                                [val aTheseIndexes] = min(abs(aHalfData(dAveragePeakIndex:end,:)),[],1);
+                                aTheseIndexes = aTheseIndexes + dAveragePeakIndex - 1;
+                        end
                         aAllIndexes(aBeats(i),aElectrodes) = aTheseIndexes + aRangeStart(aBeats(i),aElectrodes) - repmat(oBasePotential.Beats.Indexes(aBeats(i),1),1,length(aElectrodes));
                     end
             end

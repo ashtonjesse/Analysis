@@ -289,5 +289,5 @@ text(6,aylim2(2)+50,['Last',10,'shift'],'fontsize',8,'fontweight','bold','horizo
 %print
 movegui(oFigure,'center');
 set(oFigure,'resizefcn',[]);
-export_fig(sPaperSavePath,'-png','-r300','-nocrop','-painters');
-print(sThesisSavePath,'-dpsc','-r300');
+% export_fig(sPaperSavePath,'-png','-r300','-nocrop','-painters');
+% print(sThesisSavePath,'-dpsc','-r300');

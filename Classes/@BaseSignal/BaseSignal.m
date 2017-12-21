@@ -28,7 +28,7 @@ classdef BaseSignal < BaseEntity
                 %Compute the median
                 dMedian = median(aInData(:,k));
                 %Subtract this from the input data
-                aRemoveMedian = aInData(:,k) - dMedian;
+                aRemoveMedian = aInData(:,k);
                 %Compute the polynomial fit of order iOrder
                 aBaselinePolynomial = fPolynomialFitEvaluation(aRemoveMedian,iOrder);
                 %Remove the polynomial approximation to the baseline from the
@@ -180,7 +180,7 @@ classdef BaseSignal < BaseEntity
         
         function OutData = dFF0(oBaseSignal,aInData, F0)
             %this function computes dF/F0 as a percentage
-            OutData = (aInData/F0)*100;
+            OutData = (aInData/F0)*100;%%(aInData/100)*F0
         end
     end
 end

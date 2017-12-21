@@ -112,16 +112,11 @@ classdef Optical < BasePotential
             oOptical.CalculateSinusRate();
         end
         
-        function oMapData = PrepareActivationMap(oOptical, dInterpDim, sPlotType, sEventID, iSupportPoints, iBeatIndex, oActivationData,aAcceptedChannels,bAllMapsMode)
-            %Get the inputs for a mapping call for activation times,
-            %returning a struct containing the x and y locations of the
-            %electrodes and the activation times for each. dInterpDim is
-            %the number of interpolation points in each direction
-                        
+        function oEventData = PrepareEventData(oOptical, dInterpDim, sPlotType, sEventID, iBeatIndex, aAcceptedChannels)
+            %this function creates a struct containing the data needed to
+            %map different aspects of an event
+            
             switch (sPlotType)
-                case 'Scatter'
-                    oWaitbar = waitbar(0,'Please wait...');
-                    close(oWaitbar);
                 case 'Contour'
                     %get the accepted channels
                     if isempty(aAcceptedChannels) && isfield(oOptical.Electrodes(1).(sEventID),'Map')
@@ -131,165 +126,120 @@ classdef Optical < BasePotential
                         aAcceptedChannels = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'Accepted');
                     end
                     aElectrodes = oOptical.Electrodes(logical(aAcceptedChannels));
-                    if isempty(oActivationData)
-                        aFullCoords = cell2mat({oOptical.Electrodes(:).Coords});
-                        aFullCoords = aFullCoords';
-                        aCoords = cell2mat({aElectrodes(:).Coords});
-                        aCoords = aCoords';
-                        rowlocs = aCoords(:,1);
-                        collocs = aCoords(:,2);
-                        %Get the interpolated points array
-                        [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),...
-                            min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
-                        aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
-                        aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
-                        aMeshPoints = [aXArray,aYArray];
-                        %Find which points lie within the area of the array
-                        [V,ConcaveTri] = alphavol(aCoords,1);
-                        [FF BoundaryLocs] = freeBoundary(TriRep(ConcaveTri.tri,aCoords));
-                        aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),BoundaryLocs(:,1),BoundaryLocs(:,2));
-                        %do delaunay triangulation
-                        DT = DelaunayTri(aCoords);
-                        
-                        %Initialise the map data struct
-                        oMapData = struct('x', xlin, 'y', ylin, 'Boundary', aInBoundaryPoints, 'r2', [],'CVx',aCoords(:,1),'CVy',aCoords(:,2),'DT',DT,...
-                            'AverageAPA',zeros(1, numel(oOptical.Electrodes)),'AverageDeltaVm',zeros(1, numel(oOptical.Electrodes)));
-                        %Initialise the Beats struct
-                        aData = struct('FullActivationTimes',zeros(1, numel(oOptical.Electrodes)),'ActivationTimes',...
-                            [],'NonZeroedActivationTimes',[],'z',NaN(size(xlin)),'CVApprox',zeros(1, numel(oOptical.Electrodes)),...
-                            'CVVectors',zeros(1, numel(oOptical.Electrodes)),'ATgrad',zeros(1, numel(oOptical.Electrodes)),...
-                            'DeltaVm',zeros(size(xlin)),'APA',zeros(size(xlin)),...
-                            'DeltaVmData',zeros(1, numel(oOptical.Electrodes)),'APAData',zeros(1, numel(oOptical.Electrodes)));
-                        oMapData.Beats = repmat(aData,1,size(oOptical.Beats.Indexes,1));
-                        if bAllMapsMode
-                            %find mean baseline apa field
-                            aAPAmplitudesToAverage = zeros(5,numel(aElectrodes));
-                            aDeltaVmToAverage = zeros(5,numel(aElectrodes));
-                            %get processed data
-                            aProcessedData = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Data');
-                            aDeltaVm = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Slope');
-                            aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','RangeStart');
-                            aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','RangeEnd');
-                            aSteepestIndex = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','Index');
-                            
-                            %loop through first five beats
-                            aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
-                            for nn = 1:5
-                                %get APA
-                                aBeatData = aProcessedData(aRangeStart(nn,1):aRangeEnd(nn,1),:);
-                                aBaselineData = aProcessedData(oOptical.Beats.Indexes(nn,1):oOptical.Beats.Indexes(nn,1)+10,:);
-                                if max(max(aBeatData,[],1)) > 50
-                                    aAPAmplitudesToAverage(nn,:) = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0; %not df because of large baseline differences
-                                else
-                                    aAPAmplitudesToAverage(nn,:) = max(aBeatData,[],1) - mean(aBaselineData,1);
-                                end
-                                %get deltavm peak
-                                aSteepestIndexForBeat = aSteepestIndex(nn,:) - 1 + oOptical.Beats.Indexes(nn,1);
-                                aIndex = sub2ind(size(aDeltaVm),aSteepestIndexForBeat,1:1:numel(aSteepestIndexForBeat));
-                                aMaxDeltaVm = aDeltaVm(aIndex);
-                                aDeltaVmToAverage(nn,:) = aMaxDeltaVm(1,:);
-                            end
-                            oMapData.AverageAPA = mean(aAPAmplitudesToAverage,1);
-                            oMapData.AverageDeltaVm = mean(aDeltaVmToAverage,1);
-                        end
-                    else
-                        oMapData = oActivationData;
-                    end
+                    %get the coordinates of just the accepted electrodes
+                    aCoords = cell2mat({aElectrodes(:).Coords});
+                    aCoords = aCoords';
+                    rowlocs = aCoords(:,1);
+                    collocs = aCoords(:,2);
+                    %Get the interpolated points array
+                    [xlin ylin] = meshgrid(min(rowlocs):(max(rowlocs) - min(rowlocs))/dInterpDim:max(rowlocs),...
+                        min(collocs):(max(collocs)-min(collocs))/dInterpDim:max(collocs));
+                    aXArray = reshape(xlin,size(xlin,1)*size(xlin,2),1);
+                    aYArray = reshape(ylin,size(ylin,1)*size(ylin,2),1);
+                    aMeshPoints = [aXArray,aYArray];
+                    %Find which points lie within the area of the array
+                    [V,ConcaveTri] = alphavol(aCoords,1);
+                    [FF BoundaryLocs] = freeBoundary(TriRep(ConcaveTri.tri,aCoords));
+                    aInBoundaryPoints = inpolygon(aMeshPoints(:,1),aMeshPoints(:,2),BoundaryLocs(:,1),BoundaryLocs(:,2));
+                    %do delaunay triangulation
+                    DT = DelaunayTri(aCoords);
                     
-                    %Get the activation indexes
-                    aActivationIndexes = zeros(numel(aElectrodes),1);
-                    aFullActivationIndexes = zeros(numel(oOptical.Electrodes),1);
-                    aFullActivationTimes = zeros(numel(oOptical.Electrodes),1);
+                    %Initialise the map data struct
+                    oMapData = struct('x', xlin, 'y', ylin, 'Boundary', aInBoundaryPoints, 'r2', [],'CVx',aCoords(:,1),'CVy',aCoords(:,2),'DT',DT,...
+                        'AverageAmplitude',zeros(1, numel(aElectrodes)),'AverageDeltaVm',zeros(1, numel(aElectrodes)),'EventID',sEventID, ...
+                        'AcceptedChannels',aAcceptedChannels);
+                    %Initialise the Beats struct
+                    aData = struct('FullEventTimes',zeros(1, numel(oOptical.Electrodes)),'EventTimes',...
+                        [],'NonZeroedEventTimes',[],'z',NaN(size(xlin)),'CVApprox',zeros(1, numel(oOptical.Electrodes)),...
+                        'CVVectors',zeros(1, numel(oOptical.Electrodes)),'ATgrad',zeros(1, numel(oOptical.Electrodes)),...
+                        'DeltaVmMap',zeros(size(xlin)),'AmplitudeMap',zeros(size(xlin)),...
+                        'DeltaVmData',zeros(1, numel(oOptical.Electrodes)),'AmplitudeData',zeros(1, numel(oOptical.Electrodes)));
+                    oMapData.Beats = repmat(aData,1,size(oOptical.Beats.Indexes,1));
                     
-                    %track the number of accepted electrodes
-                    m = 0;
-                    for p = 1:numel(oOptical.Electrodes)
-                        if aAcceptedChannels(p)
-                            m = m + 1;
-                            if aElectrodes(m).(sEventID).Index(iBeatIndex) > 1
-                            else
-                                oOptical.MarkEvent(sEventID, iBeatIndex, p);
-                                aElectrodes(m).(sEventID).Index(iBeatIndex) = oOptical.Electrodes(p).(sEventID).Index(iBeatIndex);
-                            end
-                            aActivationIndexes(m) = aElectrodes(m).(sEventID).Index(iBeatIndex) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
-                            aFullActivationIndexes(p) =  aElectrodes(m).(sEventID).Index(iBeatIndex) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
-                            aFullActivationTimes(p) = oOptical.TimeSeries(aFullActivationIndexes(p));
-                        else
-                            %hold the unaccepted electrode places with inf
-                            aFullActivationTimes(p) = Inf;
-                        end
-                    end
+                    %find mean baseline apa field
+                    aAmplitudesToAverage = zeros(5,numel(aElectrodes));
+                    aDeltaVmToAverage = zeros(5,numel(aElectrodes));
+                    %get processed data
+                    aProcessedData = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Data');
+                    aDeltaVm = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Slope');
+                    aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,sEventID,'RangeStart');
+                    aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,sEventID,'RangeEnd');
+                    aSteepestIndex = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,sEventID,'Index');
                     
-                    %Get the activation time fields for all time points during this
-                    %beat
-                    aActivationTimes = oOptical.TimeSeries(aActivationIndexes)';
-                    %                     aFullActivationTimes = aFullActivationTimes';
-                    %convert to ms
-                    oMapData.Beats(iBeatIndex).NonZeroedActivationTimes = aActivationTimes;
-                    oMapData.Beats(iBeatIndex).ActivationTimes = 1000*(aActivationTimes-min(aActivationTimes));                    
-                    oMapData.Beats(iBeatIndex).FullActivationTimes = 1000*(aFullActivationTimes - min(aFullActivationTimes));                    
-                    if bAllMapsMode
-                        %get deltaVm
-                        aDeltaVm = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Slope');
-                        aSteepestIndex = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','Index');
-                        aSteepestIndex = aSteepestIndex(iBeatIndex,:) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
-                        aIndex = sub2ind(size(aDeltaVm),aSteepestIndex,1:1:numel(aSteepestIndex));
-                        aMaxDeltaVm = aDeltaVm(aIndex);
-                        aMaxDeltaVm = aMaxDeltaVm(1,:) - oMapData.AverageDeltaVm;
+                    %loop through first five beats
+                    aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
+                    for nn = 1:5
                         %get APA
-                        aProcessedData = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Data');
-                        aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','RangeStart');
-                        aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'amsps','RangeEnd');
-                        aBeatData = aProcessedData(aRangeStart(iBeatIndex,1):aRangeEnd(iBeatIndex,1),:);
-                        aBaselineData = aProcessedData(oOptical.Beats.Indexes(iBeatIndex,1):oOptical.Beats.Indexes(iBeatIndex,1)+10,:);
+                        aBeatData = aProcessedData(aRangeStart(nn,1):aRangeEnd(nn,1),:);
+                        aBaselineData = aProcessedData(oOptical.Beats.Indexes(nn,1):oOptical.Beats.Indexes(nn,1)+10,:);
                         if max(max(aBeatData,[],1)) > 50
-                            aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
-                            aAPAmplitude = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0 - oMapData.AverageAPA;%
+                            aAmplitudesToAverage(nn,:) = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0; %not df because of large baseline differences
                         else
-                            aAPAmplitude = max(aBeatData,[],1) - mean(aBaselineData,1) - oMapData.AverageAPA;%
+                            aAmplitudesToAverage(nn,:) = max(aBeatData,[],1) - mean(aBaselineData,1);
                         end
-                        
-                        %do interpolation for DeltaVm
-                        oInterpolant = TriScatteredInterp(oMapData.DT,aMaxDeltaVm');
-                        %evaluate interpolant
-                        oInterpolatedField = oInterpolant(oMapData.x,oMapData.y);
-                        %rearrange to be able to apply boundary
-                        aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
-                        %apply boundary
-                        aQZArray(~oMapData.Boundary) = NaN;
-                        %save result back in proper format
-                        oMapData.Beats(iBeatIndex).DeltaVm  = reshape(aQZArray,size(oMapData.x,1),size(oMapData.x,2));
-                        oMapData.Beats(iBeatIndex).DeltaVmData = aMaxDeltaVm';
-                        
-                        %do interpolation for APA
-                        oInterpolant = TriScatteredInterp(oMapData.DT,aAPAmplitude');
-                        %evaluate interpolant
-                        oInterpolatedField = oInterpolant(oMapData.x,oMapData.y);
-                        %rearrange to be able to apply boundary
-                        aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
-                        %apply boundary
-                        aQZArray(~oMapData.Boundary) = NaN;
-                        %save result back in proper format
-                        oMapData.Beats(iBeatIndex).APA  = reshape(aQZArray,size(oMapData.x,1),size(oMapData.x,2));
-                        oMapData.Beats(iBeatIndex).APAData = aAPAmplitude';
+                        %get deltavm peak
+                        aSteepestIndexForBeat = aSteepestIndex(nn,:) - 1 + oOptical.Beats.Indexes(nn,1);
+                        aIndex = sub2ind(size(aDeltaVm),aSteepestIndexForBeat,1:1:numel(aSteepestIndexForBeat));
+                        aMaxDeltaVm = aDeltaVm(aIndex);
+                        aDeltaVmToAverage(nn,:) = aMaxDeltaVm(1,:);
                     end
-                    %do interpolation for activation times
-                    %calculate interpolant
-                    oInterpolant = TriScatteredInterp(oMapData.DT,oMapData.Beats(iBeatIndex).ActivationTimes);
-                    %evaluate interpolant
-                    oInterpolatedField = oInterpolant(oMapData.x,oMapData.y);
-                    %rearrange to be able to apply boundary
-                    aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
-                    %apply boundary
-                    aQZArray(~oMapData.Boundary) = NaN;
-                    %save result back in proper format
-                    oMapData.Beats(iBeatIndex).z  = reshape(aQZArray,size(oMapData.x,1),size(oMapData.x,2));
-                    %Calculate the CV and save the results
-                    [CVApprox,CVVectors,ATgrad]=ReComputeCV([oMapData.CVx,oMapData.CVy],oMapData.Beats(iBeatIndex).ActivationTimes,iSupportPoints,0.1);
-                    oMapData.Beats(iBeatIndex).CVApprox = CVApprox;
-                    oMapData.Beats(iBeatIndex).CVVectors = CVVectors;
-                    oMapData.Beats(iBeatIndex).ATgrad = ATgrad;
+                    oMapData.AverageAmplitude = mean(aAmplitudesToAverage,1);
+                    oMapData.AverageDeltaVm = mean(aDeltaVmToAverage,1);
             end
+            oEventData = oMapData;
+        end
+        
+        function oMapData = GetEventMap(oOptical, oEventData, iBeatIndex)
+                %Get the inputs for a mapping call for activation times,
+                %returning a struct containing the x and y locations of the
+                %electrodes and the activation times for each. dInterpDim is
+                %the number of interpolation points in each direction
+                aElectrodes = oOptical.Electrodes(logical(oEventData.AcceptedChannels));
+                %Get the activation indexes
+                aIndexes = zeros(numel(aElectrodes),1); %just the accepted electrodes
+                aFullIndexes = zeros(numel(oOptical.Electrodes),1);
+                aFullEventTimes = zeros(numel(oOptical.Electrodes),1);
+                
+                %track the number of accepted electrodes
+                m = 0;
+                for p = 1:numel(oOptical.Electrodes)
+                    if oEventData.AcceptedChannels(p)
+                        m = m + 1;
+                        if aElectrodes(m).(oEventData.EventID).Index(iBeatIndex) > 1
+                        else
+                            oOptical.MarkEvent(oEventData.EventID, iBeatIndex, p);
+                            aElectrodes(m).(oEventData.EventID).Index(iBeatIndex) = oOptical.Electrodes(p).(oEventData.EventID).Index(iBeatIndex);
+                        end
+                        aIndexes(m) = aElectrodes(m).(oEventData.EventID).Index(iBeatIndex) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
+                        aFullIndexes(p) =  aElectrodes(m).(oEventData.EventID).Index(iBeatIndex) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
+                        aFullEventTimes(p) = oOptical.TimeSeries(aFullIndexes(p));
+                    else
+                        %hold the unaccepted electrode places with inf
+                        aFullEventTimes(p) = Inf;
+                    end
+                end
+                
+                %Get the activation time fields for all time points during this
+                %beat
+                aEventTimes = oOptical.TimeSeries(aIndexes)';
+                %                     aFullActivationTimes = aFullActivationTimes';
+                %convert to ms
+                oEventData.Beats(iBeatIndex).NonZeroedEventTimes = aEventTimes;
+                oEventData.Beats(iBeatIndex).EventTimes = 1000*(aEventTimes-min(aEventTimes));
+                oEventData.Beats(iBeatIndex).FullEventTimes = 1000*(aFullEventTimes - min(aFullEventTimes));
+                
+                %do interpolation for activation times
+                %calculate interpolant
+                oInterpolant = TriScatteredInterp(oEventData.DT,oEventData.Beats(iBeatIndex).EventTimes);
+                %evaluate interpolant
+                oInterpolatedField = oInterpolant(oEventData.x,oEventData.y);
+                %rearrange to be able to apply boundary
+                aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
+                %apply boundary
+                aQZArray(~oEventData.Boundary) = NaN;
+                %save result back in proper format
+                oEventData.Beats(iBeatIndex).z  = reshape(aQZArray,size(oEventData.x,1),size(oEventData.x,2));
+                oMapData = oEventData;
         end
         
         function oMapData = PreparePotentialMap(oOptical, dInterpDim, iBeatIndex, sEventID, oPotentialData,aAcceptedChannels)
@@ -390,6 +340,74 @@ classdef Optical < BasePotential
                 oOptical.ReferencePoints(iCount).Line2 = [aPointData(3,2), aPointData(4,2), aPointData(3,1), aPointData(4,1)];
                 iCount = iCount + 1;
             end
+        end
+        
+        function oMapData = GetDeltaVmMap(oOptical,oEventData, iBeatIndex)
+            aElectrodes = oOptical.Electrodes(logical(oEventData.AcceptedChannels));
+            %get deltaVm
+            aDeltaVm = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Slope');
+            aSteepestIndex = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,oEventData.EventID,'Index');
+            aSteepestIndex = aSteepestIndex(iBeatIndex,:) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
+            aIndex = sub2ind(size(aDeltaVm),aSteepestIndex,1:1:numel(aSteepestIndex));
+            aMaxDeltaVm = aDeltaVm(aIndex);
+            aMaxDeltaVm = aMaxDeltaVm(1,:) - oEventData.AverageDeltaVm;
+            
+            %do interpolation for DeltaVm
+            oInterpolant = TriScatteredInterp(oEventData.DT,aMaxDeltaVm');
+            %evaluate interpolant
+            oInterpolatedField = oInterpolant(oEventData.x,oEventData.y);
+            %rearrange to be able to apply boundary
+            aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
+            %apply boundary
+            aQZArray(~oEventData.Boundary) = NaN;
+            %save result back in proper format
+            oEventData.Beats(iBeatIndex).DeltaVmMap  = reshape(aQZArray,size(oEventData.x,1),size(oEventData.x,2));
+            oEventData.Beats(iBeatIndex).DeltaVmData = aMaxDeltaVm';
+            %pass result out
+            oMapData = oEventData;
+        end
+        
+        function oMapData = GetAmplitudeMap(oOptical,oEventData,iBeatIndex)
+            aElectrodes = oOptical.Electrodes(logical(oEventData.AcceptedChannels));
+            %get amplitudes
+            aProcessedData = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,'Processed','Data');
+            aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,oEventData.EventID,'RangeStart');
+            aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,oEventData.EventID,'RangeEnd');
+            aBeatData = aProcessedData(aRangeStart(iBeatIndex,1):aRangeEnd(iBeatIndex,1),:);
+            aBaselineData = aProcessedData(oOptical.Beats.Indexes(iBeatIndex,1):oOptical.Beats.Indexes(iBeatIndex,1)+10,:);
+            if max(max(aBeatData,[],1)) > 50
+                aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
+                aAmplitude = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0 - oEventData.AverageAmplitude;%
+            else
+                aAmplitude = max(aBeatData,[],1) - mean(aBaselineData,1) - oEventData.AverageAmplitude;%
+            end
+            %do interpolation for APA
+            oInterpolant = TriScatteredInterp(oEventData.DT,aAmplitude');
+            %evaluate interpolant
+            oInterpolatedField = oInterpolant(oEventData.x,oEventData.y);
+            %rearrange to be able to apply boundary
+            aQZArray = reshape(oInterpolatedField,size(oInterpolatedField,1)*size(oInterpolatedField,2),1);
+            %apply boundary
+            aQZArray(~oEventData.Boundary) = NaN;
+            %save result back in proper format
+            oEventData.Beats(iBeatIndex).AmplitudeMap  = reshape(aQZArray,size(oEventData.x,1),size(oEventData.x,2));
+            oEventData.Beats(iBeatIndex).AmplitudeData = aAmplitude';
+            %pass out result
+            oMapData = oEventData;
+        end
+        
+        function oMapData = GetCVMap(oOptical,oEventData,iSupportPoints,iBeatIndex)
+            %Calculate the CV and save the results
+            %check eventdata
+            if isempty(oEventData.Beats(iBeatIndex).EventTimes)
+                oEventData = GetEventMap(oOptical, oEventData, iBeatIndex);
+            end
+            [CVApprox,CVVectors,ATgrad]=ReComputeCV([oEventData.CVx,oEventData.CVy],oEventData.Beats(iBeatIndex).EventTimes,iSupportPoints,0.1);
+            oEventData.Beats(iBeatIndex).CVApprox = CVApprox;
+            oEventData.Beats(iBeatIndex).CVVectors = CVVectors;
+            oEventData.Beats(iBeatIndex).ATgrad = ATgrad;
+
+            oMapData = oEventData;
         end
     end
     
