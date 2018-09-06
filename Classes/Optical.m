@@ -350,7 +350,9 @@ classdef Optical < BasePotential
             aSteepestIndex = aSteepestIndex(iBeatIndex,:) - 1 + oOptical.Beats.Indexes(iBeatIndex,1);
             aIndex = sub2ind(size(aDeltaVm),aSteepestIndex,1:1:numel(aSteepestIndex));
             aMaxDeltaVm = aDeltaVm(aIndex);
+            % either absolute difference or %
             aMaxDeltaVm = aMaxDeltaVm(1,:) - oEventData.AverageDeltaVm;
+            aMaxDeltaVm = (aMaxDeltaVm ./ oEventData.AverageDeltaVm) * 100; 
             
             %do interpolation for DeltaVm
             oInterpolant = TriScatteredInterp(oEventData.DT,aMaxDeltaVm');
@@ -378,8 +380,10 @@ classdef Optical < BasePotential
             if max(max(aBeatData,[],1)) > 50
                 aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
                 aAmplitude = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0 - oEventData.AverageAmplitude;%
+%                 aAmplitude = (aAmplitude ./ oEventData.AverageAmplitude) * 100;%percentage
             else
-                aAmplitude = max(aBeatData,[],1) - mean(aBaselineData,1) - oEventData.AverageAmplitude;%
+                aAmplitude = max(aBeatData,[],1) - mean(aBaselineData,1) - oEventData.AverageAmplitude;%absolute
+%                 aAmplitude = (aAmplitude ./ oEventData.AverageAmplitude) * 100;%percentage
             end
             %do interpolation for APA
             oInterpolant = TriScatteredInterp(oEventData.DT,aAmplitude');

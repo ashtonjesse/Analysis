@@ -5,27 +5,41 @@
 % clear all;
 % close all;
 %% barodata pre-ivb
-% aControlFiles = {{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001' ...
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001' ... %outright competition on recovery
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003' ... %example of uncoupling
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003' ... %lots of competition on the way down. worth fitting DD
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001' ... %another good example of uncoupling
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro001' ... %superior shift prior to inferior? 
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro001' ... %don't use for recovery
-%     },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro001' ...
-%     }};
+aControlFiles = {{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140718\20140718baro001' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140722\20140722baro001' ... %outright competition on recovery
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro003' ... %example of uncoupling
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813baro003' ... %lots of competition on the way down. worth fitting DD
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814baro001' ... %another good example of uncoupling
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821baro001' ... %superior shift prior to inferior? 
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826baro001' ... %don't use for recovery
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828baro001' ...
+    }};
    
 
-% aShiftIndexes = {{27},{28},{56},{24},{28},{35},{46},{37}}; % Onset
-% aShiftIndexes = {{44},{64},{75},{53},{58},{54},{49},{56}}; % Recovery
+aShiftIndexes = {{41},{26},{27},{28},{56},{24},{28},{35},{46},{37}}; % Onset
+% aShiftIndexes = {{65},{50},{44},{64},{75},{53},{58},{54},{49},{56}}; % Recovery
+
+%% barodata post-atropine
+% aControlFiles = {{...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro015' ...
+%     },{...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro011' ...
+%     },{...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro010' ... 
+%     }};
+% aShiftIndexes = {{39},{40},{48}};
 
 %% chemodata pre-ivb
 % aControlFiles = {{...
@@ -40,20 +54,23 @@
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828chemo001' ...%ok for +15 on recovery
 %     }};
 % aShiftIndexes = {{39},{33},{25},{29},{26}}; %onset
-% aShiftIndexes = {{52},{60},{3},{37},{56}}; %recovery
+% aShiftIndexes = {{52},{60},{3},{37},{57}}; %recovery
 %% cchdata pre-ivb
-aControlFiles = {{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh001' ...
-    },{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821CCh001' ...
-    },{...
-%     'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826CCh001' ...%not used in recovery
+% aControlFiles = {{... %20140813CCh003c recovery shift is 51
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh003' ...
 %     },{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828CCh001' ...
-    }};
-% aShiftIndexes = {{45},{94},{68},{74}}; %onset
-aShiftIndexes = {{47},{51},{55}}; %recovery
-%create figures
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh001' ...
+%     },{...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140821\20140821CCh001' ...
+%     },{...
+% %     'G:\PhD\Experiments\Auckland\InSituPrep\20140826\20140826CCh001' ...%not used in recovery
+% %     },{...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828CCh001' ... %outright shift 79, further shift on b 17, c 55 partial recovery
+%     }};
+% % aShiftIndexes = {{16},{45},{94},{74}}; %onset 
+% aShiftIndexes = {{51},{47},{51},{55}}; %recovery
+% % aShiftIndexes = {{28},{57},{1},{17}}; %after outright shift
+% %create figures
 try 
     close(oFigure);
 catch ex
@@ -83,16 +100,20 @@ for p = 1:numel(aControlFiles)
         %load the optical file
         listing = dir(aFolder{j}); %names of files vary so just get all the files in dir
         aFilesInFolder = {listing(:).name}; %convert to cell array
-        switch (p)
-            case {1,3} %CCh
-                aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*c?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
-                %             case 3 %chemo
-                %                 aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*b?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
-            case {2} %CCh
-                aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*d?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
-            otherwise %baro
-                aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*a?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
-        end
+%                 switch (p)
+            %                                     case {1,2} %CCh after LP shift
+            %                                         aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*a?_\w*g10_LP100Hz-waveEach.mat']);
+            %                                     case {3,4} %CCh after LP shift
+            %                                         aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*b?_\w*g10_LP100Hz-waveEach.mat']);
+%                         case {1,2,4} %CCh recovery
+%                             aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*c?_\w*g10_LP100Hz-waveEach.mat']); %recovery
+%                         case 3 %chemo recovery
+%                             aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*b?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
+%                         case {3} %CCh recovery
+%                             aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*d?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
+%                         otherwise %baro onset&recovery, chemo onset&recovery, CCh onset
+                                aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*a?_\w*g10_LP100Hz-waveEach.mat']); %find index of right file
+%                 end
         aOpticalFileName = [aFolder{j},'\',aFilesInFolder{find(~cellfun('isempty', aFileIndex))}]; %build file name
         oOptical = GetOpticalFromMATFile(Optical,char(aOpticalFileName)); %get optical file
         fprintf('Loaded %s\n', aOpticalFileName);
@@ -100,20 +121,21 @@ for p = 1:numel(aControlFiles)
         aBeats = false(size(oOptical.Beats.Indexes,1),1);
         switch (sStimulationType)
             case 'baro'
-                %                 aBeats(max(aShiftIndexes{p}{j}-15,1):...
-                %                     min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
-                aBeats(max(aShiftIndexes{p}{j}-5,1):...
-                    min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %recovery
+                                                aBeats(max(aShiftIndexes{p}{j}-15,1):...
+                                                    min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
+%                 aBeats(max(aShiftIndexes{p}{j}-5,1):...
+%                     min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %recovery
             case 'chemo'
-                %                 aBeats(max(aShiftIndexes{p}{j}-15,1):...
-                %                     min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
+%                                 aBeats(max(aShiftIndexes{p}{j}-15,1):...
+%                                     min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
                 aBeats(max(aShiftIndexes{p}{j}-5,1):...
                     min(aShiftIndexes{p}{j}+15,numel(aBeats))) = true; %recovery
             case 'CCh'
-                %                 aBeats(max(aShiftIndexes{p}{j}-20,1):...
-                %                     min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %onset
+%                                                 aBeats(max(aShiftIndexes{p}{j}-20,1):...
+%                                                     min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %onset
                 aBeats(max(aShiftIndexes{p}{j}-5,1):...
-                    min(aShiftIndexes{p}{j}+15,numel(aBeats))) = true;
+                    min(aShiftIndexes{p}{j}+15,numel(aBeats))) = true; %recovery
+%                 aBeats(aShiftIndexes{p}{j}:aShiftIndexes{p}{j}+10) = true; %post LP shift
         end
         aBeatIndexes = find(aBeats);
         %load activation data
@@ -199,17 +221,23 @@ for p = 1:numel(aControlFiles)
         aPhaseData{p}{j}(ii+1,:) = nanmean(aAMSPSEvent(ia,:),1);
     end
 end
-% %hack for chemo
+% %hack for chemo recovery
 % aAPAData{3,1}{1} = horzcat(NaN(6,3),aAPAData{3,1}{1});
 % aDelVmData{3,1}{1} = horzcat(NaN(6,3),aDelVmData{3,1}{1});
 % aPhaseData{3,1}{1} = horzcat(NaN(6,3),aPhaseData{3,1}{1});
 % aCVData{3,1}{1} = horzcat(NaN(6,3),aCVData{3,1}{1});
 
-%%hack for CCh
-aAPAData{2,1}{1} = horzcat(aAPAData{2,1}{1},NaN(6,6));
-aDelVmData{2,1}{1} = horzcat(aDelVmData{2,1}{1},NaN(6,6));
-aPhaseData{2,1}{1} = horzcat(aPhaseData{2,1}{1},NaN(6,6));
-aCVData{2,1}{1} = horzcat(aCVData{2,1}{1},NaN(6,6));
+% %%hack for CCh onset
+% aAPAData{1,1}{1} = horzcat(aAPAData{1,1}{1},NaN(6,5));
+% aDelVmData{1,1}{1} = horzcat(aDelVmData{1,1}{1},NaN(6,5));
+% aPhaseData{1,1}{1} = horzcat(aPhaseData{1,1}{1},NaN(6,5));
+% aCVData{1,1}{1} = horzcat(aCVData{1,1}{1},NaN(6,5));
+
+%%hack for CCh recovery
+% aAPAData{3,1}{1} = horzcat(aAPAData{3,1}{1},NaN(6,6));
+% aDelVmData{3,1}{1} = horzcat(aDelVmData{3,1}{1},NaN(6,6));
+% aPhaseData{3,1}{1} = horzcat(aPhaseData{3,1}{1},NaN(6,6));
+% aCVData{3,1}{1} = horzcat(aCVData{3,1}{1},NaN(6,6));
 
 aCVDataStacked = vertcat(aCVData{:});
 aCVDataCombined = vertcat(aCVDataStacked{:})';

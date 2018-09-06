@@ -1336,7 +1336,7 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
 
-             aContourRange = -2:0.1:2;%0:10:300;%
+             aContourRange = -30:1:30;%-2:0.1:2;%0:10:300;%
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oEventData.x,oEventData.y,oEventData.Beats(iBeat).DeltaVmMap,aContourRange);
@@ -1415,7 +1415,7 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
 
-             aContourRange = -5:0.2:2;%0:50:1000;%
+             aContourRange = -20:1:20;%-5:0.2:2;%0:50:1000;%
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oEventData.x,oEventData.y,oEventData.Beats(iBeat).AmplitudeMap,aContourRange);
@@ -1708,8 +1708,8 @@ classdef MapElectrodes < SubFigure
                              oElectrodes,oFigure.oParentFigure.SelectedEventID,'Exit');
                          aCoords = cell2mat({oElectrodes(aExitData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
                          if ~isempty(aCoords)
-                             scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
-                                 'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
+%                              scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
+%                                  'sizedata',122,'Marker','o','MarkerEdgeColor','k','MarkerFaceColor','g');%size 6 for posters
                          end
                      end
 %                      for i = 1:length(oElectrodes)
@@ -1732,7 +1732,7 @@ classdef MapElectrodes < SubFigure
          function PlotSchematic(oFigure, oAxes)
              %use schematic with guide
              sFilePath = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oExperiment.(oFigure.BasePotentialFile(2:end)).SchematicFilePath;
-%                           sGuideFile = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140703\20140703Schematic_noholes.bmp';
+%                           sGuideFile = 'D:\Users\jash042\Documents\DataLocal\Imaging\Prep\20140723\20140723Schematic_rotated_highres.bmp';
                           sGuideFile = strrep(sFilePath, '.bmp', '_guide.bmp');
                           oImage = imshow(sGuideFile,'Parent', oAxes, 'Border', 'tight');
 %              oImage = imshow(sFilePath,'Parent', oAxes, 'Border', 'tight');

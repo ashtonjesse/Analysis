@@ -85,7 +85,7 @@ classdef BaseFigure < handle
             [pathstr, name, ext, versn] = fileparts(sFilePath);
             switch (ext)
                 case '.bmp'
-                    print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dbmp','-r150',sFilePath)
+                    print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dbmp','-r300',sFilePath)
                 case '.eps'
                     print(oFigure.oGuiHandle.(oFigure.sFigureTag),'-dpsc','-r300',sFilePath)
             end

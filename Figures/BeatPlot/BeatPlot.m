@@ -483,7 +483,7 @@ classdef BeatPlot < SubFigure
                  hold(oSignalPlot,'off');
                  %Plot the slope data
                  plot(aTime,aSlope,'color','r','parent',oSlopePlot);
-                                  plot(aTime,aCurvature,'color','c','parent',oEnvelopePlot );
+                 plot(aTime,aCurvature,'color','c','parent',oEnvelopePlot );
                  %Loop through events
                  if isfield(oElectrode,'SignalEvents')
                      for j = 1:length(oElectrode.SignalEvents)

@@ -60,19 +60,23 @@
 %         aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*a?_\w*g10_LP100Hz-waveEach.csv']); %find index of CSV file
 %         aCSVFileName = [aFolder{j},'\',aFilesInFolder{find(~cellfun('isempty', aFileIndex))}]; %build file name
 oOptical = ans.oGuiHandle.oOptical;
-aCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828CCh001\CCh001a_g10_LP100Hz-waveEach.csv';
+aCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\baro005_3x3_1ms_7x_g10_LP100Hz-waveEach.csv';
         %load background values
         oOptical.oDAL.GetBackgroundValuesFromCSV(oOptical, aCSVFileName);
         %compute dff0
         aInOptions = struct('Procedure','dFF0','Inputs',[]);
         oOptical.ProcessArrayData(aInOptions);
-
+        
         %create the new event
         oOptical.CreateNewEvent(1:1:length(oOptical.Electrodes), 1:1:size(oOptical.Beats.Indexes,1), ...
             'm', 'Activation', 'SteepestPositiveSlope');
-        %change area of map to match arsps
-        aMap = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'arsps','Map');
-        oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','Map',aMap);
+        %change area of map to match arsps or other file
+        
+%         oOptical2 = GetOpticalFromMATFile(Optical, 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh003\CCh003a_g10_LP100Hz-waveEach.mat');
+%         aMap = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'arsps','Map');
+        aMap2 = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'arsps','Map');
+        aMap3 = repmat(aMap2(1,:),size(oOptical.Beats.Indexes,1),1);
+        oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','Map',aMap3);
 %         
         %adjust the range
         aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'arsps','RangeStart');
@@ -81,9 +85,9 @@ aCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828CCh001\C
         oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','RangeEnd',aRangeEnd);
         %update the event mark
         oOptical.MarkEvent('amsps');
-        aOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140828\20140828CCh001\CCh001c_g10_LP100Hz-waveEach.mat';
+        aOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\baro005_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
         oOptical.Save(aOpticalFileName);
-        fprintf('Saved %s\n', aOpticalFileName);
+        fprintf('Finished %s\n', aCSVFileName);
 %     end
 %     
 % end

@@ -256,4 +256,4 @@ aCRange = [0 12];
 oLabel = text(-2.8,(aCRange(2)-aCRange(1))/2,'Atrial AT (ms)','parent',oAxes,'fontunits','points','fontweight','bold','horizontalalignment','center','rotation',90);
 set(oLabel,'fontsize',8);
 
-export_fig(sFileSavePath, '-png','-r600','-nocrop')
+% export_fig(sFileSavePath, '-png','-r600','-nocrop')
