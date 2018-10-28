@@ -376,7 +376,8 @@ classdef Optical < BasePotential
             aRangeStart = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,oEventData.EventID,'RangeStart');
             aRangeEnd = MultiLevelSubsRef(oOptical.oDAL.oHelper,aElectrodes,oEventData.EventID,'RangeEnd');
             aBeatData = aProcessedData(aRangeStart(iBeatIndex,1):aRangeEnd(iBeatIndex,1),:);
-            aBaselineData = aProcessedData(oOptical.Beats.Indexes(iBeatIndex,1):oOptical.Beats.Indexes(iBeatIndex,1)+10,:);
+%             aBaselineData = aProcessedData(oOptical.Beats.Indexes(iBeatIndex,1):oOptical.Beats.Indexes(iBeatIndex,1)+10,:);
+            aBaselineData = aProcessedData(aRangeStart(iBeatIndex,1)-10:aRangeStart(iBeatIndex,1),:);
             if max(max(aBeatData,[],1)) > 50
                 aF0 = mean(aProcessedData(oOptical.Beats.Indexes(1,1):oOptical.Beats.Indexes(1,1)+10,:),1);
                 aAmplitude = (max(aBeatData,[],1) - mean(aBaselineData,1)) ./ aF0 - oEventData.AverageAmplitude;%
@@ -412,6 +413,20 @@ classdef Optical < BasePotential
             oEventData.Beats(iBeatIndex).ATgrad = ATgrad;
 
             oMapData = oEventData;
+        end
+        
+        function oOptical = DfD0(oOptical)
+            %this function converts the raw intensities to dFd0 % values
+             [sDataFileName,sDataPathName]=uigetfile('*.*','Select a csv file that contains an optical transmembrane recording','multiselect','off');
+            %Make sure the dialogs return char objects
+            if (~ischar(sDataFileName) && ~ischar(sDataPathName))
+                return
+            end
+            sLongDataFileName=strcat(sDataPathName,sDataFileName);
+            oOptical.oDAL.GetBackgroundValuesFromCSV(oOptical,sLongDataFileName);
+            aInOptions = struct('Procedure','','Inputs',cell(1,1));
+            aInOptions.Procedure = 'dFF0';
+            oOptical.ProcessArrayData(aInOptions);
         end
     end
     

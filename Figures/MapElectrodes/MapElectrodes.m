@@ -1415,7 +1415,7 @@ classdef MapElectrodes < SubFigure
                  oHandle = oFigure.oDAL.oHelper.GetHandle(oChildren,'cbarf_horiz_linear');
              end
 
-             aContourRange = -20:1:20;%-5:0.2:2;%0:50:1000;%
+             aContourRange = -0.6:0.05:0.2;%-20:1:20;%-5:0.2:2;%0:50:1000;%
              set(oFigure.oGuiHandle.(oFigure.sFigureTag),'currentaxes',oMapAxes);
              %Assuming the potential field has been normalised.
              [C, oContour] = contourf(oMapAxes,oEventData.x,oEventData.y,oEventData.Beats(iBeat).AmplitudeMap,aContourRange);
@@ -1561,11 +1561,11 @@ classdef MapElectrodes < SubFigure
              oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
              aOriginData = MultiLevelSubsRef(oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).oDAL.oHelper,...
                  oElectrodes,'aghsm','Origin');
-             aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
-             if ~isempty(aCoords)
-                 scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
-                         'sizedata',1000,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
-             end
+             %              aCoords = cell2mat({oElectrodes(aOriginData(oFigure.oParentFigure.SelectedBeat,:)).Coords});
+             %              if ~isempty(aCoords)
+             %                  scatter(oMapAxes, aCoords(1,:), aCoords(2,:), ...
+             %                          'sizedata',1000,'Marker','p','MarkerEdgeColor','k','MarkerFaceColor','w');%size 122 for posters
+             %              end
              hold(oMapAxes,'off');
              %              set(oMapAxes,'fontsize',8);
              %              %              set(oMapAxes,'ytick',1:5);
@@ -1785,16 +1785,18 @@ classdef MapElectrodes < SubFigure
              iChannel = oFigure.oParentFigure.SelectedChannel;
              %Get the electrodes and plot the selected electrode
              %and the electrode with the earliest activation
-             dDiameter = 1.0;
+             dDiameter = [0.5;1.0];
              hold(oMapAxes,'on');
              oElectrodes = oFigure.oRootFigure.oGuiHandle.(oFigure.BasePotentialFile).Electrodes;
              if oFigure.ElectrodeMarkerVisible
                  plot(oMapAxes, oElectrodes(iChannel).Coords(1), oElectrodes(iChannel).Coords(2), ...
                      'MarkerSize',8,'Marker','o','MarkerEdgeColor','w','MarkerFaceColor','k');%size 6 for posters
                  th = 0:pi/50:2*pi;
-                 xunit = dDiameter * cos(th) + oElectrodes(iChannel).Coords(1);
-                 yunit = dDiameter * sin(th) + oElectrodes(iChannel).Coords(2);
-                 plot(oMapAxes,xunit,yunit,'k','linewidth',1.5);
+                 xunit = dDiameter * cos(th) + repmat(oElectrodes(iChannel).Coords(1),size(dDiameter,1),size(th,2));
+                 yunit = dDiameter * sin(th) + repmat(oElectrodes(iChannel).Coords(2),size(dDiameter,1),size(th,2));
+                 for ii = 1:size(xunit,1)
+                     plot(oMapAxes,xunit(ii,:),yunit(ii,:),'k','linewidth',1.5);
+                 end
              end
              hold(oMapAxes,'off');
          end

@@ -404,7 +404,7 @@ classdef BeatPlot < SubFigure
                  aEnvelopeLimits = [min(aEnvelope), max(aEnvelope)];
              end
              %get regional average
-             aRegion = GetElectrodesWithinRadius(oBasePotential,oElectrode.Coords',0.5);
+             aRegion = GetElectrodesWithinRadius(oBasePotential,oElectrode.Coords',0.5, [oBasePotential.Electrodes(:).Coords]');
              aAllData = MultiLevelSubsRef(oBasePotential.oDAL.oHelper,oBasePotential.Electrodes,'Processed','Data');
              aAverageData = aAllData(oBasePotential.Beats.Indexes(iBeat,1):...
                  oBasePotential.Beats.Indexes(iBeat,2),aRegion);

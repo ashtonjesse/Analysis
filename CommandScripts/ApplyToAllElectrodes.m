@@ -12,18 +12,17 @@
 %     end
 % end
 % ans.oGuiHandle.oOptical.MarkEvent('amsps');
-sFile = 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh002\CCh002a_g10_LP100Hz-waveEach.mat';
-sFile2 = 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh002\CCh002b_g10_LP100Hz-waveEach.mat';
+% sFile = 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh002\CCh002a_g10_LP100Hz-waveEach.mat';
+% sFile2 = 'G:\PhD\Experiments\Auckland\InSituPrep\20140813\20140813CCh002\CCh002b_g10_LP100Hz-waveEach.mat';
 % oOptical = GetOpticalFromMATFile(Optical, sFile);
 % oOptical2 = GetOpticalFromMATFile(Optical, sFile2);
 % aAMSPSData2 = PrepareEventData(oOptical2, 100, 'Contour', 'amsps', 1,
 % []);
+oOptical = ans.oGuiHandle.oOptical;
 aMap = MultiLevelSubsRef(oOptical.oDAL.oHelper,oOptical.Electrodes,'arsps','Map');
-aMap2 = MultiLevelSubsRef(oOptical2.oDAL.oHelper,oOptical2.Electrodes,'arsps','Map');
-aMap3 = repmat(aMap(1,:),size(oOptical2.Beats.Indexes,1),1);
-oOptical2.Electrodes = MultiLevelSubsAsgn(oOptical2.oDAL.oHelper, oOptical2.Electrodes,'arsps','Map',aMap3);
-oOptical2.Save(sFile2);
-fprintf('Saved %s\n', sFile2);
+aMap3 = repmat(aMap(1,:),size(oOptical.Beats.Indexes,1),1);
+oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','Map',aMap3);
+
 
 % aControlFiles = {{...
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140814\20140814CCh001' ...

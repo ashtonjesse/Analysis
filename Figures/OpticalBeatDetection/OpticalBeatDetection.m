@@ -300,9 +300,7 @@ classdef OpticalBeatDetection < BaseFigure
         end
         
         function oDFF0_Callback(oFigure, src, event)
-            aInOptions = struct('Procedure','','Inputs',cell(1,1));
-            aInOptions.Procedure = 'dFF0';
-            oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).ProcessArrayData(aInOptions);
+            oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).DfD0();
         end
     end
     
@@ -416,7 +414,9 @@ classdef OpticalBeatDetection < BaseFigure
             %to keep.
             bIndexes = ~bIndexes;
             %Truncate data that is not selected
-            oFigure.oGuiHandle.oOptical(oFigure.SelectedFile).TruncateData(bIndexes);
+            for ii = 1:numel(oFigure.oGuiHandle.oOptical)
+                oFigure.oGuiHandle.oOptical(ii).TruncateData(bIndexes);
+            end
             oFigure.Replot(oFigure.SelectedChannel);
         end
     end

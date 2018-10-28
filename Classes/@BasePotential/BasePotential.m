@@ -520,14 +520,13 @@ classdef BasePotential < BaseSignal
             [C iElectrodeNumber] = min(aDistance);
         end
         
-        function aElectrodes = GetElectrodesWithinRadius(oBasePotential, Loc, dRadius)
+        function aElectrodes = GetElectrodesWithinRadius(oBasePotential, Loc, dRadius, aCoords)
             %return logical array to select accepted electrodes within radius of specified location
             %get accepted electrodes
-            aCoords = [oBasePotential.Electrodes(:).Coords]';
             RelativeDistVectors = aCoords-repmat(Loc,[size(aCoords,1),1]);
             [Dist,SupportPoints] = sort(sqrt(sum(RelativeDistVectors.^2,2)),1,'ascend');
             aLocalRegion = SupportPoints(Dist <= dRadius);
-            aElectrodes = false(1,numel(oBasePotential.Electrodes));
+            aElectrodes = false(1,size(aCoords,1));
             aElectrodes(aLocalRegion) = true;
         end
         

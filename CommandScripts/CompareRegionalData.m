@@ -6,7 +6,9 @@
 % close all;
 %% barodata pre-ivb
 aControlFiles = {{...
-    'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005' ...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro004' ...
+    },{...
+    'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro006' ...
     },{...
     'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro001' ...
     },{...
@@ -28,18 +30,20 @@ aControlFiles = {{...
     }};
    
 
-aShiftIndexes = {{41},{26},{27},{28},{56},{24},{28},{35},{46},{37}}; % Onset
-% aShiftIndexes = {{65},{50},{44},{64},{75},{53},{58},{54},{49},{56}}; % Recovery
+% aShiftIndexes = {{41},{50},{27},{27},{28},{56},{24},{28},{35},{46},{37}}; % Onset
+aShiftIndexes = {{65},{66},{50},{44},{64},{75},{53},{58},{54},{49},{56}}; % Recovery
 
-%% barodata post-atropine
+% barodata post-atropine
 % aControlFiles = {{...
+%     'G:\PhD\Experiments\Auckland\InSituPrep\20140630\20140630baro014' ...
+%     },{...
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro015' ...
 %     },{...
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140715\20140715baro011' ...
 %     },{...
 %     'G:\PhD\Experiments\Auckland\InSituPrep\20140723\20140723baro010' ... 
 %     }};
-% aShiftIndexes = {{39},{40},{48}};
+% aShiftIndexes = {{21},{38},{40},{48}};
 
 %% chemodata pre-ivb
 % aControlFiles = {{...
@@ -94,7 +98,9 @@ for p = 1:numel(aControlFiles)
     
     [pathstr, name, ext, versn] = fileparts(char(aFolder{1}));
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), '\');
+    dExperiment = str2double(splitStr{end-1});
     [startIndex, endIndex, tokIndex, matchStr, tokenStr, exprNames, splitStr] = regexp(char(aFolder{1}), splitStr{end-1});
+    
     sStimulationType = splitStr{end}(1:end-3);
     for j = 1:numel(aFolder)
         %load the optical file
@@ -121,21 +127,23 @@ for p = 1:numel(aControlFiles)
         aBeats = false(size(oOptical.Beats.Indexes,1),1);
         switch (sStimulationType)
             case 'baro'
-                                                aBeats(max(aShiftIndexes{p}{j}-15,1):...
-                                                    min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
-%                 aBeats(max(aShiftIndexes{p}{j}-5,1):...
-%                     min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %recovery
+                %                 aBeats(max(aShiftIndexes{p}{j}-15,1):...
+                %                     min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
+                %                aCycles = -15:1:5;
+                aBeats(max(aShiftIndexes{p}{j}-5,1):...
+                    min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true;%recovery
+                aCycles = -5:1:10;
             case 'chemo'
-%                                 aBeats(max(aShiftIndexes{p}{j}-15,1):...
-%                                     min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
+                %                                 aBeats(max(aShiftIndexes{p}{j}-15,1):...
+                %                                     min(aShiftIndexes{p}{j}+5,numel(aBeats))) = true; %onset
                 aBeats(max(aShiftIndexes{p}{j}-5,1):...
                     min(aShiftIndexes{p}{j}+15,numel(aBeats))) = true; %recovery
             case 'CCh'
-%                                                 aBeats(max(aShiftIndexes{p}{j}-20,1):...
-%                                                     min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %onset
+                %                                                 aBeats(max(aShiftIndexes{p}{j}-20,1):...
+                %                                                     min(aShiftIndexes{p}{j}+10,numel(aBeats))) = true; %onset
                 aBeats(max(aShiftIndexes{p}{j}-5,1):...
                     min(aShiftIndexes{p}{j}+15,numel(aBeats))) = true; %recovery
-%                 aBeats(aShiftIndexes{p}{j}:aShiftIndexes{p}{j}+10) = true; %post LP shift
+                %                 aBeats(aShiftIndexes{p}{j}:aShiftIndexes{p}{j}+10) = true; %post LP shift
         end
         aBeatIndexes = find(aBeats);
         %load activation data
@@ -165,60 +173,100 @@ for p = 1:numel(aControlFiles)
         aAxisData = cell2mat({oOptical.Electrodes(:).AxisPoint});
         oAxesElectrodes = oOptical.Electrodes(aAxisData);
         aAxesCoords = cell2mat({oAxesElectrodes(:).Coords});
-        %loop through sections of axis and get average CV for each
-        aCVData{p}{j} = zeros(6,numel(aBeatIndexes));
-        aDelVmData{p}{j} = zeros(6,numel(aBeatIndexes));
-        aAPAData{p}{j} = zeros(6,numel(aBeatIndexes));
-        aPhaseData{p}{j} = zeros(6,numel(aBeatIndexes));
+        %         %loop through sections of axis and get average CV for each
+        %         aCVData{p}{j} = zeros(6,numel(aBeatIndexes));
+        %         aDelVmData{p}{j} = zeros(6,numel(aBeatIndexes));
+        %         aAPAData{p}{j} = zeros(6,numel(aBeatIndexes));
+        %         aPhaseData{p}{j} = zeros(6,numel(aBeatIndexes));
+        aCVData{p}{j} = cell(3,1);
+        aDelVmData{p}{j} = cell(3,1);
+        aAPAData{p}{j} = cell(3,1);
+        aPhaseData{p}{j} = cell(3,1);
+        
         %get data for all beats
         aAMSPSCV =  cell2mat({aAMSPSData.Beats(aBeats).CVApprox});
         aAMSPSDelVm = cell2mat({aAMSPSData.Beats(aBeats).DeltaVmData});
         aAMSPSAPA = cell2mat({aAMSPSData.Beats(aBeats).AmplitudeData});
         aAMSPSEvent = cell2mat({aAMSPSData.Beats(aBeats).EventTimes});
         %save data for each region
-        for ii = 1:5 %mm along SVCIVC axis
+        aLocations = [1,4];%mm along SVCIVC axis
+        for ii = 1:2 
+            mm = aLocations(ii);
             %convert axis point location to coords of centre point
-            aCentrePoint = [((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*ii+aAxesCoords(1,2),...
-                ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*ii+aAxesCoords(2,2)];
+            aCentrePoint = [((aAxesCoords(1,1)-aAxesCoords(1,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*mm+aAxesCoords(1,2),...
+                ((aAxesCoords(2,1)-aAxesCoords(2,2))/norm(aAxesCoords(:,1)-aAxesCoords(:,2)))*mm+aAxesCoords(2,2)];
             %get electrodes in the ROI
-            aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, dRadius);
+            aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, dRadius, [oOptical.Electrodes(:).Coords]');
             %convert logical arrays to indexes and select the
             %indexes that appear in both accepted and ROI
             [c ia ib] = intersect(find(aAMSPSData.AcceptedChannels),find(aElectrodes));
-            %need to now average data for these electrodes
-            %and put into an array which is recording, 5 points x #beats
-            aCVData{p}{j}(ii,:) = nanmean(aAMSPSCV(ia,:),1);
-            aDelVmData{p}{j}(ii,:) = nanmean(aAMSPSDelVm(ia,:),1);
-            aAPAData{p}{j}(ii,:) = nanmean(aAMSPSAPA(ia,:),1);
-            %decrease ROI radius for phase measurement
+            %             %need to now average data for these electrodes
+            %             %and put into an array which is recording, 5 points x #beats
+            %             aCVData{p}{j}(ii,:) = nanmean(aAMSPSCV(ia,:),1);
+            %             aDelVmData{p}{j}(ii,:) = nanmean(aAMSPSDelVm(ia,:),1);
+            %             aAPAData{p}{j}(ii,:) = nanmean(aAMSPSAPA(ia,:),1);
+            aCV = aAMSPSCV(ia,:);
+            aCycleLabels = repmat(aCycles,size(aCV,1),1);
+            aExperiment = repmat(dExperiment,size(aCV));
+            aLocation = repmat(mm,size(aCV));
+            aPoint = repmat([1:size(aCV,1)]',1,size(aCV,2));
+            aCVData{p}{j}{ii} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aCV(:));
+            aDelVm = aAMSPSDelVm(ia,:);
+            aDelVmData{p}{j}{ii} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aDelVm(:));
+            aAPA = aAMSPSAPA(ia,:);
+            aAPAData{p}{j}{ii} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aAPA(:));
+            %decrease ROI radius for the event time measurement
             %get electrodes in the ROI
-            aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, 0.5);
+            aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, 0.5, [oOptical.Electrodes(:).Coords]');
             %convert logical arrays to indexes and select the
             %indexes that appear in both accepted and ROI
             [c ia ib] = intersect(find(aAMSPSData.AcceptedChannels),find(aElectrodes));
-            aPhaseData{p}{j}(ii,:) = nanmean(aAMSPSEvent(ia,:),1); 
+            aPhase = aAMSPSEvent(ia,:);
+            aCycleLabels = repmat(aCycles,size(aPhase,1),1);
+            aExperiment = repmat(dExperiment,size(aPhase));
+            aLocation = repmat(mm,size(aPhase));
+            aPoint = repmat([1:size(aPhase,1)]',1,size(aPhase,2));
+            aPhaseData{p}{j}{ii} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aPhase(:));
+            %deleted a statement here for aPhaseData{p}{j}(ii,:)
         end
         %and add right atrial appendage
         aRAALoc = MultiLevelSubsRef(oOptical.oDAL.oHelper,...
             oOptical.Electrodes,'arsps','Exit');
         aCentrePoint = cell2mat({oOptical.Electrodes(logical(aRAALoc(1,:))).Coords})';
         %get electrodes in the ROI
-        aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, dRadius);
+        aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, dRadius, [oOptical.Electrodes(:).Coords]');
         %convert logical arrays to indexes and select the
         %indexes that appear in both accepted and ROI
         [c ia ib] = intersect(find(aAMSPSData.AcceptedChannels),find(aElectrodes));
-        %need to now average data for these electrodes
-        %and put into an array which is recording, 5 points x #beats
-        aCVData{p}{j}(ii+1,:) = nanmean(aAMSPSCV(ia,:),1);
-        aDelVmData{p}{j}(ii+1,:) = nanmean(aAMSPSDelVm(ia,:),1);
-        aAPAData{p}{j}(ii+1,:) = nanmean(aAMSPSAPA(ia,:),1);
+        %         %need to now average data for these electrodes
+        %         %and put into an array which is recording, 5 points x #beats
+        %         aCVData{p}{j}(ii+1,:) = nanmean(aAMSPSCV(ia,:),1);
+        %         aDelVmData{p}{j}(ii+1,:) = nanmean(aAMSPSDelVm(ia,:),1);
+        %         aAPAData{p}{j}(ii+1,:) = nanmean(aAMSPSAPA(ia,:),1);
+        aCV = aAMSPSCV(ia,:);
+        aCycleLabels = repmat(aCycles,size(aCV,1),1);
+        aExperiment = repmat(dExperiment,size(aCV));
+        aLocation = repmat(0,size(aCV)); %label RAA location as 0
+        aPoint = repmat([1:size(aCV,1)]',1,size(aCV,2));
+        aCVData{p}{j}{ii+1} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aCV(:));
+        aDelVm = aAMSPSDelVm(ia,:);
+        aDelVmData{p}{j}{ii+1} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aDelVm(:));
+        aAPA = aAMSPSAPA(ia,:);
+        aAPAData{p}{j}{ii+1} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aAPA(:));
+        
         %decrease ROI radius for phase measurement
         %get electrodes in the ROI
-        aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, 0.5);
+        aElectrodes = oOptical.GetElectrodesWithinRadius(aCentrePoint, 0.5, [oOptical.Electrodes(:).Coords]');
         %convert logical arrays to indexes and select the
         %indexes that appear in both accepted and ROI
         [c ia ib] = intersect(find(aAMSPSData.AcceptedChannels),find(aElectrodes));
-        aPhaseData{p}{j}(ii+1,:) = nanmean(aAMSPSEvent(ia,:),1);
+        %         aPhaseData{p}{j}(ii+1,:) = nanmean(aAMSPSEvent(ia,:),1);
+        aPhase = aAMSPSEvent(ia,:);
+        aCycleLabels = repmat(aCycles,size(aPhase,1),1);
+        aExperiment = repmat(dExperiment,size(aPhase));
+        aLocation = repmat(0,size(aPhase));
+        aPoint = repmat([1:size(aPhase,1)]',1,size(aPhase,2));
+        aPhaseData{p}{j}{ii+1} = horzcat(aExperiment(:),aCycleLabels(:),aLocation(:),aPoint(:),aPhase(:));
     end
 end
 % %hack for chemo recovery
@@ -240,27 +288,44 @@ end
 % aCVData{3,1}{1} = horzcat(aCVData{3,1}{1},NaN(6,6));
 
 aCVDataStacked = vertcat(aCVData{:});
-aCVDataCombined = vertcat(aCVDataStacked{:})';
-aCVDataToWrite = zeros(size(aCVDataCombined));
+aCVDataStacked = vertcat(aCVDataStacked{:});
+aCVDataStacked = vertcat(aCVDataStacked{:});
 aDelVmDataStacked = vertcat(aDelVmData{:});
-aDelVmDataCombined = vertcat(aDelVmDataStacked{:})';
-aDelVmDataToWrite = zeros(size(aCVDataCombined));
+aDelVmDataStacked = vertcat(aDelVmDataStacked{:});
+aDelVmDataStacked = vertcat(aDelVmDataStacked{:});
 aAPADataStacked = vertcat(aAPAData{:});
-aAPADataCombined = vertcat(aAPADataStacked{:})';
-aAPADataToWrite = zeros(size(aCVDataCombined));
+aAPADataStacked = vertcat(aAPADataStacked{:});
+aAPADataStacked = vertcat(aAPADataStacked{:});
 aPhaseDataStacked = vertcat(aPhaseData{:});
-aPhaseDataCombined = vertcat(aPhaseDataStacked{:})';
-aPhaseDataToWrite = zeros(size(aCVDataCombined));
+aPhaseDataStacked = vertcat(aPhaseDataStacked{:});
+aPhaseDataStacked = vertcat(aPhaseDataStacked{:});
 
-iColsPerRegion = size(aCVDataStacked,1);
-for ii = 1:6
-    iStartCol = (ii-1)*iColsPerRegion+1;
-    aCVDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aCVDataCombined(:,ii:6:end);
-    aDelVmDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aDelVmDataCombined(:,ii:6:end);
-    aAPADataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aAPADataCombined(:,ii:6:end);
-    aPhaseDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aPhaseDataCombined(:,ii:6:end);
-end
-csvwrite(['V:\',sStimulationType,'\aCVDataStacked.csv'],aCVDataToWrite);
-csvwrite(['V:\',sStimulationType,'\aAPADataStacked.csv'],aAPADataToWrite);
-csvwrite(['V:\',sStimulationType,'\aDelVmDataStacked.csv'],aDelVmDataToWrite);
-csvwrite(['V:\',sStimulationType,'\aPhaseDataStacked.csv'],aPhaseDataToWrite);
+aCVDataToWrite = aCVDataStacked(~isnan(aCVDataStacked(:,5)),:);
+aAPADataToWrite = aAPADataStacked(~isnan(aAPADataStacked(:,5)),:);
+aDelVmDataToWrite = aDelVmDataStacked(~isnan(aDelVmDataStacked(:,5)),:);
+aPhaseDataToWrite = aPhaseDataStacked(~isnan(aPhaseDataStacked(:,5)),:);
+% aCVDataStacked = vertcat(aCVData{:});
+% aCVDataCombined = vertcat(aCVDataStacked{:})';
+% aCVDataToWrite = zeros(size(aCVDataCombined));
+% aDelVmDataStacked = vertcat(aDelVmData{:});
+% aDelVmDataCombined = vertcat(aDelVmDataStacked{:})';
+% aDelVmDataToWrite = zeros(size(aCVDataCombined));
+% aAPADataStacked = vertcat(aAPAData{:});
+% aAPADataCombined = vertcat(aAPADataStacked{:})';
+% aAPADataToWrite = zeros(size(aCVDataCombined));
+% aPhaseDataStacked = vertcat(aPhaseData{:});
+% aPhaseDataCombined = vertcat(aPhaseDataStacked{:})';
+% aPhaseDataToWrite = zeros(size(aCVDataCombined));
+
+% iColsPerRegion = size(aCVDataStacked,1);
+% for ii = 1:6
+%     iStartCol = (ii-1)*iColsPerRegion+1;
+%     aCVDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aCVDataCombined(:,ii:6:end);
+%     aDelVmDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aDelVmDataCombined(:,ii:6:end);
+%     aAPADataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aAPADataCombined(:,ii:6:end);
+%     aPhaseDataToWrite(:,iStartCol:(iStartCol+iColsPerRegion-1)) = aPhaseDataCombined(:,ii:6:end);
+% end
+dlmwrite(['V:\',sStimulationType,'\recovery\aCVDataStacked.csv'],aCVDataToWrite,'precision','%10.5f');
+dlmwrite(['V:\',sStimulationType,'\recovery\aAPADataStacked.csv'],aAPADataToWrite,'precision','%10.5f');
+dlmwrite(['V:\',sStimulationType,'\recovery\aDelVmDataStacked.csv'],aDelVmDataToWrite,'precision','%10.5f');
+dlmwrite(['V:\',sStimulationType,'\recovery\aPhaseDataStacked.csv'],aPhaseDataToWrite,'precision','%10.5f');

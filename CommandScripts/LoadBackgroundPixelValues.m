@@ -60,7 +60,7 @@
 %         aFileIndex = regexp(aFilesInFolder, [sStimulationType,'\d*a?_\w*g10_LP100Hz-waveEach.csv']); %find index of CSV file
 %         aCSVFileName = [aFolder{j},'\',aFilesInFolder{find(~cellfun('isempty', aFileIndex))}]; %build file name
 oOptical = ans.oGuiHandle.oOptical;
-aCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\baro005_3x3_1ms_7x_g10_LP100Hz-waveEach.csv';
+aCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro006\baro006_3x3_1ms_7x_g10_LP100Hz-waveEach.csv';
         %load background values
         oOptical.oDAL.GetBackgroundValuesFromCSV(oOptical, aCSVFileName);
         %compute dff0
@@ -85,7 +85,7 @@ aCSVFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\
         oOptical.Electrodes = MultiLevelSubsAsgn(oOptical.oDAL.oHelper, oOptical.Electrodes,'amsps','RangeEnd',aRangeEnd);
         %update the event mark
         oOptical.MarkEvent('amsps');
-        aOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro005\baro005_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
+        aOpticalFileName = 'G:\PhD\Experiments\Auckland\InSituPrep\20140703\20140703baro006\baro006_3x3_1ms_7x_g10_LP100Hz-waveEach.mat';
         oOptical.Save(aOpticalFileName);
         fprintf('Finished %s\n', aCSVFileName);
 %     end
