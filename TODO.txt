@@ -1,7 +1,0 @@
-TODO
-
--Normalise beats in time and map potentials
--Look into interpolation techniques
--Interpolate potentials and then try a central difference. 
--Beat average and look at standard deviation and variance at each electrode. 
--Calculate conduction velocities
