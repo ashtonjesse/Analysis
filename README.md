@@ -3,6 +3,6 @@ This is a platform designed for interactive analysis of maps of electrical signa
 
 Signal data are stored associated with entities in the MATLAB binary .mat file structure according to the data models defined in Analysis/Database/DataModels.txt. The MATLAB platform was chosen (in 2010) over alternatives for the benefits of the .mat file structure (efficient data storage) coupled with easy to use, interactive GUI development software (GUIDE) and a rich built-in set of mathematical signal processing functions. 
 
-The GUI consists of 16 individual control panels for viewing and interactive analysis of the signals and isocontour maps. The platform was designed using the object-oriented programming capabilities of MATLAB, such as hierarchical inheritance, to ensure efficient and flexible development of the code-base. 
+The GUI consists of 16 individual control panels for viewing and interactive analysis of the bioelectric signals and derived isocontour maps. The platform was designed using the object-oriented programming capabilities of MATLAB, such as hierarchical inheritance, to ensure efficient and flexible development of the code-base. 
 
 The platform was used in a 2019 study published in The Journal of Physiology available here: https://doi.org/10.1113/JP276876
